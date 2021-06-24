@@ -25,6 +25,6 @@ export class StringInputStream implements InputStream {
     }
 
     formatError(msg: string): Error {
-        new Error(msg + " (" + this.line + ":" + this.col + ")");
+        return new Error(msg + " (" + this.line + ":" + this.col + ")");
     }
 }

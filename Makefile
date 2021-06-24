@@ -1,3 +1,7 @@
 build:
-	rm -rf build
-	./node_modules/typescript/bin/tsc ./src/index.ts
+	rm -rf build/
+	./node_modules/typescript/bin/tsc
+
+test: build
+	./node_modules/jest/bin/jest.js build/
+
