@@ -17,11 +17,21 @@ export class TillEndOfLineStream extends AbstractInputStreamDecorator implements
 }
 
 export class KindOfSpaceInputStream extends AbstractInputStreamDecorator implements InputStream {
-    static isKindOfSpace(ch: Char) {
+    static isKindOfSpace(ch: string) {
         return ch.charCodeAt(0) <= 32;
     }
 
     isEof(): boolean {
         return this.stream.isEof() || !KindOfSpaceInputStream.isKindOfSpace(this.stream.peek());
+    }
+}
+
+export class LiteralInputStream extends AbstractInputStreamDecorator implements InputStream {
+    static isLiteral(ch: string) {
+        return ch.charCodeAt(0) <= 32;
+    }
+
+    isEof(): boolean {
+        return this.stream.isEof() || !LiteralInputStream.isLiteral(this.stream.peek());
     }
 }

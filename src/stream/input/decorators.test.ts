@@ -1,4 +1,4 @@
-import StringInputStream from './StringInputStream';
+import { StringInputStream } from './StringInputStream';
 import { readToEnd, TillEndOfLineStream, KindOfSpaceInputStream } from './decorators';
 
 describe('TillEdnOfLIneStream', () => {

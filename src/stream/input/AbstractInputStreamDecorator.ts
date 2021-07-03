@@ -1,6 +1,6 @@
 import { InputStream } from './InputStream';
 
-export class AbstractInputStreamDecorator implements InputStream {
+export abstract class AbstractInputStreamDecorator implements InputStream {
     protected stream: InputStream;
 
     constructor(stream: InputStream) {
@@ -8,14 +8,16 @@ export class AbstractInputStreamDecorator implements InputStream {
     }
 
     next(): string {
-        this.stream.next();
+        return this.stream.next();
     }
 
     peek(): string {
-        this.stream.peek();
+        return this.stream.peek();
     }
 
     formatError(msg: string): Error {
         return this.stream.format(msg);
     }
+
+    abstract isEof(): boolean;
 }

@@ -1,3 +1,5 @@
+SHELL=/bin/bash
+
 build:
 	rm -rf build/
 	./node_modules/typescript/bin/tsc

@@ -1,5 +1,4 @@
-import { InputStream } from './stream/InputStream';
-import { StringInputStream } from './stream/StringInputStream';
+import { InputStream, StringInputStream } from './stream/input';
 import { StringOutputStream } from './stream/output';
 import { Token } from './token/Token';
 import { readToEnd, TillEndOfLineStream, KindOfSpaceInputStream } from './stream/input';
@@ -45,7 +44,7 @@ function readStream(stream: InputStream) {
                 // comment
                 tokens.push({
                     type: 'comment',
-                    value: readLine(stream)
+                    value: readToEnd(new TillEndOfLineStream(stream))
                 } as Token);
             } else {
                 throw stream.formatError('unexpected symbol, "/" is expected');

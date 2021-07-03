@@ -1,16 +1,16 @@
 export type Token = SpaceToken | CommentToken | BlockToken;
 
 interface SpaceToken {
-    type = 'space';
+    type: string = 'space';
     readonly value: string;
 }
 
 interface CommentToken {
-    type = 'comment';
+    type: string = 'comment';
     readonly value: string;
 }
 
 interface BlockToken {
-    type = 'block';
+    type: string = 'block';
     readonly items: Token[];
 }
