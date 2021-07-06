@@ -16,7 +16,7 @@ export abstract class AbstractInputStreamDecorator implements InputStream {
     }
 
     formatError(msg: string): Error {
-        return this.stream.format(msg);
+        return this.stream.formatError(msg);
     }
 
     abstract isEof(): boolean;

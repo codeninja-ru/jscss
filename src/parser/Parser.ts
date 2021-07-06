@@ -1,7 +1,7 @@
-import { InputStream, LiteralInputStream, StringInputStream } from './stream/input';
-import { StringOutputStream } from './stream/output';
-import { Token } from './token/Token';
-import { readToEnd, TillEndOfLineStream, KindOfSpaceInputStream } from './stream/input';
+import { InputStream, LiteralInputStream, StringInputStream } from 'stream/input';
+import { StringOutputStream } from 'stream/output';
+import { Token } from 'token/Token';
+import { readToEnd, TillEndOfLineStream, KindOfSpaceInputStream } from 'stream/input';
 
 function readLine(input: InputStream): string {
     var result = '';
@@ -29,7 +29,7 @@ function readWhile(input: InputStream, fn: (ch: Char) => boolean): string {
 }
 
 
-function readStream(stream: InputStream) {
+export function readStream(stream: InputStream) {
     const out = new StringOutputStream();
     const tokens: Token[] = [];
     while (!stream.isEof()) {
@@ -70,19 +70,6 @@ function readStream(stream: InputStream) {
     }
     out.close();
 }
-console.log(readStream(new StringInputStream(`
-// comment
-
-.className {
-  ...classNameBase;
-  [generateProp]: bold;
-  font-weight: test ? 'bold' : 'normal';
-  font-size: 12px;
-  color: color(#eee);
-  background: func();
-}
-`)));
-
 //console.log(readStream(new StringInputStream(`
 //import { func, classNameBase } from 'foo';
 //
