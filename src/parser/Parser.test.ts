@@ -1,5 +1,5 @@
 import { StringInputStream } from "stream/input";
-import { readStream } from "./Parser";
+import { parseStram } from "./Parser";
 
 const SIMPLE_CSS = `
 // comment
@@ -17,7 +17,7 @@ const SIMPLE_CSS = `
 
 describe('Parser()', () => {
     test('simple css', () => {
-        const tokens = readStream(new StringInputStream(SIMPLE_CSS));
+        const tokens = parseStram(new StringInputStream(SIMPLE_CSS));
         expect(tokens).toEqual([
             {type: 'comment'},
             {type: 'space'},

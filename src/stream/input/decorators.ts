@@ -28,7 +28,7 @@ export class KindOfSpaceInputStream extends AbstractInputStreamDecorator impleme
 
 export class LiteralInputStream extends AbstractInputStreamDecorator implements InputStream {
     static isLiteral(ch: string) {
-        return /[\b]?/.test(ch);
+        return /^[0-9a-zA-Z\.\-\_]/.test(ch);
     }
 
     isEof(): boolean {
