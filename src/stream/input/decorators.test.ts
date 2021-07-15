@@ -1,9 +1,9 @@
 import { StringInputStream } from './StringInputStream';
-import { readToEnd, TillEndOfLineStream, KindOfSpaceInputStream, LiteralInputStream } from './decorators';
+import { readToEnd, TillEndOfLineStream, KindOfSpaceInputStream, LiteralInputStream, BlockInputStream } from './decorators';
 
 describe('class TillEndOfLIneStream', () => {
     test('isEof() reads to the end of the line', () => {
-        expect(readToEnd(new TillEndOfLineStream(new StringInputStream("line number 1\nline number 2\n\nend of the stream")))).toEqual('line number 1');
+        expect(readToEnd(new TillEndOfLineStream(new StringInputStream("line number 1.\n.line number 2\n\nend of the stream")))).toEqual('line number 1.');
     });
 });
 
@@ -11,6 +11,7 @@ describe('class KindOfSpaceInputStream', () => {
     test('->isKindOfSpace()', () => {
         expect(KindOfSpaceInputStream.isKindOfSpace(' ')).toBeTruthy();
         expect(KindOfSpaceInputStream.isKindOfSpace('x')).toBeFalsy();
+        expect(KindOfSpaceInputStream.isKindOfSpace('.')).toBeFalsy();
     });
 
     test('isEof() reads to the end of the space sequence', () => {
@@ -21,6 +22,7 @@ describe('class KindOfSpaceInputStream', () => {
 describe('class LiteralInputStream', () => {
     test('->isLiteral()', () => {
         expect(LiteralInputStream.isLiteral('.')).toBeTruthy();
+        expect(LiteralInputStream.isLiteral('#')).toBeTruthy();
         expect(LiteralInputStream.isLiteral('f')).toBeTruthy();
         expect(LiteralInputStream.isLiteral('1')).toBeTruthy();
         expect(LiteralInputStream.isLiteral(' ')).toBeFalsy();
@@ -28,5 +30,19 @@ describe('class LiteralInputStream', () => {
 
     test('reads to the end of the literal', () => {
         expect(readToEnd(new LiteralInputStream(new StringInputStream('.className .nextClassName')))).toEqual('.className');
+        expect(readToEnd(new LiteralInputStream(new StringInputStream('.className, .nextClassName')))).toEqual('.className');
+        expect(readToEnd(new LiteralInputStream(new StringInputStream('#className, .nextClassName')))).toEqual('#className');
+        expect(readToEnd(new LiteralInputStream(new StringInputStream('#className:hover, .nextClassName')))).toEqual('#className:hover');
+    });
+});
+
+describe('class BlockInputStream', () => {
+    test('one level block', () => {
+        const input = new BlockInputStream(new StringInputStream(`{
+            display: block;
+        } blah blah`));
+        expect(readToEnd(input)).toEqual(`{
+            display: block;
+        }`);
     });
 });

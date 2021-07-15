@@ -1,21 +1,26 @@
-export type Token = SpaceToken | CommentToken | BlockToken | LiteralToken;
+export type Token = SpaceToken | CommentToken | BlockToken | LiteralToken | LazyBlockToken;
 
-interface SpaceToken {
+export interface SpaceToken {
     type: 'space';
     readonly value: string;
 }
 
-interface CommentToken {
+export interface CommentToken {
     type: 'comment';
     readonly value: string;
 }
 
-interface BlockToken {
+export interface BlockToken {
     type: 'block';
     readonly items: Token[];
 }
 
-interface LiteralToken {
+export interface LazyBlockToken {
+    type: 'lazy_block';
+    readonly value: string;
+}
+
+export interface LiteralToken {
     type: 'literal';
     readonly value: string;
 }

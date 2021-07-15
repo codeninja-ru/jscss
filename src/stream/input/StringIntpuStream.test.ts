@@ -13,4 +13,11 @@ describe('class StringInputStream', () => {
         expect(input.next()).toEqual('h');
         expect(input.next()).toEqual('e');
     });
+
+    test('next() and isEof', () => {
+        const input = new StringInputStream('');
+        expect(() => {
+            input.next();
+        }).toThrowError('reading beyond the end of the stream');
+    });
 });

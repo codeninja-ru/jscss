@@ -12,6 +12,9 @@ export class StringInputStream implements InputStream {
 
     next(): string {
         var ch = this.input.charAt(this.pos++);
+        if (ch == '') {
+            throw this.formatError('reading beyond the end of the stream');
+        }
         if (ch == "\n") this.line++, this.col = 0; else this.col++;
         return ch;
     }
