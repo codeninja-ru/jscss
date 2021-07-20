@@ -2,7 +2,7 @@ import { BlockInputStream, InputStream, LiteralInputStream, MultilineCommentStre
 import { StringOutputStream } from 'stream/output';
 import { CommaToken, CommentToken, LazyBlockToken, LiteralToken, MultilineCommentToken, SpaceToken, Token } from 'token/Token';
 import { readToEnd, TillEndOfLineStream, KindOfSpaceInputStream } from 'stream/input';
-import { makeBlockReader, makeCommaReader, makeUnexpectedSymbolReader, makeLiteralReader, makeSpaceReader, Reader } from 'reader/readers';
+import { makeBlockReader, makeCommaReader, makeUnexpectedSymbolReader, makeLiteralReader, makeSpaceReader, Reader, makeStringReader } from 'reader/readers';
 import { makeCommentReader } from 'reader/comment';
 
 export function parseStream(stream: InputStream) {
@@ -14,6 +14,8 @@ export function parseStream(stream: InputStream) {
         makeLiteralReader(stream),
         makeBlockReader(stream),
         makeCommentReader(stream),
+        makeStringReader(stream, "'"),
+        makeStringReader(stream, '"'),
 
         // keep it always in the end
         makeUnexpectedSymbolReader(stream),

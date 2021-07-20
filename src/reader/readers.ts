@@ -5,7 +5,7 @@ export type Reader = () => Token | null;
 
 export function makeSpaceReader(stream: InputStream) : Reader {
     return function() {
-        if (KindOfSpaceInputStream.isKindOfSpace(ch)) {
+        if (KindOfSpaceInputStream.isKindOfSpace(stream.peek())) {
             return {
                 type: 'space',
                 value: readToEnd(new KindOfSpaceInputStream(stream))
@@ -55,6 +55,34 @@ export function makeBlockReader(stream: InputStream) : Reader {
     };
 }
 
+export function makeStringReader(stream: InputStream, quatation: "'" | '"'): Reader {
+    const ESCAPE_SYMBOL = '\\';
+    return function() {
+        if (stream.peek() == quatation) {
+            var result = stream.next();
+            var isEscapeMode = false;
+            while (!stream.isEof()) {
+                var ch = stream.next();
+                if (ch == '\n') {
+                    break;
+                }
+                result += ch;
+                if (!isEscapeMode && ch == quatation) {
+                    return {
+                        type: 'string',
+                        value: result,
+                    } as Token;
+                }
+                isEscapeMode = ch == ESCAPE_SYMBOL;
+            }
+
+            throw stream.formatError('unexpected end of the string');
+        }
+
+        return null;
+    };
+}
+
 /**
  * does nothing, throws an error
  * @param stream 
@@ -63,6 +91,7 @@ export function makeBlockReader(stream: InputStream) : Reader {
  */
 export function makeUnexpectedSymbolReader(stream: InputStream) : Reader {
     return function() {
+        var ch = stream.peek();
         throw stream.formatError(`unexpected symbol '${ch}' code: ${ch.charCodeAt(0)}`);
     }
 }
