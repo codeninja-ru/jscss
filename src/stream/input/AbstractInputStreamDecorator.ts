@@ -6,6 +6,10 @@ export abstract class AbstractInputStreamDecorator implements InputStream {
     constructor(stream: InputStream) {
         this.stream = stream;
     }
+    
+    readUntil(searchString: string): string | null {
+        return this.stream.readUntil(searchString);
+    }
 
     next(): string {
         return this.stream.next();

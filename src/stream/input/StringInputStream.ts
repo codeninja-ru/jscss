@@ -30,4 +30,23 @@ export class StringInputStream implements InputStream {
     formatError(msg: string): Error {
         return new Error(msg + " (" + this.line + ":" + this.col + ")");
     }
+
+    readUntil(str: string) : string | null {
+        const idx = this.input.indexOf(str, this.pos);
+        if (idx == -1) {
+            return null;
+        }
+
+        const result = this.input.substr(this.pos, idx + str.length);
+        this.pos = idx + str.length;
+
+        var lineCount = 0;
+        var pos = -1;
+        while ((pos = result.indexOf("\n", pos + 1)) != -1) {
+            lineCount++;
+        }
+        this.line += lineCount;
+
+        return result;
+    }
 }

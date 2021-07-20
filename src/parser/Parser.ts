@@ -1,52 +1,42 @@
-import { BlockInputStream, InputStream, LiteralInputStream } from 'stream/input';
+import { BlockInputStream, InputStream, LiteralInputStream, MultilineCommentStream } from 'stream/input';
 import { StringOutputStream } from 'stream/output';
-import { CommentToken, LazyBlockToken, LiteralToken, SpaceToken, Token } from 'token/Token';
+import { CommaToken, CommentToken, LazyBlockToken, LiteralToken, MultilineCommentToken, SpaceToken, Token } from 'token/Token';
 import { readToEnd, TillEndOfLineStream, KindOfSpaceInputStream } from 'stream/input';
+import { makeBlockReader, makeCommaReader, makeUnexpectedSymbolReader, makeLiteralReader, makeSpaceReader, Reader } from 'reader/readers';
+import { makeCommentReader } from 'reader/comment';
 
-export function parseStram(stream: InputStream) {
+export function parseStream(stream: InputStream) {
     const out = new StringOutputStream();
     const tokens: Token[] = [];
+    const readers : Array<Reader> = [
+        makeSpaceReader(stream),
+        makeCommaReader(stream),
+        makeLiteralReader(stream),
+        makeBlockReader(stream),
+        makeCommentReader(stream),
+
+        // keep it always in the end
+        makeUnexpectedSymbolReader(stream),
+    ];
+
     try {
         while (!stream.isEof()) {
             var ch = stream.peek();
-            if (KindOfSpaceInputStream.isKindOfSpace(ch)) {
-                tokens.push({
-                    type: 'space',
-                    value: readToEnd(new KindOfSpaceInputStream(stream))
-                } as SpaceToken);
-            } else if (ch == '/') {
-                stream.next();
-                ch = stream.next();
-                if (ch == '/') {
-                    // comment
-                    tokens.push({
-                        type: 'comment',
-                        value: readToEnd(new TillEndOfLineStream(stream))
-                    } as CommentToken);
-                } else if (ch == '*') {
-                    //todo multiline comment
-                    throw new Error('not implememnted');
-                } else {
-                    throw stream.formatError('unexpected symbol, "/" is expected');
+            for (var reader of readers) {
+                var token = reader();
+                if (token) {
+                    tokens.push(token);
+                    break;
                 }
-            } else if (ch == "'") {
+            }
+            if (ch == "'") {
+            } else if (ch == "\"") {
             } else if (ch == "=") {
             } else if (ch == ";") {
             } else if (ch == "@") {
             } else if (ch == "\"") {
             } else if (ch == "[") {
             } else if (ch == "(") {
-
-            } else if (BlockInputStream.isBlockStart(ch)) {
-                tokens.push({
-                    type: 'lazy_block',
-                    value: readToEnd(new BlockInputStream(stream)),
-                } as LazyBlockToken);
-            } else if (LiteralInputStream.isLiteral(ch)) {
-                tokens.push({
-                    type: 'literal',
-                    value: readToEnd(new LiteralInputStream(stream))
-                } as LiteralToken);
             } else {
                 throw stream.formatError(`unexpected symbol '${ch}' code: ${ch.charCodeAt(0)}`);
             }

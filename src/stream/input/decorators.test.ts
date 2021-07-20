@@ -1,5 +1,5 @@
 import { StringInputStream } from './StringInputStream';
-import { readToEnd, TillEndOfLineStream, KindOfSpaceInputStream, LiteralInputStream, BlockInputStream } from './decorators';
+import { readToEnd, TillEndOfLineStream, KindOfSpaceInputStream, LiteralInputStream, BlockInputStream, MultilineCommentStream } from './decorators';
 
 describe('class TillEndOfLIneStream', () => {
     test('isEof() reads to the end of the line', () => {
@@ -44,5 +44,24 @@ describe('class BlockInputStream', () => {
         expect(readToEnd(input)).toEqual(`{
             display: block;
         }`);
+    });
+});
+
+describe('class MultilineCommentStream', () => {
+    test('correct multiline comment', () => {
+        const input = new MultilineCommentStream(new StringInputStream(" test of multiline comment, \n **test / */ end"));
+        expect(readToEnd(input)).toEqual(" test of multiline comment, \n **test / ");
+    });
+
+    test('some tricy cases', () => {
+        expect(readToEnd(
+            new MultilineCommentStream(new StringInputStream("** /* \n */"))
+        )).toEqual("** /* \n ");
+    });
+
+    test('the end of the file', () => {
+        expect(readToEnd(
+            new MultilineCommentStream(new StringInputStream("test \n\n test"))
+        )).toEqual("test \n\n test");
     });
 });

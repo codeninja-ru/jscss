@@ -73,3 +73,84 @@ export class BlockInputStream extends AbstractInputStreamDecorator {
     }
 
 }
+
+export class MultilineCommentStream extends AbstractInputStreamDecorator {
+    private nextStr = '';
+    private eof = false;
+
+    private _peek(): string {
+        if (this.nextStr == '') {
+            return this.peek();
+        } else {
+            return this.nextStr[0];
+        }
+    }
+
+    private _next(): string {
+        if (this.nextStr == '') {
+            return this.stream.next();
+        } else {
+            const ch = this.nextStr[0];
+            this.nextStr = this.nextStr.slice(1);
+            return ch;
+        }
+    }
+    
+    next(): string {
+        if (this.isEof()) {
+            throw this.formatError('the end of the multiline block');
+        }
+
+        return this._next();
+    }
+
+    isEof(): boolean {
+        if (this.eof) {
+            return true;
+        }
+
+        if (this.stream.isEof()) {
+            //todo is the end of comment by eof allowed?
+            return true;
+        }
+
+        var ch = this._peek();
+
+        if (ch == '*') {
+            this.nextStr = this._next() + this._next();
+            if (this.nextStr == '*/') {
+                this.eof = true;
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
+
+type StringMark = "'" | '"';
+
+export class StringValueStream extends AbstractInputStreamDecorator {
+    private isEscapeMode = false;
+    constructor(private mark: StringMark, stream: InputStream) {
+        super(stream);
+    }
+    next(): string {
+        const ch = this.stream.next();
+        this.isEscapeMode = ch == '\\';
+
+        return ch;
+    }
+
+    isEof(): boolean {
+        if (!this.isEscapeMode && this.peek() == this.mark) {
+            return true;
+        }
+        if (this.stream.isEof()) {
+            throw this.formatError('unexpected end of the string');
+        }
+
+        return false;
+    }
+
+}
