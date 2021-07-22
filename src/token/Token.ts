@@ -1,4 +1,9 @@
-export type Token = SpaceToken | CommentToken | MultilineCommentToken | BlockToken | LiteralToken | LazyBlockToken | CommaToken | StringToken;
+export type Token = SpaceToken | CommentToken | 
+    MultilineCommentToken | BlockToken |
+    LiteralToken | LazyBlockToken |
+    CommaToken | StringToken |
+    SymbolToken | TemplateStringToken |
+    RoundBracketsToken | SquareBracketsToken;
 
 export interface SpaceToken {
     type: 'space';
@@ -37,5 +42,24 @@ export interface CommaToken {
 export interface StringToken {
     type: 'string';
     readonly value: string;
-    readonly mark: "'" | '"';
+}
+
+export interface SymbolToken {
+    type: 'symbol';
+    readonly value: string;
+}
+
+export interface TemplateStringToken {
+    type: 'template_string';
+    readonly value: string;
+}
+
+export interface RoundBracketsToken {
+    type: 'round_brackets',
+    readonly value: string;
+}
+
+export interface SquareBracketsToken {
+    type: 'square_brackets',
+    readonly value: string;
 }

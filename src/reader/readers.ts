@@ -83,6 +83,62 @@ export function makeStringReader(stream: InputStream, quatation: "'" | '"'): Rea
     };
 }
 
+function takeWhile(stream: InputStream, fn: (ch:string) => boolean) : string {
+    var result = '';
+
+    while(!stream.isEof() && fn(stream.peek())) {
+        result += stream.next();
+    }
+
+    return result;
+}
+
+export function makeSymboleReader(stream: InputStream) : Reader {
+    return function() {
+        var symbolsFn = (ch: string) => {
+            return ",.=<>-*+&|^@".includes(ch);
+        };
+
+        var result = takeWhile(stream, symbolsFn);
+
+        if (result.length > 0) {
+            return {
+                type: 'symbol',
+                value: result
+            } as Token;
+        }
+
+        return null;
+    };
+}
+
+export function makeBracketsReader(stream: InputStream, startBracket: '(' | '[', endBracket: ')' | ']'): Reader {
+    return function() {
+        if (stream.peek() == startBracket) {
+            let result = '';
+            let level = 0;
+            while(!stream.isEof()) {
+                var ch = stream.next();
+                if (ch == startBracket) {
+                    level++;
+                } else if (ch == endBracket) {
+                    level--;
+                }
+                result += ch;
+                if (level == 0) {
+                    return {
+                        type: startBracket == '(' ? 'round_brackets' : 'square_brackets',
+                        value: result
+                    } as Token;
+                }
+            }
+            throw stream.formatError('brackets does not match');
+        }
+
+        return null;
+    };
+}
+
 /**
  * does nothing, throws an error
  * @param stream 
