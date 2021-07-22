@@ -3,7 +3,7 @@ import { Token, SpaceToken } from "token";
 
 export type Reader = () => Token | null;
 
-export function makeSpaceReader(stream: InputStream) : Reader {
+export function makeSpaceReader(stream: InputStream): Reader {
     return function() {
         if (KindOfSpaceInputStream.isKindOfSpace(stream.peek())) {
             return {
@@ -16,7 +16,7 @@ export function makeSpaceReader(stream: InputStream) : Reader {
     };
 }
 
-export function makeCommaReader(stream: InputStream) : Reader {
+export function makeCommaReader(stream: InputStream): Reader {
     return function() {
         var ch = stream.peek();
         if (ch == ',') {
@@ -30,8 +30,8 @@ export function makeCommaReader(stream: InputStream) : Reader {
     };
 }
 
-export function makeLiteralReader(stream: InputStream) : Reader {
-    return function () {
+export function makeLiteralReader(stream: InputStream): Reader {
+    return function() {
         if (LiteralInputStream.isLiteral(stream.peek())) {
             return {
                 type: 'literal',
@@ -43,7 +43,7 @@ export function makeLiteralReader(stream: InputStream) : Reader {
     };
 }
 
-export function makeBlockReader(stream: InputStream) : Reader {
+export function makeBlockReader(stream: InputStream): Reader {
     return function() {
         if (BlockInputStream.isBlockStart(stream.peek())) {
             return {
@@ -83,20 +83,20 @@ export function makeStringReader(stream: InputStream, quatation: "'" | '"'): Rea
     };
 }
 
-function takeWhile(stream: InputStream, fn: (ch:string) => boolean) : string {
+function takeWhile(stream: InputStream, fn: (ch: string) => boolean): string {
     var result = '';
 
-    while(!stream.isEof() && fn(stream.peek())) {
+    while (!stream.isEof() && fn(stream.peek())) {
         result += stream.next();
     }
 
     return result;
 }
 
-export function makeSymboleReader(stream: InputStream) : Reader {
+export function makeSymboleReader(stream: InputStream): Reader {
     return function() {
         var symbolsFn = (ch: string) => {
-            return ",.=<>-*+&|^@".includes(ch);
+            return ".=<>-*+&|^@".includes(ch);
         };
 
         var result = takeWhile(stream, symbolsFn);
@@ -117,7 +117,7 @@ export function makeBracketsReader(stream: InputStream, startBracket: '(' | '[',
         if (stream.peek() == startBracket) {
             let result = '';
             let level = 0;
-            while(!stream.isEof()) {
+            while (!stream.isEof()) {
                 var ch = stream.next();
                 if (ch == startBracket) {
                     level++;
@@ -139,13 +139,38 @@ export function makeBracketsReader(stream: InputStream, startBracket: '(' | '[',
     };
 }
 
+export function makeTemplateStringReader(stream: InputStream): Reader {
+    const ESCAPE_SYMBOL = '\\';
+    return function() {
+        if (stream.peek() == '`') {
+            var result = stream.next();
+            var isEscapeMode = false;
+            while (!stream.isEof()) {
+                var ch = stream.next();
+                result += ch;
+                if (!isEscapeMode && ch == '`') {
+                    return {
+                        type: 'template_string',
+                        value: result,
+                    } as Token;
+                }
+                isEscapeMode = ch == ESCAPE_SYMBOL;
+            }
+
+            throw stream.formatError('unexpected end of the string');
+        }
+
+        return null;
+    };
+}
+
 /**
  * does nothing, throws an error
  * @param stream 
  * @param error error message
  * @returns 
  */
-export function makeUnexpectedSymbolReader(stream: InputStream) : Reader {
+export function makeUnexpectedSymbolReader(stream: InputStream): Reader {
     return function() {
         var ch = stream.peek();
         throw stream.formatError(`unexpected symbol '${ch}' code: ${ch.charCodeAt(0)}`);

@@ -1,8 +1,8 @@
-import { InputStream, TillEndOfLineStream, readToEnd, MultilineCommentStream, StringInputStream, SearchableInputStream } from "stream/input";
+import { InputStream, readToEnd, TillEndOfLineStream } from "stream/input";
 import { Token } from "token";
 import { Reader } from "./readers";
 
-export function makeCommentReader(stream: InputStream) : Reader {
+export function makeCommentReader(stream: InputStream): Reader {
     return function() {
         if (stream.peek() == '/') {
             stream.next();

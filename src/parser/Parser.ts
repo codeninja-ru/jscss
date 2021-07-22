@@ -1,14 +1,13 @@
-import { BlockInputStream, InputStream, LiteralInputStream, MultilineCommentStream } from 'stream/input';
-import { StringOutputStream } from 'stream/output';
-import { CommaToken, CommentToken, LazyBlockToken, LiteralToken, MultilineCommentToken, SpaceToken, Token } from 'token/Token';
-import { readToEnd, TillEndOfLineStream, KindOfSpaceInputStream } from 'stream/input';
-import { makeBlockReader, makeCommaReader, makeUnexpectedSymbolReader, makeLiteralReader, makeSpaceReader, Reader, makeStringReader, makeSymboleReader, makeBracketsReader } from 'reader/readers';
 import { makeCommentReader } from 'reader/comment';
+import { makeBlockReader, makeBracketsReader, makeCommaReader, makeLiteralReader, makeSpaceReader, makeStringReader, makeSymboleReader, makeTemplateStringReader, makeUnexpectedSymbolReader, Reader } from 'reader/readers';
+import { InputStream } from 'stream/input';
+import { StringOutputStream } from 'stream/output';
+import { Token } from 'token/Token';
 
 export function parseStream(stream: InputStream) {
     const out = new StringOutputStream();
     const tokens: Token[] = [];
-    const readers : Array<Reader> = [
+    const readers: Array<Reader> = [
         makeSpaceReader(stream),
         makeCommaReader(stream),
         makeLiteralReader(stream),
@@ -16,10 +15,13 @@ export function parseStream(stream: InputStream) {
         makeCommentReader(stream),
         makeStringReader(stream, "'"),
         makeStringReader(stream, '"'),
+        makeTemplateStringReader(stream),
         makeSymboleReader(stream),
         makeBracketsReader(stream, '(', ')'),
         makeBracketsReader(stream, '[', ']'),
 
+
+        //todo symbols ;:
 
         // keep it always in the end
         makeUnexpectedSymbolReader(stream),
@@ -27,19 +29,12 @@ export function parseStream(stream: InputStream) {
 
     try {
         while (!stream.isEof()) {
-            var ch = stream.peek();
             for (var reader of readers) {
                 var token = reader();
                 if (token) {
                     tokens.push(token);
                     break;
                 }
-            }
-            if (ch == "[") {
-            } else if (ch == "(") {
-            } else if (ch == "`") {
-            } else {
-                throw stream.formatError(`unexpected symbol '${ch}' code: ${ch.charCodeAt(0)}`);
             }
         }
     } catch (error) {

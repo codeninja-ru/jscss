@@ -1,76 +1,7 @@
-import { InputStream, LiteralInputStream, StringInputStream } from './stream/input';
-import { StringOutputStream } from './stream/output';
-import { Token } from './token/Token';
-import { readToEnd, TillEndOfLineStream, KindOfSpaceInputStream } from './stream/input';
+import { parseStream } from 'parser/Parser';
+import { StringInputStream } from './stream/input';
 
-function readLine(input: InputStream): string {
-    var result = '';
-    while (!input.isEof()) {
-        var ch = input.next();
-        result += ch;
-        if (ch == "\n") {
-            break;
-        }
-    }
-
-    return result;
-}
-
-type Char = string;
-
-function readWhile(input: InputStream, fn: (ch: Char) => boolean): string {
-    var result = "";
-
-    while (!input.isEof() && !fn(input.peek())) {
-        result += input.next();
-    }
-
-    return result;
-}
-
-
-function readStream(stream: InputStream) {
-    const out = new StringOutputStream();
-    const tokens: Token[] = [];
-    while (!stream.isEof()) {
-        var ch = stream.peek();
-        if (KindOfSpaceInputStream.isKindOfSpace(ch)) {
-            tokens.push({
-                type: 'space',
-                value: readToEnd(new KindOfSpaceInputStream(stream))
-            } as Token);
-        } else if (ch == '/') {
-            if (stream.next() == '/') {
-                // comment
-                tokens.push({
-                    type: 'comment',
-                    value: readToEnd(new TillEndOfLineStream(stream))
-                } as Token);
-            } else {
-                throw stream.formatError('unexpected symbol, "/" is expected');
-            }
-        } else if (ch == "'") {
-        } else if (ch == "=") {
-        } else if (ch == ";") {
-        } else if (ch == "@") {
-        } else if (ch == "\"") {
-        } else if (ch == "[") {
-        } else if (ch == "(") {
-
-        } else if (ch == '{') {
-
-        } else if (LiteralInputStream.isLiteral(ch)) {
-            tokens.push({
-                type: 'literal',
-                value: readToEnd(new LiteralInputStream(stream))
-            } as Token);
-        } else {
-            throw stream.formatError('unexpected symbol ' + ch);
-        }
-    }
-    out.close();
-}
-console.log(readStream(new StringInputStream(`
+console.log(parseStream(new StringInputStream(`
 // comment
 
 .className {

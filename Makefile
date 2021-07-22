@@ -1,7 +1,9 @@
 SHELL=/bin/bash
 
-build:
+clean:
 	rm -rf ./build
+
+build: clean
 	./node_modules/typescript/bin/tsc
 
 test: build
