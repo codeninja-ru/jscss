@@ -1,5 +1,5 @@
 import { StringInputStream } from "stream/input";
-import { parseStream } from "./Parser";
+import { parseStream } from "./lexer";
 
 const SIMPLE_CSS = `
 // this is a comment
@@ -14,7 +14,7 @@ const SIMPLE_CSS = `
 }
 `;
 
-const SIMPLE_JS = `
+/*const SIMPLE_JS = `
 import _ from 'lodash';
 import {foo} from 'bar';
 
@@ -26,31 +26,34 @@ function process(css) {
     color: #eee;
     foo: $\{foo\};
 }
-`;
+`;*/
 
 
-describe('Parser()', () => {
+describe('parseStream()', () => {
     test('simple css', () => {
         const tokens = parseStream(new StringInputStream(SIMPLE_CSS));
         expect(tokens).toEqual([
-            {type: 'space', value: "\n"},
-            {type: 'comment', value: ' this is a comment'},
-            {type: 'space', value: "\n\n"},
-            {type: 'literal', value: '.className'},
-            {type: 'space', value: " "},
-            {type: 'lazy_block', value: `{
-    ...classNameBase;
+            { type: 'space', value: "\n" },
+            { type: 'comment', value: '// this is a comment' },
+            { type: 'space', value: "\n\n" },
+            { type: 'literal', value: '.className' },
+            { type: 'space', value: " " },
+            {
+                type: 'lazy_block', value: `{
+    ...classNameBase.prop;
     [generateProp]: bold;
-    font-weight: test ? 'bold' : 'normal';
+    font-weight: \$\{test ? 'bold' : 'normal'\};
     font-size: 12px;
-    color: color(#eee);
-    background: func();\n}`},
+    color: \$\{color(\"#eee\")\};
+    background: \$\{func()\};
+}`
+            },
             { type: 'space', value: "\n" },
         ]);
     });
 
-    test('that javascript is ignored', () => {
-        const tokens = parseStream(new StringInputStream(SIMPLE_JS));
+    test('javascript', () => {
+        const tokens = parseStream(new StringInputStream("import _ from 'lodash';\n"));
         expect(tokens).toEqual([
         ]);
     });

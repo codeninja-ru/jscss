@@ -1,5 +1,5 @@
 import { StringInputStream } from "stream/input";
-import { makeBracketsReader, makeStringReader, makeTemplateStringReader } from "./readers";
+import { makeBracketsReader, makeSemicolonRader, makeStringReader, makeTemplateStringReader } from "./readers";
 
 describe('makeStringReader()', () => {
     test('correct strings', () => {
@@ -24,19 +24,29 @@ describe('makeStringReader()', () => {
 describe('makeBracketsReader', () => {
     test('round brackets', () => {
         const stream = new StringInputStream('(arg1, foo(prop1, prop2[1]), ...rest) test of the stream');
-        expect(makeBracketsReader(stream, '(', ')')()).toEqual('(arg1, foo(prop1, prop2[1]), ...rest)');
+        expect(makeBracketsReader(stream, '(', ')')()).toEqual({ type: 'round_brackets', value: '(arg1, foo(prop1, prop2[1]), ...rest)' });
     });
 
     test('square brackets', () => {
         const stream = new StringInputStream('[1, 2, 3, [...array], 4] rest of the stream');
-        expect(makeBracketsReader(stream, '[', ']')()).toEqual('[1, 2, 3, [...array], 4]');
+        expect(makeBracketsReader(stream, '[', ']')()).toEqual({ type: 'square_brackets', value: '[1, 2, 3, [...array], 4]' });
     });
 });
 
 describe('makeTemplateStringReader', () => {
     test('simple template', () => {
-        const stream = new StringInputStream('`hello, \`${userName}\`` rest of the stream');
-        expect(makeTemplateStringReader(stream)()).toEqual('`hello, \`${userName}\``');
+        const stream = new StringInputStream('`hello, \\`${userName}\\`` rest of the stream');
+        expect(makeTemplateStringReader(stream)()).toEqual({ type: 'template_string', value: '`hello, \\`${userName}\\``' });
+    });
+
+});
+
+describe('makeSemicolonReader', () => {
+    test('semicolon', () => {
+        expect(makeSemicolonRader(new StringInputStream(';rest'))()).toEqual({
+            type: 'symbol',
+            value: ';'
+        });
     });
 
 });

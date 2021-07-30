@@ -148,13 +148,16 @@ export function makeTemplateStringReader(stream: InputStream): Reader {
             while (!stream.isEof()) {
                 var ch = stream.next();
                 result += ch;
-                if (!isEscapeMode && ch == '`') {
+                if (isEscapeMode) {
+                    isEscapeMode = false;
+                } else if (ch == '`') {
                     return {
                         type: 'template_string',
                         value: result,
                     } as Token;
+                } else if (ch == ESCAPE_SYMBOL) {
+                    isEscapeMode = true;
                 }
-                isEscapeMode = ch == ESCAPE_SYMBOL;
             }
 
             throw stream.formatError('unexpected end of the string');
@@ -162,6 +165,19 @@ export function makeTemplateStringReader(stream: InputStream): Reader {
 
         return null;
     };
+}
+
+export function makeSemicolonRader(stream: InputStream): Reader {
+    return function() {
+        if (stream.peek() == ';') {
+            return {
+                type: 'symbol',
+                value: stream.next(),
+            } as Token;
+        }
+
+        return null;
+    }
 }
 
 /**

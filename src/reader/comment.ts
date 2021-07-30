@@ -6,13 +6,18 @@ export function makeCommentReader(stream: InputStream): Reader {
     return function() {
         if (stream.peek() == '/') {
             stream.next();
+
+            if (stream.isEof()) {
+                throw stream.formatError('unexpected end of the comment block');
+            }
+
             var ch = stream.next();
 
             if (ch == '/') {
                 // comment
                 return {
                     type: 'comment',
-                    value: ch + readToEnd(new TillEndOfLineStream(stream))
+                    value: '/' + ch + readToEnd(new TillEndOfLineStream(stream))
                 } as Token;
             } else if (ch == '*') {
                 var comment = stream.readUntil('*/')
@@ -21,10 +26,10 @@ export function makeCommentReader(stream: InputStream): Reader {
                 }
                 return {
                     type: 'multiline_comment',
-                    value: ch + comment
+                    value: '/' + ch + comment
                 } as Token;
             } else {
-                throw stream.formatError('unexpected symbol, "/" or "*" is expected');
+                throw stream.formatError(`unexpected symbol, "/" or "*" is expected, but ${ch} was gven`);
             }
         }
         return null;

@@ -1,5 +1,5 @@
 import { makeCommentReader } from 'reader/comment';
-import { makeBlockReader, makeBracketsReader, makeCommaReader, makeLiteralReader, makeSpaceReader, makeStringReader, makeSymboleReader, makeTemplateStringReader, makeUnexpectedSymbolReader, Reader } from 'reader/readers';
+import { makeBlockReader, makeBracketsReader, makeCommaReader, makeLiteralReader, makeSemicolonRader, makeSpaceReader, makeStringReader, makeSymboleReader, makeTemplateStringReader, makeUnexpectedSymbolReader, Reader } from 'reader/readers';
 import { InputStream } from 'stream/input';
 import { StringOutputStream } from 'stream/output';
 import { Token } from 'token/Token';
@@ -10,6 +10,7 @@ export function parseStream(stream: InputStream) {
     const readers: Array<Reader> = [
         makeSpaceReader(stream),
         makeCommaReader(stream),
+        makeSemicolonRader(stream),
         makeLiteralReader(stream),
         makeBlockReader(stream),
         makeCommentReader(stream),
@@ -19,9 +20,7 @@ export function parseStream(stream: InputStream) {
         makeSymboleReader(stream),
         makeBracketsReader(stream, '(', ')'),
         makeBracketsReader(stream, '[', ']'),
-
-
-        //todo symbols ;:
+        makeSymboleReader(stream),
 
         // keep it always in the end
         makeUnexpectedSymbolReader(stream),

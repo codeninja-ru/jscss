@@ -1,4 +1,4 @@
-import { parseStream } from 'parser/Parser';
+import { parseStream } from 'parser/lexer';
 import { StringInputStream } from './stream/input';
 
 console.log(parseStream(new StringInputStream(`
