@@ -1,4 +1,5 @@
 import { StringInputStream } from "stream/input";
+import { TokenType } from "token";
 import { parseStream } from "./lexer";
 
 const SIMPLE_CSS = `
@@ -33,13 +34,13 @@ describe('parseStream()', () => {
     test('simple css', () => {
         const tokens = parseStream(new StringInputStream(SIMPLE_CSS));
         expect(tokens).toEqual([
-            { type: 'space', value: "\n" },
-            { type: 'comment', value: '// this is a comment' },
-            { type: 'space', value: "\n\n" },
-            { type: 'literal', value: '.className' },
-            { type: 'space', value: " " },
+            { type: TokenType.Space, value: "\n" },
+            { type: TokenType.Comment, value: '// this is a comment' },
+            { type: TokenType.Space, value: "\n\n" },
+            { type: TokenType.Literal, value: '.className' },
+            { type: TokenType.Space, value: " " },
             {
-                type: 'lazy_block', value: `{
+                type: TokenType.LazyBlock, value: `{
     ...classNameBase.prop;
     [generateProp]: bold;
     font-weight: \$\{test ? 'bold' : 'normal'\};
@@ -48,13 +49,22 @@ describe('parseStream()', () => {
     background: \$\{func()\};
 }`
             },
-            { type: 'space', value: "\n" },
+            { type: TokenType.Space, value: "\n" },
         ]);
     });
 
     test('javascript', () => {
         const tokens = parseStream(new StringInputStream("import _ from 'lodash';\n"));
         expect(tokens).toEqual([
+            { type: TokenType.Literal, value: 'import' },
+            { type: TokenType.Space, value: ' ' },
+            { type: TokenType.Literal, value: '_' },
+            { type: TokenType.Space, value: ' ' },
+            { type: TokenType.Literal, value: 'from' },
+            { type: TokenType.Space, value: ' ' },
+            { type: TokenType.String, value: "'lodash'" },
+            { type: TokenType.Symbol, value: ';' },
+            { type: TokenType.Space, value: '\n' }
         ]);
     });
 

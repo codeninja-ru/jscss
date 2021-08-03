@@ -1,5 +1,5 @@
 import { BlockInputStream, InputStream, KindOfSpaceInputStream, LiteralInputStream, readToEnd } from "stream/input";
-import { Token, SpaceToken } from "token";
+import { Token, TokenType, SpaceToken } from "token";
 
 export type Reader = () => Token | null;
 
@@ -7,7 +7,7 @@ export function makeSpaceReader(stream: InputStream): Reader {
     return function() {
         if (KindOfSpaceInputStream.isKindOfSpace(stream.peek())) {
             return {
-                type: 'space',
+                type: TokenType.Space,
                 value: readToEnd(new KindOfSpaceInputStream(stream))
             } as SpaceToken;
         }
@@ -22,7 +22,7 @@ export function makeCommaReader(stream: InputStream): Reader {
         if (ch == ',') {
             stream.next();
             return {
-                type: 'comma',
+                type: TokenType.Comma,
             } as Token;
         }
 
@@ -34,7 +34,7 @@ export function makeLiteralReader(stream: InputStream): Reader {
     return function() {
         if (LiteralInputStream.isLiteral(stream.peek())) {
             return {
-                type: 'literal',
+                type: TokenType.Literal,
                 value: readToEnd(new LiteralInputStream(stream))
             } as Token;
         }
@@ -47,7 +47,7 @@ export function makeBlockReader(stream: InputStream): Reader {
     return function() {
         if (BlockInputStream.isBlockStart(stream.peek())) {
             return {
-                type: 'lazy_block',
+                type: TokenType.LazyBlock,
                 value: readToEnd(new BlockInputStream(stream)),
             } as Token;
         }
@@ -69,7 +69,7 @@ export function makeStringReader(stream: InputStream, quatation: "'" | '"'): Rea
                 result += ch;
                 if (!isEscapeMode && ch == quatation) {
                     return {
-                        type: 'string',
+                        type: TokenType.String,
                         value: result,
                     } as Token;
                 }
@@ -103,7 +103,7 @@ export function makeSymboleReader(stream: InputStream): Reader {
 
         if (result.length > 0) {
             return {
-                type: 'symbol',
+                type: TokenType.Symbol,
                 value: result
             } as Token;
         }
@@ -127,7 +127,7 @@ export function makeBracketsReader(stream: InputStream, startBracket: '(' | '[',
                 result += ch;
                 if (level == 0) {
                     return {
-                        type: startBracket == '(' ? 'round_brackets' : 'square_brackets',
+                        type: startBracket == '(' ? TokenType.RoundBrackets : TokenType.SquareBrackets,
                         value: result
                     } as Token;
                 }
@@ -152,7 +152,7 @@ export function makeTemplateStringReader(stream: InputStream): Reader {
                     isEscapeMode = false;
                 } else if (ch == '`') {
                     return {
-                        type: 'template_string',
+                        type: TokenType.TemplateString,
                         value: result,
                     } as Token;
                 } else if (ch == ESCAPE_SYMBOL) {
@@ -171,7 +171,7 @@ export function makeSemicolonRader(stream: InputStream): Reader {
     return function() {
         if (stream.peek() == ';') {
             return {
-                type: 'symbol',
+                type: TokenType.Symbol,
                 value: stream.next(),
             } as Token;
         }

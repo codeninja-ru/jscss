@@ -1,5 +1,5 @@
 import { InputStream, readToEnd, TillEndOfLineStream } from "stream/input";
-import { Token } from "token";
+import { Token, TokenType } from "token";
 import { Reader } from "./readers";
 
 export function makeCommentReader(stream: InputStream): Reader {
@@ -16,7 +16,7 @@ export function makeCommentReader(stream: InputStream): Reader {
             if (ch == '/') {
                 // comment
                 return {
-                    type: 'comment',
+                    type: TokenType.Comment,
                     value: '/' + ch + readToEnd(new TillEndOfLineStream(stream))
                 } as Token;
             } else if (ch == '*') {
@@ -25,7 +25,7 @@ export function makeCommentReader(stream: InputStream): Reader {
                     throw stream.formatError('unexpected end of the comment');
                 }
                 return {
-                    type: 'multiline_comment',
+                    type: TokenType.MultilineComment,
                     value: '/' + ch + comment
                 } as Token;
             } else {
