@@ -3,7 +3,8 @@ export type Token = SpaceToken | CommentToken |
     LiteralToken | LazyBlockToken |
     CommaToken | StringToken |
     SymbolToken | TemplateStringToken |
-    RoundBracketsToken | SquareBracketsToken;
+    RoundBracketsToken | SquareBracketsToken |
+    SemicolonToken;
 
 export enum TokenType {
     Space,
@@ -18,6 +19,7 @@ export enum TokenType {
     TemplateString,
     RoundBrackets,
     SquareBrackets,
+    Semicolon,
 }
 
 interface IBaseToken {
@@ -81,4 +83,8 @@ export interface RoundBracketsToken extends IBaseToken {
 export interface SquareBracketsToken extends IBaseToken {
     type: TokenType.SquareBrackets,
     readonly value: string;
+}
+
+export interface SemicolonToken extends IBaseToken {
+    type: TokenType.Semicolon;
 }
