@@ -36,7 +36,7 @@ export interface CommentToken extends IBaseToken {
     readonly value: string;
 }
 
-export interface MultilineCommentToken extends IBaseToken {
+export interface MultilineCommentToken extends IBaseToken { //TODO merge with comment
     type: TokenType.MultilineComment,
     readonly value: string;
 }
@@ -46,7 +46,7 @@ export interface BlockToken extends IBaseToken {
     readonly items: Token[];
 }
 
-export interface LazyBlockToken extends IBaseToken {
+export interface LazyBlockToken extends IBaseToken { //TODO merge with block
     type: TokenType.LazyBlock;
     readonly value: string;
 }

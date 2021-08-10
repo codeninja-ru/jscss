@@ -1,11 +1,26 @@
-export enum Keyword {
-    _class = 'class',
-    _function = 'function',
-    _import = 'import',
-    _if = 'if',
-    _while = 'while',
-    _for = 'for',
-    _switch = 'switch',
-    _case = 'case',
-    _else = 'else',
+import { LiteralToken } from "token";
+
+export class Keyword {
+    constructor(readonly name: string) {
+    }
+
+    equal(token: LiteralToken): boolean {
+        return token.value.toLowerCase() == this.name;
+    }
+}
+
+export const Keywords = {
+    _class: new Keyword('class'),
+    _function: new Keyword('function'),
+    _import: new Keyword('import'),
+    _if: new Keyword('if'),
+    _while: new Keyword('while'),
+    _for: new Keyword('for'),
+    _switch: new Keyword('switch'),
+    _case: new Keyword('case'),
+    _else: new Keyword('else'),
+    _with: new Keyword('with'),
+
+    _export: new Keyword('export'),
+    _from: new Keyword('from'),
 }

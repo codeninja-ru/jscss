@@ -1,4 +1,4 @@
-import { Keyword } from 'keyworkds';
+import { Keyword, Keywords } from 'keyworkds';
 import { Token, TokenType } from 'token';
 
 enum NodeType {
@@ -86,7 +86,7 @@ function stmStartsWith(stm: IStatement, literal: string): boolean {
 function parseBlock(stm: Statements) {
     var literal = statements.current.firstLiteral();
 
-    var jsKeywords = Object.values(Keyword);
+    var jsKeywords = Object.values(Keywords);
 
     if (literal == null) {
 
@@ -95,9 +95,8 @@ function parseBlock(stm: Statements) {
     if (jsKeywords.includes(literal)) {
         return
     }
-
-
 }
+
 
 export function parseTokens(tokenTree: Token[]) {
     const statements = new Statements();
