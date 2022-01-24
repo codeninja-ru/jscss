@@ -1,5 +1,6 @@
 import { Keyword, Keywords } from 'keyworkds';
 import { Token, TokenType } from 'token';
+import { IStatement } from './statement';
 
 type SyntaxRuleFn = (token: Token) => boolean;
 
@@ -83,17 +84,35 @@ function slot(ruleFn: SyntaxRuleFn, errorFn?: errorMessageFn) : SlotFn {
     };
 }
 
-class ErrorTokenEaterResponse {
+enum TokenEaterResponeType {
+    Error,
+    MoveNext,
+    EndOfSentance,
+    Skip,
+}
+
+interface ITokenEaterResponse {
+    type: TokenEaterResponeType;
+}
+
+class ErrorTokenEaterResponse implements ITokenEaterResponse {
+    readonly type = TokenEaterResponeType.Error;
     constructor(readonly errorMessage: string) {}
 }
 
-class MoveNextTokenEaterResponse {
+class MoveNextTokenEaterResponse implements ITokenEaterResponse {
+    readonly type = TokenEaterResponeType.MoveNext;
 }
 
-class EndOfSentanceTokenEaterResponse {
+class EndOfSentanceTokenEaterResponse implements ITokenEaterResponse {
+    readonly type = TokenEaterResponeType.EndOfSentance;
 }
 
-type TokenEaterResponse = ErrorTokenEaterResponse | MoveNextTokenEaterResponse | EndOfSentanceTokenEaterResponse;
+class SkipTokenEaterResponse implements ITokenEaterResponse {
+    readonly type = TokenEaterResponeType.Skip;
+}
+
+type TokenEaterResponse = ErrorTokenEaterResponse | MoveNextTokenEaterResponse | EndOfSentanceTokenEaterResponse | SkipTokenEaterResponse;
 
 abstract class AbstractSyntax implements TokenEater {
     protected slotNumber = 0;
@@ -105,7 +124,7 @@ abstract class AbstractSyntax implements TokenEater {
             const resp = slot(token);
             switch (resp.type) {
                 case SlotResponseType.MoveNext:
-                    return new MoveNextTokenEaterResponse();
+                    return this.slotNumber >= this.slots.length - 1 ? new EndOfSentanceTokenEaterResponse() : new MoveNextTokenEaterResponse();
                 case SlotResponseType.End:
                     return new EndOfSentanceTokenEaterResponse();
                 case SlotResponseType.Error:
@@ -114,18 +133,6 @@ abstract class AbstractSyntax implements TokenEater {
                 default:
                     throw new Error('SlotReponse is not supported');
             }
-            if (this.slots.length == 1) {
-                return {
-                    ...resp,
-                    giveMeMore: false,
-                    matched: true,
-                }
-            }
-            if (resp.giveMeMore) {
-                this.slotNumber++;
-            }
-
-            return resp;
         } else {
             throw new Error('no more slotes')
         }
@@ -147,4 +154,48 @@ export class CommentSyntax extends AbstractSyntax {
     protected slots = [
         slot(isComment()),
     ];
+}
+
+export class CssImportSyntax extends AbstractSyntax {
+    protected slots = [
+        slot(isKeyword(Keywords.css._import)),
+        slot(isAnyString()),
+    ];
+}
+
+interface IStatementParser {
+    walk(token: Token): IStatement | null;
+}
+
+interface TokenEaterConstructor {
+    new (): TokenEater;
+}
+
+class StatementParser implements IStatementParser {
+    protected tokenEaterInstance: TokenEater;
+    constructor(private tokenEater: TokenEaterConstructor) {
+        this.tokenEaterInstance = this.makeTokenEater();
+    }
+
+    protected makeTokenEater(): TokenEater {
+        return new this.tokenEater();
+    }
+
+    walk(token: Token): IStatement | null {
+        const resp = this.tokenEaterInstance.eat(token);
+
+        switch(resp.type) {
+            case TokenEaterResponeType.EndOfSentance:
+                this.tokenEaterInstance = this.makeTokenEater();
+                break;
+            case TokenEaterResponeType.Error:
+                this.tokenEaterInstance = this.makeTokenEater();
+                break;
+            case TokenEaterResponeType.MoveNext:
+            case TokenEaterResponeType.Skip:
+            default:
+                throw new Error('response type is unsupported');
+        }
+    }
+
 }

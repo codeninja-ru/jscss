@@ -1,7 +1,7 @@
-import { parseStream } from 'parser/lexer';
+import { lexer } from 'parser/lexer';
 import { StringInputStream } from './stream/input';
 
-console.log(parseStream(new StringInputStream(`
+console.log(lexer(new StringInputStream(`
 // comment
 
 .className {

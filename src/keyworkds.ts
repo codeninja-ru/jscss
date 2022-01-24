@@ -23,4 +23,9 @@ export const Keywords = {
 
     _export: new Keyword('export'),
     _from: new Keyword('from'),
+
+    // css keywords
+    css: {
+        _import: new Keyword('@import'),
+    }
 }

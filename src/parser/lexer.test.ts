@@ -1,6 +1,6 @@
 import { StringInputStream } from "stream/input";
 import { TokenType } from "token";
-import { parseStream } from "./lexer";
+import { lexer } from "./lexer";
 
 const SIMPLE_CSS = `
 // this is a comment
@@ -32,7 +32,7 @@ function process(css) {
 
 describe('parseStream()', () => {
     test('simple css', () => {
-        const tokens = parseStream(new StringInputStream(SIMPLE_CSS));
+        const tokens = lexer(new StringInputStream(SIMPLE_CSS));
         expect(tokens).toEqual([
             { type: TokenType.Space, value: "\n" },
             { type: TokenType.Comment, value: '// this is a comment' },
@@ -54,7 +54,7 @@ describe('parseStream()', () => {
     });
 
     test('javascript', () => {
-        const tokens = parseStream(new StringInputStream("import _ from 'lodash';\n"));
+        const tokens = lexer(new StringInputStream("import _ from 'lodash';\n"));
         expect(tokens).toEqual([
             { type: TokenType.Literal, value: 'import' },
             { type: TokenType.Space, value: ' ' },

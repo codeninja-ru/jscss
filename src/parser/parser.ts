@@ -1,5 +1,5 @@
-import { Keyword, Keywords } from 'keyworkds';
 import { Token, TokenType } from 'token';
+import { IStatement, Statement } from './statement';
 
 enum NodeType {
     CssImport, // @import
@@ -14,42 +14,13 @@ enum NodeType {
     JsPlaceholder, // ${...}
 }
 
-interface IAstNode {
-    type: NodeType;
-    statement: IStatement;
-}
-
-type IStatement = Array<Token>;
-
-class Statement extends Array<Token> {
-    [idx: number]: Token;
-
-    firstLiteral(): string | null {
-        for (var token of this) {
-            if (token.type == TokenType.Space) {
-                continue;
-            }
-
-            if (token.type == TokenType.Literal) {
-                return token.value;
-            } else {
-                return null;
-            }
-
-        }
-
-        return null;
-    }
-
-}
-
 class Statements {
-    private _current: Statement; //todo sould be read only outside of the class
+    private _current: IStatement;
     constructor(private items: IStatement[] = []) {
         this._current = new Statement();
     }
 
-    public get current(): Statement {
+    public get current(): IStatement {
         return this._current;
     }
 
@@ -83,21 +54,6 @@ function stmStartsWith(stm: IStatement, literal: string): boolean {
     return result;
 }
 
-function parseBlock(stm: Statements) {
-    var literal = statements.current.firstLiteral();
-
-    var jsKeywords = Object.values(Keywords);
-
-    if (literal == null) {
-
-    }
-
-    if (jsKeywords.includes(literal)) {
-        return
-    }
-}
-
-
 export function parseTokens(tokenTree: Token[]) {
     const statements = new Statements();
     for (let token of tokenTree) {
@@ -108,8 +64,6 @@ export function parseTokens(tokenTree: Token[]) {
                 break;
             case TokenType.Block:
             case TokenType.LazyBlock:
-                parseBlock(statements);
-                break;
             case TokenType.Comma:
             case TokenType.Comment:
             case TokenType.Literal:

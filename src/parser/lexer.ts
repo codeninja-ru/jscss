@@ -4,7 +4,7 @@ import { InputStream } from 'stream/input';
 import { StringOutputStream } from 'stream/output';
 import { Token } from 'token/Token';
 
-export function parseStream(stream: InputStream) {
+export function lexer(stream: InputStream) {
     const out = new StringOutputStream();
     const tokens: Token[] = [];
     const readers: Array<Reader> = [
