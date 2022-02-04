@@ -63,7 +63,7 @@ describe('parseStream()', () => {
             { type: TokenType.Literal, value: 'from' },
             { type: TokenType.Space, value: ' ' },
             { type: TokenType.String, value: "'lodash'" },
-            { type: TokenType.Symbol, value: ';' },
+            { type: TokenType.Semicolon, value: ';' },
             { type: TokenType.Space, value: '\n' }
         ]);
     });

@@ -46,6 +46,7 @@ describe('makeSemicolonReader', () => {
     test('semicolon', () => {
         expect(makeSemicolonRader(new StringInputStream(';rest'))()).toEqual({
             type: TokenType.Semicolon,
+            value: ';',
         });
     });
 

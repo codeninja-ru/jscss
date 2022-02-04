@@ -23,7 +23,7 @@ export enum TokenType {
 }
 
 interface IBaseToken {
-    type: TokenType;
+    readonly type: TokenType;
 }
 
 export interface SpaceToken extends IBaseToken {
@@ -87,4 +87,5 @@ export interface SquareBracketsToken extends IBaseToken {
 
 export interface SemicolonToken extends IBaseToken {
     type: TokenType.Semicolon;
+    readonly value: string;
 }

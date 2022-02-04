@@ -1,5 +1,5 @@
 import { BlockInputStream, InputStream, KindOfSpaceInputStream, LiteralInputStream, readToEnd } from "stream/input";
-import { Token, TokenType, SpaceToken } from "token";
+import { Token, TokenType, SpaceToken, SemicolonToken } from "token";
 
 export type Reader = () => Token | null;
 
@@ -171,9 +171,9 @@ export function makeSemicolonRader(stream: InputStream): Reader {
     return function() {
         if (stream.peek() == ';') {
             return {
-                type: TokenType.Symbol,
+                type: TokenType.Semicolon,
                 value: stream.next(),
-            } as Token;
+            } as SemicolonToken;
         }
 
         return null;
