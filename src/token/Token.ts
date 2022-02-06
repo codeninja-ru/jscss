@@ -22,70 +22,71 @@ export enum TokenType {
     Semicolon,
 }
 
-interface IBaseToken {
+interface BaseToken {
     readonly type: TokenType;
+    rawValue: string;
 }
 
-export interface SpaceToken extends IBaseToken {
+export interface SpaceToken extends BaseToken {
     type: TokenType.Space;
     readonly value: string;
 }
 
-export interface CommentToken extends IBaseToken {
+export interface CommentToken extends BaseToken {
     type: TokenType.Comment;
     readonly value: string;
 }
 
-export interface MultilineCommentToken extends IBaseToken { //TODO merge with comment
+export interface MultilineCommentToken extends BaseToken { //TODO merge with comment
     type: TokenType.MultilineComment,
     readonly value: string;
 }
 
-export interface BlockToken extends IBaseToken {
+export interface BlockToken extends BaseToken {
     type: TokenType.Block;
     readonly items: Token[];
 }
 
-export interface LazyBlockToken extends IBaseToken { //TODO merge with block
+export interface LazyBlockToken extends BaseToken { //TODO merge with block
     type: TokenType.LazyBlock;
     readonly value: string;
 }
 
-export interface LiteralToken extends IBaseToken {
+export interface LiteralToken extends BaseToken {
     type: TokenType.Literal;
     readonly value: string;
 }
 
-export interface CommaToken extends IBaseToken {
+export interface CommaToken extends BaseToken {
     type: TokenType.Comma
 }
 
-export interface StringToken extends IBaseToken {
+export interface StringToken extends BaseToken {
     type: TokenType.String;
     readonly value: string;
 }
 
-export interface SymbolToken extends IBaseToken {
+export interface SymbolToken extends BaseToken {
     type: TokenType.Symbol;
     readonly value: string;
 }
 
-export interface TemplateStringToken extends IBaseToken {
+export interface TemplateStringToken extends BaseToken {
     type: TokenType.TemplateString;
     readonly value: string;
 }
 
-export interface RoundBracketsToken extends IBaseToken {
+export interface RoundBracketsToken extends BaseToken {
     type: TokenType.RoundBrackets,
     readonly value: string;
 }
 
-export interface SquareBracketsToken extends IBaseToken {
+export interface SquareBracketsToken extends BaseToken {
     type: TokenType.SquareBrackets,
     readonly value: string;
 }
 
-export interface SemicolonToken extends IBaseToken {
+export interface SemicolonToken extends BaseToken {
     type: TokenType.Semicolon;
     readonly value: string;
 }

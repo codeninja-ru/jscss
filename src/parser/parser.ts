@@ -1,7 +1,9 @@
 import { Keywords } from "keyworkds";
-import { CommentToken, Token } from "token";
+import { CommentToken, LiteralToken, Token, TokenType } from "token";
 import { isAnyBlock, isAnyLiteral, isAnyString, isComment, isKeyword, or } from "./rules";
 import { CommentNode, Node, NodeType, SyntaxTree } from "./syntaxTree";
+
+
 type SyntaxRuleFn = (token: Token) => boolean;
 interface SyntaxRule {
     test: SyntaxRuleFn;
@@ -10,6 +12,7 @@ interface SyntaxRule {
 interface TokenCollection {
     push(parsedToken: Token): void;
     items(): readonly Token[];
+    rawValue(): string;
 }
 
 class TokenCollection implements TokenCollection {
@@ -22,6 +25,10 @@ class TokenCollection implements TokenCollection {
 
     items(): readonly Token[] {
         return this.array;
+    }
+
+    rawValue(): string {
+        return this.array.map(item => item.rawValue).join();
     }
 }
 
@@ -48,10 +55,14 @@ class ArraySyntaxIterator<T> implements SyntaxIterator<T> {
     }
 
     isLast(): boolean {
-        return this.idx >= this.items.length;
+        return this.idx >= this.items.length - 1;
     }
 
     next(): SyntaxIterator<T> {
+        if (this.isLast()) {
+            throw new Error('there is no next element');
+        }
+
         return new ArraySyntaxIterator<T>(this.items, this.idx + 1);
     }
 
@@ -62,7 +73,7 @@ class ArraySyntaxIterator<T> implements SyntaxIterator<T> {
 
 class ArraySyntaxRules implements SyntaxRules {
     constructor(private readonly rules: SyntaxRule[],
-                private makeNodeCallback: (parsedTokens: readonly Token[]) => Node) {
+                private makeNodeCallback: (parsedTokens: readonly Token[], rawValue: string) => Node) {
     }
 
     iterator(): SyntaxIterator<SyntaxRule> {
@@ -70,7 +81,7 @@ class ArraySyntaxRules implements SyntaxRules {
     }
 
     makeNode(parsedTokens: TokenCollection) : Node {
-        return this.makeNodeCallback(parsedTokens.items());
+        return this.makeNodeCallback(parsedTokens.items(), parsedTokens.rawValue());
     }
 }
 
@@ -79,11 +90,12 @@ const JS_IMPORT = new ArraySyntaxRules([
     new SyntaxRule(or(isAnyBlock(), isAnyLiteral())),
     new SyntaxRule(isKeyword(Keywords._from)),
     new SyntaxRule(isAnyString()),
-], ([, vars, , path]) => {
+], ([, vars, , path], rawValue) => {
     return {
         type: NodeType.JsImport,
-        path: path,
-        vars: vars,
+        path: (path as LiteralToken).value,
+        vars: vars.rawValue,
+        rawValue,
     };
 });
 
@@ -97,30 +109,7 @@ const COMMENT = new ArraySyntaxRules([
 });
 
 interface ParserStep {
-    isError(): boolean;
-    nextStep(token: Token): ParserStep;
-    hasNextStep(): boolean;
-    lastStep(): CanBeLastStep;
-}
-
-class ErrorParserStep implements ParserStep {
-    static readonly INSTANCE = new ErrorParserStep();
-
-    isError(): boolean {
-        return true;
-    }
-
-    nextStep(_: Token): ParserStep {
-        throw new Error('unexpected call');
-    }
-
-    hasNextStep() : boolean {
-        throw new Error('unexpected call');
-    }
-
-    lastStep(): CanBeLastStep {
-        throw new Error('unexpected call');
-    }
+    nextStep(token: Token): SomeParserStep;
 }
 
 class ItParserStep implements ParserStep {
@@ -128,11 +117,7 @@ class ItParserStep implements ParserStep {
                 private parsedTokenCollection: TokenCollection,
                 private syntaxRules: SyntaxRules) {}
 
-    isError(): boolean {
-        return false;
-    }
-
-    nextStep(token: Token): ParserStep {
+    nextStep(token: Token): SomeParserStep {
         if (this.iterator.isLast()) {
             throw new Error('no next step');
         }
@@ -140,39 +125,79 @@ class ItParserStep implements ParserStep {
         const nextIt = this.iterator.next();
         if (nextIt.value().test(token)) {
             this.parsedTokenCollection.push(token);
-            return new ItParserStep(nextIt, this.parsedTokenCollection, this.syntaxRules);
+            if (nextIt.isLast()) {
+                return new LastStep(this.syntaxRules, this.parsedTokenCollection);
+            } else {
+                return new ItParserStep(nextIt, this.parsedTokenCollection, this.syntaxRules);
+            }
         }
 
-        return ErrorParserStep.INSTANCE;
+        return ErrorParserStep.NOT_MATCHED;
     }
+}
 
-    hasNextStep() : boolean {
-        return !this.iterator.isLast();
-    }
+type SomeMatcher = Matcher | LastParserStep | ErrorMatcher;
 
-    lastStep(): CanBeLastStep {
-        if (this.iterator.isLast()) {
-            return new LastStep(this.syntaxRules, this.parsedTokenCollection);
-        }
-
-        return NotLastStep.INSTANCE;
-    }
-
-
+function isNextStepMatcher(matcher: SomeMatcher): matcher is Matcher {
+    return (matcher as Matcher).probe !== undefined;
 }
 
 interface Matcher {
-    probe(token: Token): Matcher;
-    node(): Node;
-    hasNext(): boolean;
+    probe(token: Token): SomeMatcher;
+    hasActiveParsers(): boolean;
 }
 
-interface CanBeLastStep {
-    node(): Node;
-    isLast(): boolean;
+interface ErrorMatcher {
+    error(): ErrorParserStep;
 }
 
-class LastStep implements CanBeLastStep {
+function isErrorMatcher(matcher: SomeMatcher): matcher is ErrorMatcher {
+    return (matcher as ErrorMatcher).error != undefined;
+}
+
+class LastErrorMatcher implements ErrorMatcher {
+    constructor(private errors: readonly ErrorParserStep[]) {
+    }
+
+    error(): ErrorParserStep {
+        return this.errors[this.errors.length - 1];
+    }
+}
+
+class StringErrorMatcher implements ErrorMatcher {
+    constructor(private errorMessage: string) {
+    }
+
+    error(): ErrorParserStep {
+        return new ErrorParserStep(this.errorMessage);
+    }
+}
+
+interface LastParserStep {
+    node(): Node;
+}
+
+interface ErrorParserStep {
+    readonly error: string;
+}
+
+class ErrorParserStep {
+    static readonly NOT_MATCHED = new ErrorParserStep('not matcher');
+    constructor(public readonly error: string) {
+    }
+}
+
+type SomeParserStep = LastParserStep | ParserStep | ErrorParserStep;
+
+function isLastParserStep(parserStep: SomeParserStep | SomeMatcher): parserStep is LastParserStep {
+    return (parserStep as LastStep).node !== undefined;
+}
+
+function isErrorParserStep(parserStep: SomeParserStep): parserStep is ErrorParserStep {
+    return (parserStep as ErrorParserStep).error !== undefined;
+}
+
+class LastStep implements LastParserStep {
     constructor(private syntaxRules: SyntaxRules,
                 private parsedTokens: TokenCollection) {
     }
@@ -180,62 +205,39 @@ class LastStep implements CanBeLastStep {
     node(): Node {
         return this.syntaxRules.makeNode(this.parsedTokens);
     }
-
-    isLast(): boolean {
-        return true;
-    }
 }
-
-class NotLastStep implements CanBeLastStep {
-    static readonly INSTANCE = new NotLastStep();
-
-    isLast(): boolean {
-        return false;
-    }
-
-    node(): Node {
-        throw new Error("It's not a last step");
-    }
-}
-
 
 class ParserMatcher implements Matcher {
     constructor(private readonly items: ParserStep[]) {}
 
-    probe(token: Token): Matcher {
+    probe(token: Token): SomeMatcher {
         const result = [];
+        const errors: ErrorParserStep[] = [];
 
         for (const item of this.items) {
             const nextStep = item.nextStep(token);
-            if (!nextStep.isError()) {
+            if (isLastParserStep(nextStep)) {
+                return nextStep;
+            } else if (isErrorParserStep(nextStep)) {
+                errors.push(nextStep);
+            } else {
                 result.push(nextStep);
             }
         }
 
         if (result.length == 0) {
-            throw new Error(`unexpected token ${token}`)
+            if (errors.length != 0) {
+                return new LastErrorMatcher(errors);
+            } else {
+                return new StringErrorMatcher(`unexpected token ${token}`);
+            }
         }
 
         return new ParserMatcher(result);
     }
 
-    hasNext(): boolean {
-        return this.items
-            .some((item) => !item.hasNextStep())
-    }
-
-    node() : Node {
-        const lst = this.items
-            .find((item) => !item.hasNextStep());
-        console.log(this.items);
-
-        if (lst) {
-            return lst
-                .lastStep()
-                .node();
-        }
-
-        throw new Error('program error, node() has been called but there is no last step')
+    hasActiveParsers(): boolean {
+        return this.items.length > 0;
     }
 }
 
@@ -243,14 +245,18 @@ class FirstParserMatcher implements Matcher {
     constructor(private readonly items: readonly SyntaxRules[]) {
     }
 
-    probe(token: Token): Matcher {
+    probe(token: Token): SomeMatcher {
         const result = [];
 
         for (const item of this.items) {
             const it = item.iterator();
             if (it.value().test(token)) {
                 const parsedTokens = new TokenCollection([token]);
-                result.push(new ItParserStep(it, parsedTokens, item));
+                if (it.isLast()) {
+                    return new LastStep(item, parsedTokens);
+                } else {
+                    result.push(new ItParserStep(it, parsedTokens, item));
+                }
             }
         }
 
@@ -261,12 +267,8 @@ class FirstParserMatcher implements Matcher {
         return new ParserMatcher(result);
     }
 
-    hasNext(): boolean {
-        return true;
-    }
-
-    node(): Node {
-        throw new Error('unexpected call');
+    hasActiveParsers(): boolean {
+        return false;
     }
 }
 
@@ -282,17 +284,19 @@ class Parser implements Parser {
 
     parse(tokens: Token[]): SyntaxTree {
         let syntaxTree = [];
-        let matcher = this.matcher;
+        let matcher: SomeMatcher = this.matcher;
         for (const token of tokens) {
-            if (matcher.hasNext()) {
-                matcher = matcher.probe(token);
-            } else {
+            matcher = matcher.probe(token);
+            if (isLastParserStep(matcher)) {
                 let node = matcher.node();
                 syntaxTree.push(node);
+                matcher = this.matcher;
+            } else if (isErrorMatcher(matcher)) {
+                throw new Error(matcher.error().error);
             }
         }
 
-        if (matcher.hasNext()) {
+        if (isNextStepMatcher(matcher) && matcher.hasActiveParsers()) {
             throw new Error('unexpeced end of the file');
         }
 

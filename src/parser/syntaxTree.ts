@@ -8,6 +8,7 @@ export enum NodeType {
 
 export interface Node {
     readonly type: NodeType;
+    readonly rawValue: string;
 }
 
 export interface ImportVar {

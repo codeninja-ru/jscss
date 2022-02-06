@@ -13,7 +13,7 @@ describe('parse()', () => {
         const syntaxTree = parse(tokens);
 
         expect(syntaxTree).toEqual([
-            { type: NodeType.JsImport }
+            { type: NodeType.JsImport, vars: '_', path: '"lodash"' }
         ]);
     });
 
