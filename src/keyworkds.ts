@@ -21,6 +21,10 @@ export const Keywords = {
     _else: new Keyword('else'),
     _with: new Keyword('with'),
 
+    _var: new Keyword('var'),
+    _let: new Keyword('let'),
+    _const: new Keyword('const'),
+
     _export: new Keyword('export'),
     _from: new Keyword('from'),
 

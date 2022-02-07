@@ -4,6 +4,7 @@ export enum NodeType {
     JsImport,
     Comment,
     Raw,
+    Var_Declaration,
 }
 
 export interface Node {
@@ -32,4 +33,9 @@ export interface JsImportNode extends Node {
 export interface CommentNode extends Node {
     type: NodeType.Comment,
     value: string;
+}
+
+export interface VarDeclaraionNode extends Node {
+    type: NodeType.Var_Declaration,
+    //TODO
 }

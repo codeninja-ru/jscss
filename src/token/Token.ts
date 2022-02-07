@@ -24,7 +24,7 @@ export enum TokenType {
 
 interface BaseToken {
     readonly type: TokenType;
-    rawValue: string;
+    value: string;
 }
 
 export interface SpaceToken extends BaseToken {
@@ -45,6 +45,7 @@ export interface MultilineCommentToken extends BaseToken { //TODO merge with com
 export interface BlockToken extends BaseToken {
     type: TokenType.Block;
     readonly items: Token[];
+    readonly value: string;
 }
 
 export interface LazyBlockToken extends BaseToken { //TODO merge with block

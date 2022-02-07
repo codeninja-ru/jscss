@@ -1,71 +1,1 @@
-import { StringInputStream } from "stream/input";
-import { TokenType } from "token";
-import { lexer } from "./lexer";
-
-const SIMPLE_CSS = `
-// this is a comment
-
-.className {
-    ...classNameBase.prop;
-    [generateProp]: bold;
-    font-weight: $\{test ? 'bold' : 'normal'\};
-    font-size: 12px;
-    color: $\{color("#eee")\};
-    background: $\{func()\};
-}
-`;
-
-/*const SIMPLE_JS = `
-import _ from 'lodash';
-import {foo} from 'bar';
-
-function process(css) {
-    return _(css).map((val) => val + 1);
-}
-
-.className {
-    color: #eee;
-    foo: $\{foo\};
-}
-`;*/
-
-
-describe('parseStream()', () => {
-    test('simple css', () => {
-        const tokens = lexer(new StringInputStream(SIMPLE_CSS));
-        expect(tokens).toEqual([
-            { type: TokenType.Space, value: "\n" },
-            { type: TokenType.Comment, value: '// this is a comment' },
-            { type: TokenType.Space, value: "\n\n" },
-            { type: TokenType.Literal, value: '.className' },
-            { type: TokenType.Space, value: " " },
-            {
-                type: TokenType.LazyBlock, value: `{
-    ...classNameBase.prop;
-    [generateProp]: bold;
-    font-weight: \$\{test ? 'bold' : 'normal'\};
-    font-size: 12px;
-    color: \$\{color(\"#eee\")\};
-    background: \$\{func()\};
-}`
-            },
-            { type: TokenType.Space, value: "\n" },
-        ]);
-    });
-
-    test('javascript', () => {
-        const tokens = lexer(new StringInputStream("import _ from 'lodash';\n"));
-        expect(tokens).toEqual([
-            { type: TokenType.Literal, value: 'import' },
-            { type: TokenType.Space, value: ' ' },
-            { type: TokenType.Literal, value: '_' },
-            { type: TokenType.Space, value: ' ' },
-            { type: TokenType.Literal, value: 'from' },
-            { type: TokenType.Space, value: ' ' },
-            { type: TokenType.String, value: "'lodash'" },
-            { type: TokenType.Semicolon, value: ';' },
-            { type: TokenType.Space, value: '\n' }
-        ]);
-    });
-
-});
+import { StringInputStream } from "stream/input";import { TokenType } from "token";import { makeCommaToken, makeLazyBlockToken, makeLiteralToken, makeRoundBracketsToken, makeSemicolonToken, makeSpaceToken, makeStringToken, makeSymbolToken } from "token/helpers";import { lexer } from "./lexer";const impr = makeLiteralToken('import');const sp = makeSpaceToken();const spn = makeSpaceToken("\n");const spnspn = makeSpaceToken("\n\n");const lodash = makeLiteralToken('_');const frm = makeLiteralToken('from');const smcl = makeSemicolonToken();const comma = makeCommaToken();const SIMPLE_CSS = `// this is a comment.className {    ...classNameBase.prop;    [generateProp]: bold;    font-weight: $\{test ? 'bold' : 'normal'\};    font-size: 12px;    color: $\{color("#eee")\};    background: $\{func()\};}`;describe('parseStream()', () => {    test('simple css', () => {        const tokens = lexer(new StringInputStream(SIMPLE_CSS));        expect(tokens).toEqual([            spn,            { type: TokenType.Comment, value: '// this is a comment' },            spnspn,            { type: TokenType.Literal, value: '.className' },            sp,            {                type: TokenType.LazyBlock, value: `{    ...classNameBase.prop;    [generateProp]: bold;    font-weight: \$\{test ? 'bold' : 'normal'\};    font-size: 12px;    color: \$\{color(\"#eee\")\};    background: \$\{func()\};}`            },            spn,        ]);    });    test('javascript', () => {        const tokens = lexer(new StringInputStream("import _ from 'lodash';\n"));        expect(tokens).toEqual([            impr,            sp,            lodash,            sp,            frm,            sp,            makeStringToken("'lodash'"),            makeSemicolonToken(),            spn,        ]);    });    // TODO can color be not a string by #fff without '' ?const SIMPLE_JSCSS = `import _ from 'lodash';import {foo} from 'bar';const BACKGROUD_COLOR = '#fff';function process(css) {    return _(css).map((val) => val + 1);}.className, tagName, #elementId, .className:hover {    color: #eee;    foo: $\{foo\};}`;    test('simple jscss', () => {        const tokens = lexer(new StringInputStream(SIMPLE_JSCSS));        expect(tokens).toEqual([            spn,            impr, sp, lodash, sp, frm, sp, makeStringToken("'lodash'"), smcl, spn,            impr, sp, makeLazyBlockToken('{foo}'), sp, frm, sp, makeStringToken("'bar'"), smcl,            spnspn,            makeLiteralToken('const'), sp, makeLiteralToken('BACKGROUD_COLOR'), sp, makeSymbolToken('='), sp, makeStringToken("'#fff'"), smcl,            spnspn,            makeLiteralToken('function'), sp, makeLiteralToken('process'), makeRoundBracketsToken('(css)'), sp, makeLazyBlockToken("{\n    return _(css).map((val) => val + 1);\n}"),            spnspn,            makeLiteralToken('.className'), comma, sp, makeLiteralToken('tagName'), comma, sp, makeLiteralToken('#elementId'), comma, sp, makeLiteralToken('.className:hover'), sp,            makeLazyBlockToken("{\n    color: #eee;\n    foo: $\{foo\};\n}"), spn        ]);    });});

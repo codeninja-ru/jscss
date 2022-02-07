@@ -1,119 +1,13 @@
-import { Keywords } from "keyworkds";
-import { CommentToken, LiteralToken, Token, TokenType } from "token";
-import { isAnyBlock, isAnyLiteral, isAnyString, isComment, isKeyword, or } from "./rules";
-import { CommentNode, Node, NodeType, SyntaxTree } from "./syntaxTree";
+import { Token, TokenType } from "token";
+import { SyntaxIterator, SyntaxRule, SyntaxRules } from "./syntaxRules";
+import { Node, SyntaxTree } from "./syntaxTree";
+import { ArrayTokenCollection, TokenCollection } from './tokenCollection';
 
-
-type SyntaxRuleFn = (token: Token) => boolean;
-interface SyntaxRule {
-    test: SyntaxRuleFn;
-}
-
-function isSpaceToken(token: Token): boolean {
+export function isSpaceToken(token: Token): boolean {
     return (token.type == TokenType.Space)
         || (token.type == TokenType.Comment)
         || (token.type == TokenType.MultilineComment);
 }
-
-interface TokenCollection {
-    push(parsedToken: Token): void;
-    items(): readonly Token[];
-    rawValue(): string;
-}
-
-class TokenCollection implements TokenCollection {
-    constructor(private array: Token[] = []) {
-    }
-
-    push(parsedToken: Token): void {
-        this.array.push(parsedToken);
-    }
-
-    items(): readonly Token[] {
-        return this.array.filter((token) => !isSpaceToken(token));
-    }
-
-    rawValue(): string {
-        return this.array.map(item => item.rawValue).join('');
-    }
-}
-
-class SyntaxRule implements SyntaxRule {
-    constructor(test: SyntaxRuleFn) {
-        this.test = test.bind(this);
-    }
-}
-
-interface SyntaxIterator<T> {
-    isLast(): boolean;
-    next(): SyntaxIterator<T>;
-    value(): T
-}
-
-interface SyntaxRules {
-    iterator(): SyntaxIterator<SyntaxRule>;
-    makeNode(parsedTokens: TokenCollection) : Node;
-}
-
-class ArraySyntaxIterator<T> implements SyntaxIterator<T> {
-    constructor(private readonly items: T[],
-                private readonly idx: number = 0) {
-    }
-
-    isLast(): boolean {
-        return this.idx >= this.items.length - 1;
-    }
-
-    next(): SyntaxIterator<T> {
-        if (this.isLast()) {
-            throw new Error('there is no next element');
-        }
-
-        return new ArraySyntaxIterator<T>(this.items, this.idx + 1);
-    }
-
-    value(): T {
-        return this.items[this.idx];
-    }
-}
-
-class ArraySyntaxRules implements SyntaxRules {
-    constructor(private readonly rules: SyntaxRule[],
-                private makeNodeCallback: (parsedTokens: readonly Token[], rawValue: string) => Node) {
-    }
-
-    iterator(): SyntaxIterator<SyntaxRule> {
-        return new ArraySyntaxIterator<SyntaxRule>(this.rules);
-    }
-
-    makeNode(parsedTokens: TokenCollection) : Node {
-        return this.makeNodeCallback(parsedTokens.items(), parsedTokens.rawValue());
-    }
-}
-
-const JS_IMPORT = new ArraySyntaxRules([
-    new SyntaxRule(isKeyword(Keywords._import)),
-    new SyntaxRule(or(isAnyBlock(), isAnyLiteral())),
-    new SyntaxRule(isKeyword(Keywords._from)),
-    new SyntaxRule(isAnyString()),
-], function([, vars, , path], rawValue) {
-    console.log(arguments);
-    return {
-        type: NodeType.JsImport,
-        path: (path as LiteralToken).value,
-        vars: vars.rawValue,
-        rawValue,
-    };
-});
-
-const COMMENT = new ArraySyntaxRules([
-    new SyntaxRule(isComment()),
-], ([value]) => {
-    return {
-        type: NodeType.Comment,
-        value: (value as CommentToken).value,
-    } as CommentNode;
-});
 
 interface ParserStep {
     nextStep(token: Token): SomeParserStep;
@@ -266,7 +160,7 @@ class FirstParserMatcher implements Matcher {
         for (const item of this.items) {
             const it = item.iterator();
             if (it.value().test(token)) {
-                const parsedTokens = new TokenCollection([token]);
+                const parsedTokens = new ArrayTokenCollection([token]);
                 if (it.isLast()) {
                     return new LastStep(item, parsedTokens);
                 } else {
@@ -287,12 +181,13 @@ class FirstParserMatcher implements Matcher {
     }
 }
 
-interface Parser {
+export interface Parser {
     parse(tokens: Token[]): SyntaxTree;
 }
 
-class Parser implements Parser {
+export class CommonParser implements Parser {
     private readonly matcher: Matcher;
+
     constructor(syntaxRules: readonly SyntaxRules[]) {
         this.matcher = new FirstParserMatcher(syntaxRules);
     }
@@ -317,13 +212,4 @@ class Parser implements Parser {
 
         return syntaxTree;
     }
-}
-
-const TopLevelParser = new Parser([
-    JS_IMPORT,
-    COMMENT,
-]);
-
-export function parse(tokens: Token[]): SyntaxTree {
-    return TopLevelParser.parse(tokens);
 }

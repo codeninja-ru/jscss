@@ -1,5 +1,5 @@
 import { BlockInputStream, InputStream, KindOfSpaceInputStream, LiteralInputStream, readToEnd } from "stream/input";
-import { Token, TokenType, SpaceToken, SemicolonToken } from "token";
+import { Token, TokenType, SpaceToken, SemicolonToken, CommaToken } from "token";
 
 export type Reader = () => Token | null;
 
@@ -23,7 +23,8 @@ export function makeCommaReader(stream: InputStream): Reader {
             stream.next();
             return {
                 type: TokenType.Comma,
-            } as Token;
+                value: ','
+            } as CommaToken;
         }
 
         return null;

@@ -1,4 +1,5 @@
 import { Keyword } from 'keyworkds';
+import { Symbol } from 'symbols';
 import { Token, TokenType } from 'token';
 
 export type SyntaxRuleFn = (token: Token) => boolean;
@@ -6,6 +7,12 @@ export type SyntaxRuleFn = (token: Token) => boolean;
 export function isKeyword(keyword: Keyword): SyntaxRuleFn {
     return function(token: Token): boolean {
         return token.type == TokenType.Literal && keyword.equal(token);
+    };
+}
+
+export function isSymbol(symbol: Symbol): SyntaxRuleFn {
+    return function(token: Token): boolean {
+        return token.type == TokenType.Symbol && Symbol.equal(token);
     };
 }
 

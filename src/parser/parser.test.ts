@@ -1,5 +1,5 @@
 import { makeLiteralToken, makeSpaceToken, makeStringToken } from "token/helpers";
-import { parse } from "./parser";
+import { parse } from "./syntax";
 import { NodeType } from "./syntaxTree";
 
 describe('parse()', () => {
