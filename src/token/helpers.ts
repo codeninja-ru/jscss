@@ -1,4 +1,4 @@
-import { LiteralToken, StringToken, TokenType } from "./Token";
+import { LiteralToken, SpaceToken, StringToken, TokenType } from "./Token";
 
 export function makeLiteralToken(value: string): LiteralToken  {
     return {
@@ -14,4 +14,12 @@ export function makeStringToken(value: string): StringToken {
         value,
         rawValue: value,
     }
+}
+
+export function makeSpaceToken(value: string = ' '): SpaceToken {
+    return {
+        type: TokenType.Space,
+        value,
+        rawValue: value,
+    };
 }

@@ -9,6 +9,12 @@ interface SyntaxRule {
     test: SyntaxRuleFn;
 }
 
+function isSpaceToken(token: Token): boolean {
+    return (token.type == TokenType.Space)
+        || (token.type == TokenType.Comment)
+        || (token.type == TokenType.MultilineComment);
+}
+
 interface TokenCollection {
     push(parsedToken: Token): void;
     items(): readonly Token[];
@@ -24,11 +30,11 @@ class TokenCollection implements TokenCollection {
     }
 
     items(): readonly Token[] {
-        return this.array;
+        return this.array.filter((token) => !isSpaceToken(token));
     }
 
     rawValue(): string {
-        return this.array.map(item => item.rawValue).join();
+        return this.array.map(item => item.rawValue).join('');
     }
 }
 
@@ -90,7 +96,8 @@ const JS_IMPORT = new ArraySyntaxRules([
     new SyntaxRule(or(isAnyBlock(), isAnyLiteral())),
     new SyntaxRule(isKeyword(Keywords._from)),
     new SyntaxRule(isAnyString()),
-], ([, vars, , path], rawValue) => {
+], function([, vars, , path], rawValue) {
+    console.log(arguments);
     return {
         type: NodeType.JsImport,
         path: (path as LiteralToken).value,
@@ -117,19 +124,27 @@ class ItParserStep implements ParserStep {
                 private parsedTokenCollection: TokenCollection,
                 private syntaxRules: SyntaxRules) {}
 
+    private nextParser(nextIt: SyntaxIterator<SyntaxRule>): SomeParserStep {
+        if (nextIt.isLast()) {
+            return new LastStep(this.syntaxRules, this.parsedTokenCollection);
+        } else {
+            return new ItParserStep(nextIt, this.parsedTokenCollection, this.syntaxRules);
+        }
+    }
+
     nextStep(token: Token): SomeParserStep {
         if (this.iterator.isLast()) {
             throw new Error('no next step');
         }
 
         const nextIt = this.iterator.next();
-        if (nextIt.value().test(token)) {
+
+        if (isSpaceToken(token)) {
             this.parsedTokenCollection.push(token);
-            if (nextIt.isLast()) {
-                return new LastStep(this.syntaxRules, this.parsedTokenCollection);
-            } else {
-                return new ItParserStep(nextIt, this.parsedTokenCollection, this.syntaxRules);
-            }
+            return this;
+        } else if (nextIt.value().test(token)) {
+            this.parsedTokenCollection.push(token);
+            return this.nextParser(nextIt);
         }
 
         return ErrorParserStep.NOT_MATCHED;
