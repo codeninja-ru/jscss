@@ -1,5 +1,5 @@
 import { Keyword } from 'keyworkds';
-import { Symbol } from 'symbols';
+import { SyntaxSymbol } from 'symbols';
 import { Token, TokenType } from 'token';
 
 export type SyntaxRuleFn = (token: Token) => boolean;
@@ -10,9 +10,9 @@ export function isKeyword(keyword: Keyword): SyntaxRuleFn {
     };
 }
 
-export function isSymbol(symbol: Symbol): SyntaxRuleFn {
+export function isSymbol(symbol: SyntaxSymbol): SyntaxRuleFn {
     return function(token: Token): boolean {
-        return token.type == TokenType.Symbol && Symbol.equal(token);
+        return token.type == TokenType.Symbol && symbol.equal(token);
     };
 }
 

@@ -1,6 +1,6 @@
 import { SymbolToken } from "token";
 
-export class Symbol {
+export class SyntaxSymbol {
     constructor(readonly name: string) {
     }
 
@@ -10,5 +10,12 @@ export class Symbol {
 }
 
 export const Symbols = {
-    eq: new Symbol('='),
+    eq: new SyntaxSymbol('='),
+    astersik: new SyntaxSymbol('*'),
+    lt: new SyntaxSymbol('>'),
+    gt: new SyntaxSymbol('<'),
+    tilde: new SyntaxSymbol('~'),
+    minus: new SyntaxSymbol('-'),
+    plus: new SyntaxSymbol('+'),
+    at: new SyntaxSymbol('@'),
 }

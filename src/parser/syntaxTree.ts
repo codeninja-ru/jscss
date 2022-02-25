@@ -4,17 +4,14 @@ export enum NodeType {
     JsImport,
     Comment,
     Raw,
-    Var_Declaration,
+    VarDeclaration,
+    CssBlock,
+    CssImport,
 }
 
 export interface Node {
     readonly type: NodeType;
-    readonly rawValue: string;
-}
-
-export interface ImportVar {
-    name: string;
-    asName: string | null;
+    rawValue?: string;
 }
 
 export interface RawNode extends Node {
@@ -22,12 +19,17 @@ export interface RawNode extends Node {
     value: string;
 }
 
+// import namespace from ...
+export interface JsImportNamespace {
+    readonly varName?: string;
+    readonly varAlias?: string;
+}
+
 // import defaultVar as asName, { var1 as asName1, var2 as asName2 } from 'path';
 export interface JsImportNode extends Node {
     type: NodeType.JsImport;
-    readonly path: string;
-    defaultVar: ImportVar | null;
-    vars: ImportVar[] | null;
+    readonly path?: string;
+    readonly vars?: JsImportNamespace[];
 }
 
 export interface CommentNode extends Node {
@@ -36,6 +38,18 @@ export interface CommentNode extends Node {
 }
 
 export interface VarDeclaraionNode extends Node {
-    type: NodeType.Var_Declaration,
+    type: NodeType.VarDeclaration,
     //TODO
+}
+
+export interface CssBlockNode extends Node {
+    type: NodeType.CssBlock,
+    selectors: any,
+    block: any,
+
+}
+
+export interface CssImportNode extends Node {
+    type: NodeType.CssImport,
+    readonly path: string,
 }

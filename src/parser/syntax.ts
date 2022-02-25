@@ -40,7 +40,7 @@ const VAR_DECLARATION = new ArraySyntaxRules([
 
 ], ([, name,], rawValue) => {
     return {
-        type: NodeType.Var_Declaration,
+        type: NodeType.VarDeclaration,
         rawValue,
     } as VarDeclaraionNode
 });
