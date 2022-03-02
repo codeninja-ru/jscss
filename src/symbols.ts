@@ -18,4 +18,7 @@ export const Symbols = {
     minus: new SyntaxSymbol('-'),
     plus: new SyntaxSymbol('+'),
     at: new SyntaxSymbol('@'),
+    dot: new SyntaxSymbol('.'),
+
+    optionalChain: new SyntaxSymbol('?.'),
 }

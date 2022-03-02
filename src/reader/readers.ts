@@ -84,6 +84,36 @@ export function makeStringReader(stream: InputStream, quatation: "'" | '"'): Rea
     };
 }
 
+export function makeRegExpReader(stream: InputStream): Reader {
+    //TODO it's almost identical to to makeStringReader
+    const ESCAPE_SYMBOL = '\\';
+    const SLASH = '/';
+    return function() {
+        if (stream.peek() == SLASH) {
+            var result = stream.next();
+            var isEscapeMode = false;
+            while (!stream.isEof()) {
+                var ch = stream.next();
+                if (ch == '\n') {
+                    break;
+                }
+                result += ch;
+                if (!isEscapeMode && ch == SLASH) {
+                    return {
+                        type: TokenType.SlashBrackets,
+                        value: result,
+                    } as Token;
+                }
+                isEscapeMode = ch == ESCAPE_SYMBOL;
+            }
+
+            throw stream.formatError('unexpected end of the regexp');
+        }
+
+        return null;
+    };
+}
+
 function takeWhile(stream: InputStream, fn: (ch: string) => boolean): string {
     var result = '';
 

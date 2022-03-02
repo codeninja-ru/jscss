@@ -118,20 +118,165 @@ function comma(stream: TokenStream) : string {
     throw new Error(`, is expected, but ${JSON.stringify(token)} was given`);
 }
 
-function primaryExpression(stream: TokenStream) : string {
-// this
-// IdentifierReference[?Yield, ?Await]
-// Literal
-// ArrayLiteral[?Yield, ?Await]
-// ObjectLiteral[?Yield, ?Await]
-// FunctionExpression
-// ClassExpression[?Yield, ?Await]
-// GeneratorExpression
-// AsyncFunctionExpression
-// AsyncGeneratorExpression
-// RegularExpressionLiteral
-// TemplateLiteral[?Yield, ?Await, ~Tagged]
-// CoverParenthesizedExpressionAndArrowParameterList
+function functionExpression(stream: TokenStream) : void {
+    keyword(Keywords._function)(stream);
+    maybe(anyJsIdentifier)(stream);
+    roundBracket(stream);
+    anyBlock(stream);
+}
+
+function superPropery(stream: TokenStream) : void {
+    oneOf(
+        // super [ Expression[+In, ?Yield, ?Await] ]
+        sequence(keyword(Keywords._super), squareBracket),
+        // super . IdentifierName
+        sequence(keyword(Keywords._super), symbol(Symbols.dot), anyJsIdentifier),
+    )(stream);
+}
+
+function metaPropery(stream: TokenStream) : void {
+    oneOf(
+        // NewTarget
+        sequence(keyword(Keywords._new), symbol(Symbols.dot), keyword(Keywords._target)),
+        // ImportMeta
+        sequence(keyword(Keywords._import), symbol(Symbols.dot), keyword(Keywords._meta)),
+    )(stream);
+}
+
+function memberExpression(stream: TokenStream) : void {
+    oneOf(
+        // PrimaryExpression[?Yield, ?Await]
+        primaryExpression,
+        // MemberExpression[?Yield, ?Await] [ Expression[+In, ?Yield, ?Await] ]
+        sequence(memberExpression, squareBracket),
+        // MemberExpression[?Yield, ?Await] . IdentifierName
+        sequence(memberExpression, symbol(Symbols.dot), anyJsIdentifier),
+        // MemberExpression[?Yield, ?Await] TemplateLiteral[?Yield, ?Await, +Tagged]
+        sequence(memberExpression, anyTempateStringLiteral),
+        // SuperProperty[?Yield, ?Await]
+        superPropery,
+        // MetaProperty
+        metaPropery,
+        // new MemberExpression[?Yield, ?Await] Arguments[?Yield, ?Await]
+        sequence(keyword(Keywords._new), memberExpression, roundBracket),
+    )(stream);
+}
+
+function newExpression(stream: TokenStream) : void {
+    oneOf(
+        // MemberExpression[?Yield, ?Await]
+        memberExpression,
+        // new NewExpression[?Yield, ?Await]
+        sequence(keyword(Keywords._new), memberExpression),
+    )(stream);
+}
+
+function callExpression(stream: TokenStream) : void {
+    oneOf(
+        // CoverCallExpressionAndAsyncArrowHead[?Yield, ?Await]
+        sequence(memberExpression, roundBracket),
+        // SuperCall[?Yield, ?Await]
+        sequence(keyword(Keywords._super), roundBracket),
+        // ImportCall[?Yield, ?Await]
+        sequence(keyword(Keywords._import), roundBracket),
+        // CallExpression[?Yield, ?Await] Arguments[?Yield, ?Await]
+        sequence(callExpression, roundBracket),
+        // CallExpression[?Yield, ?Await] [ Expression[+In, ?Yield, ?Await] ]
+        sequence(callExpression, squareBracket),
+        // CallExpression[?Yield, ?Await] . IdentifierName
+        sequence(callExpression, symbol(Symbols.dot), anyJsIdentifier),
+        // CallExpression[?Yield, ?Await] TemplateLiteral[?Yield, ?Await, +Tagged]
+        sequence(callExpression, anyTempateStringLiteral),
+    )(stream);
+}
+
+function optionalChain(stream: TokenStream) : void {
+    oneOf(
+        //?. Arguments[?Yield, ?Await]
+        sequence(symbol(Symbols.optionalChain), roundBracket),
+        //?. [ Expression[+In, ?Yield, ?Await] ]
+        sequence(symbol(Symbols.optionalChain), squareBracket),
+        //?. IdentifierName
+        sequence(symbol(Symbols.optionalChain), anyJsIdentifier),
+        //?. TemplateLiteral[?Yield, ?Await, +Tagged]
+        sequence(symbol(Symbols.optionalChain), anyTempateStringLiteral),
+        //OptionalChain[?Yield, ?Await] Arguments[?Yield, ?Await]
+        sequence(optionalChain, roundBracket),
+        //OptionalChain[?Yield, ?Await] [ Expression[+In, ?Yield, ?Await] ]
+        sequence(optionalChain, squareBracket),
+        //OptionalChain[?Yield, ?Await] . IdentifierName
+        sequence(optionalChain, anyJsIdentifier),
+        //OptionalChain[?Yield, ?Await] TemplateLiteral[?Yield, ?Await, +Tagged]
+        sequence(optionalChain, anyTempateStringLiteral),
+
+    )(stream);
+}
+
+function optionalCallExpression(stream: TokenStream) : void {
+    oneOf(
+        // MemberExpression[?Yield, ?Await] OptionalChain[?Yield, ?Await]
+        sequence(memberExpression, optionalChain),
+        // CallExpression[?Yield, ?Await] OptionalChain[?Yield, ?Await]
+        sequence(callExpression, optionalChain),
+        // OptionalExpression[?Yield, ?Await] OptionalChain[?Yield, ?Await]
+        sequence(optionalCallExpression, optionalChain),
+    )(stream);
+}
+
+function leftHandSideExpression(stream: TokenStream) : void {
+    oneOf(
+        // NewExpression[?Yield, ?Await]
+        newExpression,
+        //CallExpression[?Yield, ?Await]
+        callExpression,
+        //OptionalExpression
+        optionalCallExpression,
+    )(stream);
+}
+
+function classHeritage(stream: TokenStream) : void {
+    keyword(Keywords._extends)(stream);
+    leftHandSideExpression(stream);
+}
+
+function classExpression(stream: TokenStream) : void {
+    keyword(Keywords._class)(stream);
+    maybe(anyJsIdentifier)(stream);
+    maybe(classHeritage)(stream);
+    anyBlock(stream);
+}
+
+function regularExpressionLiteral(stream: TokenStream) : string {
+    //TODO
+}
+
+function primaryExpression(stream: TokenStream) : void {
+    oneOf(
+        // this
+        // IdentifierReference[?Yield, ?Await]
+        // Literal
+        anyLiteral,
+        // ArrayLiteral[?Yield, ?Await]
+        squareBracket,
+        // ObjectLiteral[?Yield, ?Await]
+        anyBlock,
+        // FunctionExpression
+        functionExpression,
+        // ClassExpression[?Yield, ?Await]
+        classExpression,
+        // GeneratorExpression
+        sequence(keyword(Keywords._function), symbol(Symbols.astersik), anyJsIdentifier, roundBracket, anyBlock),
+        // AsyncFunctionExpression
+        sequence(keyword(Keywords._async), keyword(Keywords._function), anyJsIdentifier, roundBracket, anyBlock),
+        // AsyncGeneratorExpression
+        sequence(keyword(Keywords._async), keyword(Keywords._function), symbol(Symbols.dot), anyJsIdentifier, roundBracket, anyBlock),
+        // RegularExpressionLiteral
+        regularExpressionLiteral,
+        // TemplateLiteral[?Yield, ?Await, ~Tagged]
+        anyTempateStringLiteral,
+        // CoverParenthesizedExpressionAndArrowParameterList
+        roundBracket,
+    )(stream);
 }
 
 function anyBlock(stream: TokenStream) : string {
@@ -185,6 +330,15 @@ function anyString(stream: TokenStream) : string {
     throw new Error(`string literal is expected, byt ${JSON.stringify(token)} was given`);
 }
 
+function anyTempateStringLiteral(stream: TokenStream) : string {
+    const token = peekAndSkipSpaces(stream);
+    if (token.type == TokenType.TemplateString) {
+        return token.value;
+    }
+
+    throw new Error(`template string literal is expected, byt ${JSON.stringify(token)} was given`);
+}
+
 //function or(...parsers: TokenParser[]) : TokenParser {
 //    return function(stream: TokenStream) : any[] {
 //        let errors = [];
@@ -203,6 +357,20 @@ function anyString(stream: TokenStream) : string {
 //        throw new Error(`none of the parsers worked ${errors}`)
 //    };
 //}
+
+function sequence(...parsers: TokenParser[]) : TokenParser {
+    return function(stream: TokenStream) : ReturnType<TokenParser> {
+        const parserStream = new CommonChildTokenStream(stream);
+        const result = [];
+        for (const parser of parsers) {
+            result.push(parser(parserStream));
+        }
+
+        parserStream.flush();
+        return result;
+    };
+}
+
 
 function oneOf(...parsers: TokenParser[]) : TokenParser {
     return function(stream: TokenStream) : any[] {

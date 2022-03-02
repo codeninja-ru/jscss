@@ -1,8 +1,9 @@
 import { InputStream, readToEnd, TillEndOfLineStream } from "stream/input";
 import { Token, TokenType } from "token";
-import { Reader } from "./readers";
+import { makeRegExpReader, Reader } from "./readers";
 
 export function makeCommentReader(stream: InputStream): Reader {
+    const regexpReader = makeRegExpReader(stream);
     return function() {
         if (stream.peek() == '/') {
             stream.next();
@@ -29,7 +30,7 @@ export function makeCommentReader(stream: InputStream): Reader {
                     value: '/' + ch + comment
                 } as Token;
             } else {
-                throw stream.formatError(`unexpected symbol, "/" or "*" is expected, but ${ch} was gven`);
+                return regexpReader();
             }
         }
         return null;

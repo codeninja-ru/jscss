@@ -13,6 +13,7 @@ export const ReservedWords = {"await": 1, "break": 1, "case": 1, "catch": 1, "cl
 
 export const Keywords = {
     _class: new Keyword('class'),
+    _extends: new Keyword('extends'),
     _function: new Keyword('function'),
     _import: new Keyword('import'),
     _as: new Keyword('as'),
@@ -23,6 +24,11 @@ export const Keywords = {
     _case: new Keyword('case'),
     _else: new Keyword('else'),
     _with: new Keyword('with'),
+    _super: new Keyword('super'),
+    _new: new Keyword('new'),
+    _target: new Keyword('target'),
+    _meta: new Keyword('meta'),
+    _async: new Keyword('async'),
 
     _var: new Keyword('var'),
     _let: new Keyword('let'),
