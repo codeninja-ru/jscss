@@ -1,10 +1,10 @@
 import { StringInputStream } from "stream/input";
 import { TokenType } from "token";
-import { makeCommentReader } from "./comment";
+import { makeCommentAndRegexpReader } from "./comment";
 
 describe('makeCommentReader()', () => {
     test('single line comment', () => {
-        const reader = makeCommentReader(new StringInputStream("// this is a comment \n\nnew line"));
+        const reader = makeCommentAndRegexpReader(new StringInputStream("// this is a comment \n\nnew line"));
         expect(reader()).toEqual({
             type: TokenType.Comment,
             value: '// this is a comment '
@@ -12,7 +12,7 @@ describe('makeCommentReader()', () => {
     });
 
     test('multiline comment', () => {
-        const reader = makeCommentReader(new StringInputStream("/* this is a comment \n\nnew line :-* */"));
+        const reader = makeCommentAndRegexpReader(new StringInputStream("/* this is a comment \n\nnew line :-* */"));
         expect(reader()).toEqual({
             type: TokenType.MultilineComment,
             value: "/* this is a comment \n\nnew line :-* */"
@@ -20,12 +20,12 @@ describe('makeCommentReader()', () => {
     });
 
     test('empty', () => {
-        const reader = makeCommentReader(new StringInputStream("    "));
+        const reader = makeCommentAndRegexpReader(new StringInputStream("    "));
         expect(reader()).toBeNull();
     });
 
     test('regexp', () => {
-        const reader = makeCommentReader(new StringInputStream("/[a-z]*\/'(*?)/gi"));
+        const reader = makeCommentAndRegexpReader(new StringInputStream("/[a-z]*\/'(*?)/gi"));
         expect(reader()).toEqual({
             type: TokenType.SlashBrackets,
             value: "/[a-z]*\/'(*?)/"

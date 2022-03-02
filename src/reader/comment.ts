@@ -2,7 +2,7 @@ import { InputStream, readToEnd, TillEndOfLineStream } from "stream/input";
 import { Token, TokenType } from "token";
 import { makeRegExpReader, Reader } from "./readers";
 
-export function makeCommentReader(stream: InputStream): Reader {
+export function makeCommentAndRegexpReader(stream: InputStream): Reader {
     const regexpReader = makeRegExpReader(stream);
     return function() {
         if (stream.peek() == '/') {
