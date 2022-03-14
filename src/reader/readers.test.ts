@@ -1,6 +1,6 @@
 import { StringInputStream } from "stream/input";
 import { TokenType } from "token";
-import { makeBracketsReader, makeSemicolonRader, makeStringReader, makeTemplateStringReader } from "./readers";
+import { makeBracketsReader, makeRegExpReader, makeSemicolonRader, makeStringReader, makeTemplateStringReader } from "./readers";
 
 describe('makeStringReader()', () => {
     test('correct strings', () => {
@@ -49,5 +49,35 @@ describe('makeSemicolonReader', () => {
             value: ';',
         });
     });
+
+});
+
+describe('makeRegExpReader', () => {
+    test('empty', () => {
+        const reader = makeRegExpReader(new StringInputStream("    "));
+        expect(reader()).toBeNull();
+    });
+
+    test('regexp', () => {
+        const reader = makeRegExpReader(new StringInputStream(/[a-z]*\/(.?)/gi + ""));
+        expect(reader()).toEqual({
+            type: TokenType.SlashBrackets,
+            value: "/[a-z]*\\/(.?)/"
+        });
+    });
+
+    test('ignores comments', () => {
+        const reader = makeRegExpReader(new StringInputStream("//[a-z]*\/'(*?)/gi"));
+        expect(reader()).toBeNull();
+    });
+
+    test('throws error', () => {
+        const reader = makeRegExpReader(new StringInputStream("/[a-z]*\\/'(*?"));
+        //thows error
+        expect(() => {
+            reader();
+        }).toThrowError('unexpected end of the regexp (1:13)');
+    });
+
 
 });

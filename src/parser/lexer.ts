@@ -1,5 +1,5 @@
 import { makeCommentAndRegexpReader } from 'reader/comment';
-import { makeBlockReader, makeBracketsReader, makeCommaReader, makeLiteralReader, makeSemicolonRader, makeSpaceReader, makeStringReader, makeSymboleReader, makeTemplateStringReader, makeUnexpectedSymbolReader, Reader } from 'reader/readers';
+import { makeBlockReader, makeBracketsReader, makeCommaReader, makeLiteralReader, makeRegExpReader, makeSemicolonRader, makeSpaceReader, makeStringReader, makeSymboleReader, makeTemplateStringReader, makeUnexpectedSymbolReader, Reader } from 'reader/readers';
 import { InputStream } from 'stream/input';
 import { StringOutputStream } from 'stream/output';
 import { Token } from 'token/Token';
@@ -21,6 +21,7 @@ export function lexer(stream: InputStream) {
         makeBracketsReader(stream, '(', ')'),
         makeBracketsReader(stream, '[', ']'),
         makeSymboleReader(stream),
+        makeRegExpReader(stream),
 
         // keep it always in the end
         makeUnexpectedSymbolReader(stream),

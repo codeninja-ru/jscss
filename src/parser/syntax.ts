@@ -1,4 +1,4 @@
-import { Keywords } from "keyworkds";
+import { Keywords } from "keywords";
 import { Symbols } from "symbols";
 import { CommentToken, LiteralToken, Token } from 'token';
 import { CommonParser } from "./parser";

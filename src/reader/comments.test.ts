@@ -23,13 +23,4 @@ describe('makeCommentReader()', () => {
         const reader = makeCommentAndRegexpReader(new StringInputStream("    "));
         expect(reader()).toBeNull();
     });
-
-    test('regexp', () => {
-        const reader = makeCommentAndRegexpReader(new StringInputStream("/[a-z]*\/'(*?)/gi"));
-        expect(reader()).toEqual({
-            type: TokenType.SlashBrackets,
-            value: "/[a-z]*\/'(*?)/"
-        });
-    });
-
 });

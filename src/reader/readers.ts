@@ -99,10 +99,14 @@ export function makeRegExpReader(stream: InputStream): Reader {
                 }
                 result += ch;
                 if (!isEscapeMode && ch == SLASH) {
-                    return {
-                        type: TokenType.SlashBrackets,
-                        value: result,
-                    } as Token;
+                    if (result.length > 2) { // regexp can't be empty (//)
+                        return {
+                            type: TokenType.SlashBrackets,
+                            value: result,
+                        } as Token;
+                    } else {
+                        return null;
+                    }
                 }
                 isEscapeMode = ch == ESCAPE_SYMBOL;
             }

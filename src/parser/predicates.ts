@@ -1,4 +1,4 @@
-import { Keyword } from 'keyworkds';
+import { Keyword } from 'keywords';
 import { SyntaxSymbol } from 'symbols';
 import { Token, TokenType } from 'token';
 

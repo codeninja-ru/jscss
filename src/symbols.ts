@@ -19,6 +19,32 @@ export const Symbols = {
     plus: new SyntaxSymbol('+'),
     at: new SyntaxSymbol('@'),
     dot: new SyntaxSymbol('.'),
+    question: new SyntaxSymbol('?'),
+    colon: new SyntaxSymbol(':'),
+
+    and: new SyntaxSymbol('&&'),
+    or: new SyntaxSymbol('||'),
+    coalesce: new SyntaxSymbol('??'),
+    bitwiseAnd: new SyntaxSymbol('&'),
+    bitwiseOr: new SyntaxSymbol('|'),
+    bitwiseNot: new SyntaxSymbol('~'),
+    bitwiseXor: new SyntaxSymbol('^'),
+    not: new SyntaxSymbol('!'),
+
+    eq2: new SyntaxSymbol('=='),
+    eq3: new SyntaxSymbol('==='),
+    notEq2: new SyntaxSymbol('!='),
+    notEq3: new SyntaxSymbol('!=='),
+    astersik2: new SyntaxSymbol('**'),
+    minus2: new SyntaxSymbol('--'),
+    plus2: new SyntaxSymbol('++'),
 
     optionalChain: new SyntaxSymbol('?.'),
+}
+
+export const LogicalSymbols = {
+    and: new SyntaxSymbol('&&'),
+    or: new SyntaxSymbol('||'),
+    coalesce: new SyntaxSymbol('??'),
+
 }
