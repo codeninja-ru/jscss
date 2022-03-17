@@ -1,5 +1,5 @@
 import { Keyword, Keywords, ReservedWords } from "keywords";
-import { SyntaxSymbol, Symbols } from "symbols";
+import { SyntaxSymbol, Symbols, AssigmentOperator } from "symbols";
 import { Token, TokenType } from "token";
 import { CommentNode, CssBlockNode, CssImportNode, JsImportNamespace, JsImportNode, NodeType, SyntaxTree, VarDeclaraionNode } from "./syntaxTree";
 
@@ -107,7 +107,7 @@ function literal(str: string) : TokenParser {
     }
 }
 
-function keyword(keyword: Keyword): TokenParser {
+export function keyword(keyword: Keyword): TokenParser {
     return function(stream: TokenStream) : string {
         const token = peekAndSkipSpaces(stream);
         if (token.type == TokenType.Literal && keyword.equal(token)) {
@@ -153,21 +153,21 @@ function metaPropery(stream: TokenStream) : void {
 }
 
 function memberExpression(stream: TokenStream) : void {
-    longestOf(
+    firstOf(
         // PrimaryExpression[?Yield, ?Await]
         primaryExpression,
-        // MemberExpression[?Yield, ?Await] [ Expression[+In, ?Yield, ?Await] ]
-        sequence(memberExpression, squareBracket),
-        // MemberExpression[?Yield, ?Await] . IdentifierName
-        sequence(memberExpression, symbol(Symbols.dot), anyJsIdentifier),
-        // MemberExpression[?Yield, ?Await] TemplateLiteral[?Yield, ?Await, +Tagged]
-        sequence(memberExpression, anyTempateStringLiteral),
         // SuperProperty[?Yield, ?Await]
         superPropery,
         // MetaProperty
         metaPropery,
         // new MemberExpression[?Yield, ?Await] Arguments[?Yield, ?Await]
         sequence(keyword(Keywords._new), memberExpression, roundBracket),
+        // MemberExpression[?Yield, ?Await] [ Expression[+In, ?Yield, ?Await] ]
+        sequence(memberExpression, squareBracket),
+        // MemberExpression[?Yield, ?Await] . IdentifierName
+        sequence(memberExpression, symbol(Symbols.dot), anyJsIdentifier),
+        // MemberExpression[?Yield, ?Await] TemplateLiteral[?Yield, ?Await, +Tagged]
+        sequence(memberExpression, anyTempateStringLiteral),
     )(stream);
 }
 
@@ -200,7 +200,7 @@ function callExpression(stream: TokenStream) : void {
 }
 
 function optionalChain(stream: TokenStream) : void {
-    longestOf(
+    firstOf(
         //?. Arguments[?Yield, ?Await]
         sequence(symbol(Symbols.optionalChain), roundBracket),
         //?. [ Expression[+In, ?Yield, ?Await] ]
@@ -221,14 +221,14 @@ function optionalChain(stream: TokenStream) : void {
     )(stream);
 }
 
-function optionalCallExpression(stream: TokenStream) : void {
-    longestOf(
+function optionalExpression(stream: TokenStream) : void {
+    firstOf(
         // MemberExpression[?Yield, ?Await] OptionalChain[?Yield, ?Await]
         sequence(memberExpression, optionalChain),
         // CallExpression[?Yield, ?Await] OptionalChain[?Yield, ?Await]
         sequence(callExpression, optionalChain),
         // OptionalExpression[?Yield, ?Await] OptionalChain[?Yield, ?Await]
-        sequence(optionalCallExpression, optionalChain),
+        sequence(optionalExpression, optionalChain),
     )(stream);
 }
 
@@ -239,7 +239,7 @@ function leftHandSideExpression(stream: TokenStream) : void {
         //CallExpression[?Yield, ?Await]
         callExpression,
         //OptionalExpression
-        optionalCallExpression,
+        optionalExpression,
     )(stream);
 }
 
@@ -324,7 +324,7 @@ function anyLiteral(stream: TokenStream) : string {
     throw new Error(`any literal is expteced, but ${JSON.stringify(token)} was given`);
 }
 
-function symbol(ch: SyntaxSymbol) : TokenParser {
+export function symbol(ch: SyntaxSymbol) : TokenParser {
     return function(stream: TokenStream) : string {
         const token = peekAndSkipSpaces(stream);
         if (token.type == TokenType.Symbol && ch.equal(token)) {
@@ -338,7 +338,7 @@ function symbol(ch: SyntaxSymbol) : TokenParser {
 interface SymbolArray {
     [idx: string] : true;
 }
-function oneOfSymbols(...chars: SyntaxSymbol[]) : TokenParser {
+export function oneOfSymbols(...chars: SyntaxSymbol[]) : TokenParser {
     let symbols = {} as SymbolArray;
     chars.forEach((ch) => symbols[ch.name] = true);
 
@@ -389,7 +389,7 @@ function anyTempateStringLiteral(stream: TokenStream) : string {
 //    };
 //}
 
-function sequence(...parsers: TokenParser[]) : TokenParser {
+export function sequence(...parsers: TokenParser[]) : TokenParser {
     return function(stream: TokenStream) : ReturnType<TokenParser> {
         const parserStream = new CommonChildTokenStream(stream);
         const result = [];
@@ -402,7 +402,7 @@ function sequence(...parsers: TokenParser[]) : TokenParser {
     };
 }
 
-function longestOf(...parsers: TokenParser[]) : TokenParser {
+export function longestOf(...parsers: TokenParser[]) : TokenParser {
     return function(stream: TokenStream) : ReturnType<TokenParser> {
         let errors = [];
         let result = [] as Array<[ReturnType<TokenParser>, ChildTokenStream]>;
@@ -416,9 +416,9 @@ function longestOf(...parsers: TokenParser[]) : TokenParser {
         }
 
         if (result.length == 0) {
-            throw new Error(`none of the parsers worked ${errors}`)
+            throw new Error(`none of the parsers worked`)
         } else {
-            const [longestStream, longestResult] = result.reduce((prevValue, curValue) => {
+            const [longestResult, longestStream] = result.reduce((prevValue, curValue) => {
                 if (curValue[1].currentPosition() > prevValue[1].currentPosition()) {
                     return curValue;
                 } else {
@@ -433,7 +433,7 @@ function longestOf(...parsers: TokenParser[]) : TokenParser {
     };
 }
 
-function firstOf(...parsers: TokenParser[]) : TokenParser {
+export function firstOf(...parsers: TokenParser[]) : TokenParser {
     return function(stream: TokenStream) : any[] {
         let errors = [];
         for (let i = 0; i < parsers.length; i++) {
@@ -447,11 +447,11 @@ function firstOf(...parsers: TokenParser[]) : TokenParser {
             }
         }
 
-        throw new Error(`none of the parsers worked ${errors}`)
+        throw new Error(`none of the parsers worked`)
     };
 }
 
-function optional(parser: TokenParser) : TokenParser {
+export function optional(parser: TokenParser) : TokenParser {
     return function(stream: TokenStream) : any {
         const parserStream = new CommonChildTokenStream(stream);
 
@@ -480,16 +480,39 @@ function importNamespace(stream: TokenStream) : JsImportNamespace {
     }
 }
 
-function commaList(parser: TokenParser) : TokenParser {
+export function commaList(parser: TokenParser) : TokenParser {
     return list(parser, comma);
+}
+
+function flushed(parser : TokenParser) : TokenParser {
+    return function(stream: TokenStream) : ReturnType<TokenParser> {
+        const childStream = new CommonChildTokenStream(stream);
+        let result;
+        try {
+            result = parser(childStream);
+            childStream.flush();
+        } catch(e) {
+            throw e;
+        }
+
+        return result;
+    };
 }
 
 function list(parser: TokenParser, separator: TokenParser) : TokenParser {
     return function(stream: TokenStream) : ReturnType<TokenParser> {
         let result = [];
         do {
-            result.push(parser(stream));
-        } while( optional(separator)(stream) )
+            try {
+                result.push(flushed(parser)(stream));
+            } catch(e) {
+                break;
+            }
+        } while( optional(separator)(stream) );
+
+        if (result.length == 0) {
+            throw new Error(`list of elements is exptected`);
+        }
 
         return result;
     };
@@ -619,15 +642,6 @@ function anyJsIdentifier(stream: TokenStream) : string {
     return bindingIdentifier;
 }
 
-function functionCall(stream: TokenStream) : string {
-    const funcName = anyJsIdentifier(stream);
-    roundBracket(stream);
-
-    //TODO funcname can be an epression example: funcArray[i+1](params)(nextparams)
-
-    return funcName;
-}
-
 function variableDeclaration(stream : TokenStream) : void {
     firstOf(
         // BindingIdentifier
@@ -641,21 +655,213 @@ function variableDeclaration(stream : TokenStream) : void {
     const eq = optional(symbol(Symbols.eq))(stream);
 
     if (eq) {
-        assignmentExpression(stream);
+       assignmentExpression(stream);
     }
 }
 
+function updateExpression(stream : TokenStream) : void {
+    longestOf(
+        // LeftHandSideExpression[?Yield, ?Await]
+        leftHandSideExpression,
+        // LeftHandSideExpression[?Yield, ?Await] [no LineTerminator here] ++
+        sequence(leftHandSideExpression, symbol(Symbols.plus2)),
+        // LeftHandSideExpression[?Yield, ?Await] [no LineTerminator here] --
+        sequence(leftHandSideExpression, symbol(Symbols.minus2)),
+        // ++ UnaryExpression[?Yield, ?Await]
+        // -- UnaryExpression[?Yield, ?Await]
+        sequence(oneOfSymbols(
+            Symbols.plus2,
+            Symbols.minus2,
+        ), unaryExpression),
+    )(stream);
+}
+
+function unaryExpression(stream : TokenStream) : void {
+    firstOf(
+        // UpdateExpression[?Yield, ?Await]
+        updateExpression,
+        // delete UnaryExpression[?Yield, ?Await]
+        sequence(keyword(Keywords._delete), unaryExpression),
+        // void UnaryExpression[?Yield, ?Await]
+        sequence(keyword(Keywords._void), unaryExpression),
+        // typeof UnaryExpression[?Yield, ?Await]
+        sequence(keyword(Keywords._typeof), unaryExpression),
+        // + UnaryExpression[?Yield, ?Await]
+        // - UnaryExpression[?Yield, ?Await]
+        // ~ UnaryExpression[?Yield, ?Await]
+        // ! UnaryExpression[?Yield, ?Await]
+        sequence(oneOfSymbols(
+            Symbols.plus,
+            Symbols.minus,
+            Symbols.tilde,
+            Symbols.not,
+        ), unaryExpression),
+        // [+Await]AwaitExpression[?Yield]
+        sequence(keyword(Keywords._await), unaryExpression),
+    )(stream);
+}
+
+function bitwiseOrExpression(stream : TokenStream) : void {
+    longestOf(
+        // BitwiseXORExpression[?In, ?Yield, ?Await]
+        bitwiseXorExpression,
+        // BitwiseORExpression[?In, ?Yield, ?Await] | BitwiseXORExpression[?In, ?Yield, ?Await]
+        sequence(bitwiseOrExpression, symbol(Symbols.bitwiseOr), bitwiseXorExpression)
+    )(stream);
+}
+
+function bitwiseXorExpression(stream : TokenStream) : void {
+    longestOf(
+        // BitwiseANDExpression[?In, ?Yield, ?Await]
+        bitwiseAndExpression,
+        // BitwiseXORExpression[?In, ?Yield, ?Await] ^ BitwiseANDExpression[?In, ?Yield, ?Await]
+        sequence(bitwiseXorExpression, symbol(Symbols.bitwiseXor), bitwiseAndExpression)
+    )(stream);
+}
+
+function bitwiseAndExpression(stream : TokenStream) : void {
+    longestOf(
+        // EqualityExpression[?In, ?Yield, ?Await]
+        equalityExpression,
+        // BitwiseANDExpression[?In, ?Yield, ?Await] & EqualityExpression[?In, ?Yield, ?Await]
+        sequence(bitwiseAndExpression, symbol(Symbols.bitwiseAnd), equalityExpression)
+    )(stream);
+}
+
+function equalityExpression(stream : TokenStream) : void {
+    longestOf(
+        // RelationalExpression[?In, ?Yield, ?Await]
+        relationalExpression,
+        // EqualityExpression[?In, ?Yield, ?Await] == RelationalExpression[?In, ?Yield, ?Await]
+        // EqualityExpression[?In, ?Yield, ?Await] != RelationalExpression[?In, ?Yield, ?Await]
+        // EqualityExpression[?In, ?Yield, ?Await] === RelationalExpression[?In, ?Yield, ?Await]
+        // EqualityExpression[?In, ?Yield, ?Await] !== RelationalExpression[?In, ?Yield, ?Await]
+        sequence(equalityExpression, oneOfSymbols(
+            Symbols.eq2,
+            Symbols.notEq2,
+            Symbols.eq3,
+            Symbols.notEq3
+        ), relationalExpression)
+    )(stream);
+}
+
+function relationalExpression(stream : TokenStream) : void {
+    longestOf(
+        // ShiftExpression[?Yield, ?Await]
+        shiftExpression,
+        // RelationalExpression[?In, ?Yield, ?Await] < ShiftExpression[?Yield, ?Await]
+        // RelationalExpression[?In, ?Yield, ?Await] > ShiftExpression[?Yield, ?Await]
+        // RelationalExpression[?In, ?Yield, ?Await] <= ShiftExpression[?Yield, ?Await]
+        // RelationalExpression[?In, ?Yield, ?Await] >= ShiftExpression[?Yield, ?Await]
+        sequence(relationalExpression, oneOfSymbols(
+            Symbols.lt,
+            Symbols.gt,
+            Symbols.lteq,
+            Symbols.gteq,
+        ), shiftExpression),
+        // RelationalExpression[?In, ?Yield, ?Await] instanceof ShiftExpression[?Yield, ?Await]
+        sequence(relationalExpression, keyword(Keywords._instanceof), shiftExpression),
+        // [+In] RelationalExpression[+In, ?Yield, ?Await] in ShiftExpression[?Yield, ?Await]
+        sequence(relationalExpression, keyword(Keywords._in), shiftExpression),
+    )(stream);
+}
+
+function shiftExpression(stream : TokenStream) : void {
+    longestOf(
+        // AdditiveExpression[?Yield, ?Await]
+        additiveExpression,
+        // ShiftExpression[?Yield, ?Await] << AdditiveExpression[?Yield, ?Await]
+        // ShiftExpression[?Yield, ?Await] >> AdditiveExpression[?Yield, ?Await]
+        // ShiftExpression[?Yield, ?Await] >>> AdditiveExpression[?Yield, ?Await]
+        sequence(shiftExpression, oneOfSymbols(
+            Symbols.shiftLeft,
+            Symbols.shiftRight,
+            Symbols.shiftRight3,
+        ), additiveExpression)
+    )(stream);
+}
+
+function additiveExpression(stream : TokenStream) : void {
+    longestOf(
+        // MultiplicativeExpression[?Yield, ?Await]
+        multiplicativeExpression,
+        // AdditiveExpression[?Yield, ?Await] + MultiplicativeExpression[?Yield, ?Await]
+        // AdditiveExpression[?Yield, ?Await] - MultiplicativeExpression[?Yield, ?Await]
+        sequence(additiveExpression, oneOfSymbols(
+            Symbols.plus,
+            Symbols.minus,
+        ), multiplicativeExpression)
+    )(stream);
+}
+
+function multiplicativeExpression(stream : TokenStream) : void {
+    firstOf(
+        // ExponentiationExpression[?Yield, ?Await]
+        exponentiationExpression,
+        // MultiplicativeExpression[?Yield, ?Await] MultiplicativeOperator ExponentiationExpression[?Yield, ?Await]
+        // MultiplicativeOperator : one of
+        // * / %
+        sequence(multiplicativeExpression, oneOfSymbols(
+            Symbols.astersik,
+            Symbols.div,
+            Symbols.percent,
+        ), exponentiationExpression)
+    )(stream);
+}
+
+function exponentiationExpression(stream : TokenStream) : void {
+    longestOf(
+        // UnaryExpression[?Yield, ?Await]
+        unaryExpression,
+        // UpdateExpression[?Yield, ?Await] ** ExponentiationExpression[?Yield, ?Await]
+        sequence(updateExpression, symbol(Symbols.astersik2), exponentiationExpression),
+    )(stream);
+}
+
+
+
+function logicalAndExpression(stream : TokenStream) : void {
+    longestOf(
+        // BitwiseORExpression[?In, ?Yield, ?Await]
+        bitwiseOrExpression,
+        // LogicalANDExpression[?In, ?Yield, ?Await] && BitwiseORExpression[?In, ?Yield, ?Await]
+        sequence(logicalAndExpression, symbol(Symbols.and), bitwiseOrExpression),
+    )(stream);
+}
+
+
+function logicalOrExpression(stream : TokenStream) : void {
+    longestOf(
+        // LogicalANDExpression[?In, ?Yield, ?Await]
+        logicalAndExpression,
+        // LogicalORExpression[?In, ?Yield, ?Await] || LogicalANDExpression[?In, ?Yield, ?Await]
+        sequence(logicalOrExpression, symbol(Symbols.or), logicalAndExpression)
+    )(stream);
+}
+
+function coalesceExpression(stream : TokenStream) : void {
+    longestOf(
+        // CoalesceExpressionHead[?In, ?Yield, ?Await] ?? BitwiseORExpression[?In, ?Yield, ?Await]
+        sequence(coalesceExpressionHead, symbol(Symbols.coalesce), bitwiseOrExpression)
+    )(stream);
+}
+
+function coalesceExpressionHead(stream : TokenStream) : void {
+    longestOf(
+        // CoalesceExpression[?In, ?Yield, ?Await]
+        coalesceExpression,
+        // BitwiseORExpression[?In, ?Yield, ?Await]
+        bitwiseOrExpression
+    )(stream);
+}
+
 function shortCircuitExpression(stream : TokenStream) : void {
-    // TODO
-    // LogicalORExpression[?In, ?Yield, ?Await]
-    // CoalesceExpression[?In, ?Yield, ?Await]
-    list(firstOf(
-        roundBracket,
-        anyJsIdentifier
-    ), oneOfSymbols(
-        Symbols.and,
-        Symbols.or,
-    ))(stream);
+    longestOf(
+        // LogicalORExpression[?In, ?Yield, ?Await]
+        logicalOrExpression,
+        // CoalesceExpression[?In, ?Yield, ?Await]
+        coalesceExpression,
+    )(stream);
 }
 
 function conditionalExpression(stream : TokenStream) : void {
@@ -671,19 +877,61 @@ function conditionalExpression(stream : TokenStream) : void {
     )(stream);
 }
 
+function yeildExpression(stream : TokenStream) : void {
+    keyword(Keywords._yield)(stream);
+
+    //TODO no line terminator here
+    optional(symbol(Symbols.astersik))(stream);
+
+    assignmentExpression(stream);
+}
+
+function bindingIdentifier(stream : TokenStream) : void {
+    firstOf(
+        //Identifier
+        anyJsIdentifier,
+        // yield
+        keyword(Keywords._async),
+        // await
+        keyword(Keywords._yield)
+    )(stream);
+}
+
+function arrowFunction(stream : TokenStream) : void {
+    // ArrowParameters[?Yield, ?Await] [no LineTerminator here] => ConciseBody[?In]
+    firstOf(bindingIdentifier, roundBracket)(stream);
+    symbol(Symbols.arrow)(stream);
+    firstOf(anyBlock, assignmentExpression)(stream);
+}
+
+function asyncArrowFunction(stream : TokenStream) : void {
+    // async [no LineTerminator here] AsyncArrowBindingIdentifier[?Yield] [no LineTerminator here] => AsyncConciseBody[?In]
+    keyword(Keywords._async)(stream);
+    bindingIdentifier(stream);
+    symbol(Symbols.arrow)(stream);
+    firstOf(anyBlock, assignmentExpression)(stream);
+}
+
 function assignmentExpression(stream : TokenStream) : void {
     longestOf(
-        //TODO
         // ConditionalExpression[?In, ?Yield, ?Await]
         conditionalExpression,
         // [+Yield]YieldExpression[?In, ?Await]
+        yeildExpression,
         // ArrowFunction[?In, ?Yield, ?Await]
+        arrowFunction,
         // AsyncArrowFunction[?In, ?Yield, ?Await]
+        asyncArrowFunction,
         // LeftHandSideExpression[?Yield, ?Await] = AssignmentExpression[?In, ?Yield, ?Await]
         // LeftHandSideExpression[?Yield, ?Await] AssignmentOperator AssignmentExpression[?In, ?Yield, ?Await]
         // LeftHandSideExpression[?Yield, ?Await] &&= AssignmentExpression[?In, ?Yield, ?Await]
         // LeftHandSideExpression[?Yield, ?Await] ||= AssignmentExpression[?In, ?Yield, ?Await]
         // LeftHandSideExpression[?Yield, ?Await] ??= AssignmentExpression[?In, ?Yield, ?Await]
+        sequence(
+            leftHandSideExpression,
+            oneOfSymbols(Symbols.eq, ...AssigmentOperator, Symbols.eq2and, Symbols.eq2or, Symbols.eq2questions),
+            assignmentExpression,
+        )
     )(stream);
 }
 
@@ -691,17 +939,6 @@ export function parseJsVarStatement(stream: TokenStream) : VarDeclaraionNode {
     firstOf(keyword(Keywords._var), keyword(Keywords._const), keyword(Keywords._let))(stream);
 
     commaList(variableDeclaration)(stream);
-
-    const eq = symbol(Symbols.eq)(stream);
-    if (eq) {
-        firstOf(
-            anyLiteral,
-            functionCall,
-            anyString,
-            squareBracket,
-            anyBlock
-        )(stream); //TODO expression
-    }
 
     return {
         type: NodeType.VarDeclaration,

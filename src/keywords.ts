@@ -40,6 +40,8 @@ export const Keywords = {
     _finally: new Keyword('finally'),
     _delete: new Keyword('delete'),
     _static: new Keyword('static'),
+    _await: new Keyword('await'),
+    _yeild: new Keyword('yeild'),
 
     _var: new Keyword('var'),
     _let: new Keyword('let'),

@@ -1,4 +1,5 @@
 SHELL=/bin/bash
+JEST=./node_modules/jest/bin/jest.js
 
 clean:
 	rm -rf ./build
@@ -7,5 +8,8 @@ build: clean
 	./node_modules/typescript/bin/tsc
 
 test: build
-	./node_modules/jest/bin/jest.js
+	$(JEST)
 
+debug:
+	@echo "open chrome://inspect"
+	node --inspect-brk $(JEST) --runInBand

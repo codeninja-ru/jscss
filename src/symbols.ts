@@ -14,6 +14,8 @@ export const Symbols = {
     astersik: new SyntaxSymbol('*'),
     lt: new SyntaxSymbol('>'),
     gt: new SyntaxSymbol('<'),
+    lteq: new SyntaxSymbol('>='),
+    gteq: new SyntaxSymbol('<='),
     tilde: new SyntaxSymbol('~'),
     minus: new SyntaxSymbol('-'),
     plus: new SyntaxSymbol('+'),
@@ -21,6 +23,8 @@ export const Symbols = {
     dot: new SyntaxSymbol('.'),
     question: new SyntaxSymbol('?'),
     colon: new SyntaxSymbol(':'),
+    div: new SyntaxSymbol('/'),
+    percent: new SyntaxSymbol('%'),
 
     and: new SyntaxSymbol('&&'),
     or: new SyntaxSymbol('||'),
@@ -31,6 +35,8 @@ export const Symbols = {
     bitwiseXor: new SyntaxSymbol('^'),
     not: new SyntaxSymbol('!'),
 
+    arrow: new SyntaxSymbol('=>'),
+
     eq2: new SyntaxSymbol('=='),
     eq3: new SyntaxSymbol('==='),
     notEq2: new SyntaxSymbol('!='),
@@ -39,8 +45,18 @@ export const Symbols = {
     minus2: new SyntaxSymbol('--'),
     plus2: new SyntaxSymbol('++'),
 
+    shiftLeft: new SyntaxSymbol('<<'),
+    shiftRight: new SyntaxSymbol('>>'),
+    shiftRight3: new SyntaxSymbol('>>>'),
+
+    eq2and: new SyntaxSymbol('&&='),
+    eq2or: new SyntaxSymbol('||='),
+    eq2questions: new SyntaxSymbol('??='),
+
     optionalChain: new SyntaxSymbol('?.'),
 }
+
+export const AssigmentOperator = ['*=', '/=', '%=', '+=', '-=', '<<=', '>>=', '>>>=', '&=', '^=', '|=', '**='].map((item) => new SyntaxSymbol(item));
 
 export const LogicalSymbols = {
     and: new SyntaxSymbol('&&'),
