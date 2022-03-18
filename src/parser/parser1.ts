@@ -48,7 +48,7 @@ export class ArrayTokenStream implements TokenStream {
 }
 
 
-class CommonChildTokenStream implements ChildTokenStream {
+export class CommonChildTokenStream implements ChildTokenStream {
     private pos : number;
     private startPos : number;
     constructor(private parent: TokenStream) {
@@ -96,17 +96,6 @@ class CommonChildTokenStream implements ChildTokenStream {
 
 type TokenParser = (stream: TokenStream) => any;
 
-function literal(str: string) : TokenParser {
-    return function(stream: TokenStream) : string {
-        const token = peekAndSkipSpaces(stream);
-        if (token.type == TokenType.Literal && token.value == str) {
-            return token.value;
-        }
-
-        throw new Error(`expected ${str} but ${JSON.stringify(token)} was given}`);
-    }
-}
-
 export function keyword(keyword: Keyword): TokenParser {
     return function(stream: TokenStream) : string {
         const token = peekAndSkipSpaces(stream);
@@ -129,7 +118,7 @@ function comma(stream: TokenStream) : string {
 
 function functionExpression(stream: TokenStream) : void {
     keyword(Keywords._function)(stream);
-    optional(anyJsIdentifier)(stream);
+    optional(identifier)(stream);
     roundBracket(stream);
     anyBlock(stream);
 }
@@ -139,7 +128,7 @@ function superPropery(stream: TokenStream) : void {
         // super [ Expression[+In, ?Yield, ?Await] ]
         sequence(keyword(Keywords._super), squareBracket),
         // super . IdentifierName
-        sequence(keyword(Keywords._super), symbol(Symbols.dot), anyJsIdentifier),
+        sequence(keyword(Keywords._super), symbol(Symbols.dot), identifier),
     )(stream);
 }
 
@@ -165,7 +154,7 @@ function memberExpression(stream: TokenStream) : void {
         // MemberExpression[?Yield, ?Await] [ Expression[+In, ?Yield, ?Await] ]
         sequence(memberExpression, squareBracket),
         // MemberExpression[?Yield, ?Await] . IdentifierName
-        sequence(memberExpression, symbol(Symbols.dot), anyJsIdentifier),
+        sequence(memberExpression, symbol(Symbols.dot), identifier),
         // MemberExpression[?Yield, ?Await] TemplateLiteral[?Yield, ?Await, +Tagged]
         sequence(memberExpression, anyTempateStringLiteral),
     )(stream);
@@ -181,7 +170,7 @@ function newExpression(stream: TokenStream) : void {
 }
 
 function callExpression(stream: TokenStream) : void {
-    longestOf(
+    firstOf(
         // CoverCallExpressionAndAsyncArrowHead[?Yield, ?Await]
         sequence(memberExpression, roundBracket),
         // SuperCall[?Yield, ?Await]
@@ -193,7 +182,7 @@ function callExpression(stream: TokenStream) : void {
         // CallExpression[?Yield, ?Await] [ Expression[+In, ?Yield, ?Await] ]
         sequence(callExpression, squareBracket),
         // CallExpression[?Yield, ?Await] . IdentifierName
-        sequence(callExpression, symbol(Symbols.dot), anyJsIdentifier),
+        sequence(callExpression, symbol(Symbols.dot), identifier),
         // CallExpression[?Yield, ?Await] TemplateLiteral[?Yield, ?Await, +Tagged]
         sequence(callExpression, anyTempateStringLiteral),
     )(stream);
@@ -206,7 +195,7 @@ function optionalChain(stream: TokenStream) : void {
         //?. [ Expression[+In, ?Yield, ?Await] ]
         sequence(symbol(Symbols.optionalChain), squareBracket),
         //?. IdentifierName
-        sequence(symbol(Symbols.optionalChain), anyJsIdentifier),
+        sequence(symbol(Symbols.optionalChain), identifier),
         //?. TemplateLiteral[?Yield, ?Await, +Tagged]
         sequence(symbol(Symbols.optionalChain), anyTempateStringLiteral),
         //OptionalChain[?Yield, ?Await] Arguments[?Yield, ?Await]
@@ -214,7 +203,7 @@ function optionalChain(stream: TokenStream) : void {
         //OptionalChain[?Yield, ?Await] [ Expression[+In, ?Yield, ?Await] ]
         sequence(optionalChain, squareBracket),
         //OptionalChain[?Yield, ?Await] . IdentifierName
-        sequence(optionalChain, anyJsIdentifier),
+        sequence(optionalChain, identifier),
         //OptionalChain[?Yield, ?Await] TemplateLiteral[?Yield, ?Await, +Tagged]
         sequence(optionalChain, anyTempateStringLiteral),
 
@@ -250,7 +239,7 @@ function classHeritage(stream: TokenStream) : void {
 
 function classExpression(stream: TokenStream) : void {
     keyword(Keywords._class)(stream);
-    optional(anyJsIdentifier)(stream);
+    optional(identifier)(stream);
     optional(classHeritage)(stream);
     anyBlock(stream);
 }
@@ -268,12 +257,60 @@ function regularExpressionLiteral(stream: TokenStream) : string {
     return body;
 }
 
+function nonDecimalIntergerLiteral(stream : TokenStream) : void {
+    firstOf(
+        // BinaryIntegerLiteral[?Sep]
+        regexpLiteral(/^0[bB][0-1\_]+n?$/),
+        // OctalIntegerLiteral[?Sep]
+        regexpLiteral(/^0[oO][0-7\_]+n?$/),
+        // HexIntegerLiteral[?Sep]
+        regexpLiteral(/^0[xX][0-9a-fA-F\_]+n?$/),
+    )(stream);
+}
+
+function regexpLiteral(reg : RegExp, errorString = undefined) : TokenParser {
+    return function(stream : TokenStream) : ReturnType<TokenParser> {
+        const token = peekAndSkipSpaces(stream);
+        if (token.type == TokenType.Literal && reg.test(token.value)) {
+            return token.value;
+        } else {
+            throw new Error(errorString ? errorString : `expected literal matched to regexp ${reg}, but token was given ${token}`);
+        }
+    };
+}
+
+function numericLiteral(stream : TokenStream) : void {
+    firstOf(
+        // DecimalLiteral
+        // DecimalBigIntegerLiteral
+        regexpLiteral(/^[0-9\_]*(\.[0-9\_]*)?([eE][\-\+][0-9\_]+)?n?$/), //TODO fix, the point symbol will not work
+        // NonDecimalIntegerLiteral[+Sep]
+        // NonDecimalIntegerLiteral[+Sep] BigIntLiteralSuffix
+        nonDecimalIntergerLiteral,
+    )(stream);
+}
+
+function literal(stream : TokenStream) : void {
+    firstOf(
+        // NullLiteral
+        keyword(Keywords._null),
+        // BooleanLiteral
+        firstOf(keyword(Keywords._true), keyword(Keywords._false)),
+        // NumericLiteral
+        numericLiteral,
+        // StringLiteral
+        anyString,
+    )(stream);
+}
+
 function primaryExpression(stream: TokenStream) : void {
     firstOf(
         // this
+        keyword(Keywords._this),
         // IdentifierReference[?Yield, ?Await]
+        bindingIdentifier,
         // Literal
-        anyLiteral,
+        literal,
         // ArrayLiteral[?Yield, ?Await]
         squareBracket,
         // ObjectLiteral[?Yield, ?Await]
@@ -283,11 +320,11 @@ function primaryExpression(stream: TokenStream) : void {
         // ClassExpression[?Yield, ?Await]
         classExpression,
         // GeneratorExpression
-        sequence(keyword(Keywords._function), symbol(Symbols.astersik), anyJsIdentifier, roundBracket, anyBlock),
+        sequence(keyword(Keywords._function), symbol(Symbols.astersik), identifier, roundBracket, anyBlock),
         // AsyncFunctionExpression
-        sequence(keyword(Keywords._async), keyword(Keywords._function), anyJsIdentifier, roundBracket, anyBlock),
+        sequence(keyword(Keywords._async), keyword(Keywords._function), identifier, roundBracket, anyBlock),
         // AsyncGeneratorExpression
-        sequence(keyword(Keywords._async), keyword(Keywords._function), symbol(Symbols.dot), anyJsIdentifier, roundBracket, anyBlock),
+        sequence(keyword(Keywords._async), keyword(Keywords._function), symbol(Symbols.dot), identifier, roundBracket, anyBlock),
         // RegularExpressionLiteral
         regularExpressionLiteral,
         // TemplateLiteral[?Yield, ?Await, ~Tagged]
@@ -370,25 +407,6 @@ function anyTempateStringLiteral(stream: TokenStream) : string {
     throw new Error(`template string literal is expected, byt ${JSON.stringify(token)} was given`);
 }
 
-//function or(...parsers: TokenParser[]) : TokenParser {
-//    return function(stream: TokenStream) : any[] {
-//        let errors = [];
-//        let result = Array(parsers.length).fill(undefined);
-//        for (let i = 0; i < parsers.length; i++) {
-//            try {
-//                let parserStream = new CommonChildTokenStream(stream);
-//                result[i] = parsers[i](parserStream);
-//                parserStream.flush();
-//                return result;
-//            } catch( e ) {
-//                errors.push(e);
-//            }
-//        }
-//
-//        throw new Error(`none of the parsers worked ${errors}`)
-//    };
-//}
-
 export function sequence(...parsers: TokenParser[]) : TokenParser {
     return function(stream: TokenStream) : ReturnType<TokenParser> {
         const parserStream = new CommonChildTokenStream(stream);
@@ -397,11 +415,13 @@ export function sequence(...parsers: TokenParser[]) : TokenParser {
             result.push(parser(parserStream));
         }
 
+        // TODO flush is might be not needed if we call sequence inside firstOf/or
         parserStream.flush();
         return result;
     };
 }
 
+// TODO deprecated
 export function longestOf(...parsers: TokenParser[]) : TokenParser {
     return function(stream: TokenStream) : ReturnType<TokenParser> {
         let errors = [];
@@ -433,6 +453,7 @@ export function longestOf(...parsers: TokenParser[]) : TokenParser {
     };
 }
 
+// TODO reanme to or
 export function firstOf(...parsers: TokenParser[]) : TokenParser {
     return function(stream: TokenStream) : any[] {
         let errors = [];
@@ -624,7 +645,7 @@ export function parseCssBlock(stream: TokenStream) : CssBlockNode {
 
 export function parseCssImport(stream: TokenStream) : CssImportNode {
     symbol(Symbols.at)(stream);
-    literal('import')(stream);
+    keyword(Keywords._import)(stream);
     const path = anyString(stream);
 
     return {
@@ -633,7 +654,7 @@ export function parseCssImport(stream: TokenStream) : CssImportNode {
     }
 }
 
-function anyJsIdentifier(stream: TokenStream) : string {
+function identifier(stream: TokenStream) : string {
     const bindingIdentifier = anyLiteral(stream);
     if (bindingIdentifier in ReservedWords) {
         throw new Error(`${bindingIdentifier} is a reseved word`);
@@ -642,10 +663,21 @@ function anyJsIdentifier(stream: TokenStream) : string {
     return bindingIdentifier;
 }
 
+function bindingIdentifier(stream : TokenStream) : void {
+    firstOf(
+        // Identifier
+        identifier,
+        // yield
+        keyword(Keywords._yield),
+        // await
+        keyword(Keywords._await),
+    )(stream);
+}
+
 function variableDeclaration(stream : TokenStream) : void {
     firstOf(
         // BindingIdentifier
-        anyJsIdentifier,
+        bindingIdentifier,
         // BindingPatten
         squareBracket, //TODO we do not parse and do not validate the content yet
         anyBlock, //TODO we do not parse and do not validate the content yet
@@ -660,7 +692,7 @@ function variableDeclaration(stream : TokenStream) : void {
 }
 
 function updateExpression(stream : TokenStream) : void {
-    longestOf(
+    firstOf(
         // LeftHandSideExpression[?Yield, ?Await]
         leftHandSideExpression,
         // LeftHandSideExpression[?Yield, ?Await] [no LineTerminator here] ++
@@ -702,7 +734,7 @@ function unaryExpression(stream : TokenStream) : void {
 }
 
 function bitwiseOrExpression(stream : TokenStream) : void {
-    longestOf(
+    firstOf(
         // BitwiseXORExpression[?In, ?Yield, ?Await]
         bitwiseXorExpression,
         // BitwiseORExpression[?In, ?Yield, ?Await] | BitwiseXORExpression[?In, ?Yield, ?Await]
@@ -711,7 +743,7 @@ function bitwiseOrExpression(stream : TokenStream) : void {
 }
 
 function bitwiseXorExpression(stream : TokenStream) : void {
-    longestOf(
+    firstOf(
         // BitwiseANDExpression[?In, ?Yield, ?Await]
         bitwiseAndExpression,
         // BitwiseXORExpression[?In, ?Yield, ?Await] ^ BitwiseANDExpression[?In, ?Yield, ?Await]
@@ -720,7 +752,7 @@ function bitwiseXorExpression(stream : TokenStream) : void {
 }
 
 function bitwiseAndExpression(stream : TokenStream) : void {
-    longestOf(
+    firstOf(
         // EqualityExpression[?In, ?Yield, ?Await]
         equalityExpression,
         // BitwiseANDExpression[?In, ?Yield, ?Await] & EqualityExpression[?In, ?Yield, ?Await]
@@ -729,7 +761,7 @@ function bitwiseAndExpression(stream : TokenStream) : void {
 }
 
 function equalityExpression(stream : TokenStream) : void {
-    longestOf(
+    firstOf(
         // RelationalExpression[?In, ?Yield, ?Await]
         relationalExpression,
         // EqualityExpression[?In, ?Yield, ?Await] == RelationalExpression[?In, ?Yield, ?Await]
@@ -746,7 +778,7 @@ function equalityExpression(stream : TokenStream) : void {
 }
 
 function relationalExpression(stream : TokenStream) : void {
-    longestOf(
+    firstOf(
         // ShiftExpression[?Yield, ?Await]
         shiftExpression,
         // RelationalExpression[?In, ?Yield, ?Await] < ShiftExpression[?Yield, ?Await]
@@ -767,7 +799,7 @@ function relationalExpression(stream : TokenStream) : void {
 }
 
 function shiftExpression(stream : TokenStream) : void {
-    longestOf(
+    firstOf(
         // AdditiveExpression[?Yield, ?Await]
         additiveExpression,
         // ShiftExpression[?Yield, ?Await] << AdditiveExpression[?Yield, ?Await]
@@ -782,7 +814,7 @@ function shiftExpression(stream : TokenStream) : void {
 }
 
 function additiveExpression(stream : TokenStream) : void {
-    longestOf(
+    firstOf(
         // MultiplicativeExpression[?Yield, ?Await]
         multiplicativeExpression,
         // AdditiveExpression[?Yield, ?Await] + MultiplicativeExpression[?Yield, ?Await]
@@ -810,7 +842,7 @@ function multiplicativeExpression(stream : TokenStream) : void {
 }
 
 function exponentiationExpression(stream : TokenStream) : void {
-    longestOf(
+    firstOf(
         // UnaryExpression[?Yield, ?Await]
         unaryExpression,
         // UpdateExpression[?Yield, ?Await] ** ExponentiationExpression[?Yield, ?Await]
@@ -821,7 +853,7 @@ function exponentiationExpression(stream : TokenStream) : void {
 
 
 function logicalAndExpression(stream : TokenStream) : void {
-    longestOf(
+    firstOf(
         // BitwiseORExpression[?In, ?Yield, ?Await]
         bitwiseOrExpression,
         // LogicalANDExpression[?In, ?Yield, ?Await] && BitwiseORExpression[?In, ?Yield, ?Await]
@@ -831,7 +863,7 @@ function logicalAndExpression(stream : TokenStream) : void {
 
 
 function logicalOrExpression(stream : TokenStream) : void {
-    longestOf(
+    firstOf(
         // LogicalANDExpression[?In, ?Yield, ?Await]
         logicalAndExpression,
         // LogicalORExpression[?In, ?Yield, ?Await] || LogicalANDExpression[?In, ?Yield, ?Await]
@@ -840,14 +872,14 @@ function logicalOrExpression(stream : TokenStream) : void {
 }
 
 function coalesceExpression(stream : TokenStream) : void {
-    longestOf(
+    firstOf(
         // CoalesceExpressionHead[?In, ?Yield, ?Await] ?? BitwiseORExpression[?In, ?Yield, ?Await]
         sequence(coalesceExpressionHead, symbol(Symbols.coalesce), bitwiseOrExpression)
     )(stream);
 }
 
 function coalesceExpressionHead(stream : TokenStream) : void {
-    longestOf(
+    firstOf(
         // CoalesceExpression[?In, ?Yield, ?Await]
         coalesceExpression,
         // BitwiseORExpression[?In, ?Yield, ?Await]
@@ -856,7 +888,7 @@ function coalesceExpressionHead(stream : TokenStream) : void {
 }
 
 function shortCircuitExpression(stream : TokenStream) : void {
-    longestOf(
+    firstOf(
         // LogicalORExpression[?In, ?Yield, ?Await]
         logicalOrExpression,
         // CoalesceExpression[?In, ?Yield, ?Await]
@@ -884,17 +916,6 @@ function yeildExpression(stream : TokenStream) : void {
     optional(symbol(Symbols.astersik))(stream);
 
     assignmentExpression(stream);
-}
-
-function bindingIdentifier(stream : TokenStream) : void {
-    firstOf(
-        //Identifier
-        anyJsIdentifier,
-        // yield
-        keyword(Keywords._async),
-        // await
-        keyword(Keywords._yield)
-    )(stream);
 }
 
 function arrowFunction(stream : TokenStream) : void {

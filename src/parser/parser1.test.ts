@@ -3,7 +3,7 @@ import { StringInputStream } from "stream/input";
 import { Symbols } from "symbols";
 import { makeLiteralToken, makeSpaceToken, makeStringToken } from "token/helpers";
 import { lexer } from "./lexer";
-import { ArrayTokenStream, commaList, firstOf, keyword, longestOf, oneOfSymbols, optional, parse, parseCssBlock, parseCssImport, parseJsImport, parseJsVarStatement, sequence, symbol, TokenStream } from "./parser1";
+import { ArrayTokenStream, commaList, CommonChildTokenStream, firstOf, keyword, longestOf, oneOfSymbols, optional, parse, parseCssBlock, parseCssImport, parseJsImport, parseJsVarStatement, sequence, symbol, TokenStream } from "./parser1";
 import { NodeType } from "./syntaxTree";
 
 describe('parser', () => {
@@ -47,13 +47,52 @@ describe('parsers', () => {
         expect(node).toEqual({"path": "'style.css'", "type": NodeType.CssImport});
     });
 
-    test('parseJsVarStatement()', () => {
-        const tokens = lexer(new StringInputStream(`const a = 1;`))
-        const stream = new ArrayTokenStream(tokens);
-        const node = parseJsVarStatement(stream);
-        expect(node).toEqual({"type": NodeType.VarDeclaration});
-        expect(stream.currentPosition()).toEqual(7);
+    describe('parseJsVarStatement()', () => {
+        test('simple', () => {
+            const tokens = lexer(new StringInputStream(`const a = 1;`))
+            const stream = new ArrayTokenStream(tokens);
+            const node = parseJsVarStatement(stream);
+            expect(node).toEqual({"type": NodeType.VarDeclaration});
+            expect(stream.currentPosition()).toEqual(7);
+        });
+
+        test('function', () => {
+            const tokens = lexer(new StringInputStream(`let fn = function(test) {};`))
+            const stream = new CommonChildTokenStream(new ArrayTokenStream(tokens));
+            const node = parseJsVarStatement(stream);
+            expect(node).toEqual({"type": NodeType.VarDeclaration});
+            expect(stream.rawValue()).toEqual('let fn = function(test) {}');
+            expect(stream.currentPosition()).toEqual(10);
+        });
+
+        test('destracting', () => {
+            const tokens = lexer(new StringInputStream(`let {a, b} = fn(kek)[1].test`))
+            const stream = new CommonChildTokenStream(new ArrayTokenStream(tokens));
+            const node = parseJsVarStatement(stream);
+            expect(node).toEqual({"type": NodeType.VarDeclaration});
+            expect(stream.rawValue()).toEqual('let {a, b} = fn(kek)[1].test');
+            expect(stream.currentPosition()).toEqual(10);
+        });
+
+        test('multilple assignment', () => {
+            const tokens = lexer(new StringInputStream(`var t1 = 1, t2 = .2, t3 = 3;`))
+            const stream = new CommonChildTokenStream(new ArrayTokenStream(tokens));
+            const node = parseJsVarStatement(stream);
+            expect(node).toEqual({"type": NodeType.VarDeclaration});
+            expect(stream.rawValue()).toEqual('var t1 = 1, t2 = .2, t3 = 3');
+            expect(stream.currentPosition()).toEqual(21);
+        });
+
+        test('arrow function', () => {
+            const tokens = lexer(new StringInputStream(`let fn = (test) => {};`))
+            const stream = new CommonChildTokenStream(new ArrayTokenStream(tokens));
+            const node = parseJsVarStatement(stream);
+            expect(node).toEqual({"type": NodeType.VarDeclaration});
+            expect(stream.rawValue()).toEqual('let fn = (test) => {}');
+            expect(stream.currentPosition()).toEqual(11);
+        });
     });
+
 });
 
 //TODO move parseUtils to a seprate file

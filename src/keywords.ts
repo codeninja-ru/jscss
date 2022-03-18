@@ -34,14 +34,14 @@ export const Keywords = {
     _instanceof: new Keyword('instanceof'),
     _typeof: new Keyword('typeof'),
     _void: new Keyword('void'),
-    _yield: new Keyword('yield'),
     _try: new Keyword('try'),
     _catch: new Keyword('catch'),
     _finally: new Keyword('finally'),
     _delete: new Keyword('delete'),
     _static: new Keyword('static'),
     _await: new Keyword('await'),
-    _yeild: new Keyword('yeild'),
+    _yield: new Keyword('yield'),
+    _this: new Keyword('this'),
 
     _var: new Keyword('var'),
     _let: new Keyword('let'),
@@ -50,8 +50,7 @@ export const Keywords = {
     _export: new Keyword('export'),
     _from: new Keyword('from'),
 
-    // css keywords
-    css: {
-        _import: new Keyword('@import'),
-    }
+    _null: new Keyword('null'),
+    _true: new Keyword('true'),
+    _false: new Keyword('false'),
 }
