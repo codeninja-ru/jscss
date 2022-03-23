@@ -25,6 +25,7 @@ export const Symbols = {
     colon: new SyntaxSymbol(':'),
     div: new SyntaxSymbol('/'),
     percent: new SyntaxSymbol('%'),
+    numero: new SyntaxSymbol('#'),
 
     and: new SyntaxSymbol('&&'),
     or: new SyntaxSymbol('||'),
@@ -56,7 +57,7 @@ export const Symbols = {
     optionalChain: new SyntaxSymbol('?.'),
 }
 
-export const AssigmentOperator = ['*=', '/=', '%=', '+=', '-=', '<<=', '>>=', '>>>=', '&=', '^=', '|=', '**='].map((item) => new SyntaxSymbol(item));
+export const AssignmentOperator = ['*=', '/=', '%=', '+=', '-=', '<<=', '>>=', '>>>=', '&=', '^=', '|=', '**='].map((item) => new SyntaxSymbol(item));
 
 export const LogicalSymbols = {
     and: new SyntaxSymbol('&&'),

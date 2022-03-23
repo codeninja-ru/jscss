@@ -71,7 +71,7 @@ describe('parsers', () => {
             const node = parseJsVarStatement(stream);
             expect(node).toEqual({"type": NodeType.VarDeclaration});
             expect(stream.rawValue()).toEqual('let {a, b} = fn(kek)[1].test');
-            expect(stream.currentPosition()).toEqual(10);
+            expect(stream.currentPosition()).toEqual(11);
         });
 
         test('multilple assignment', () => {
@@ -80,7 +80,7 @@ describe('parsers', () => {
             const node = parseJsVarStatement(stream);
             expect(node).toEqual({"type": NodeType.VarDeclaration});
             expect(stream.rawValue()).toEqual('var t1 = 1, t2 = .2, t3 = 3');
-            expect(stream.currentPosition()).toEqual(21);
+            expect(stream.currentPosition()).toEqual(22);
         });
 
         test('arrow function', () => {

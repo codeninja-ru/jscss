@@ -11,6 +11,7 @@ export function lexer(stream: InputStream) {
         makeSpaceReader(stream),
         makeCommaReader(stream),
         makeSemicolonRader(stream),
+        makeSymboleReader(stream),
         makeLiteralReader(stream),
         makeBlockReader(stream),
         makeCommentAndRegexpReader(stream),
@@ -20,7 +21,6 @@ export function lexer(stream: InputStream) {
         makeSymboleReader(stream),
         makeBracketsReader(stream, '(', ')'),
         makeBracketsReader(stream, '[', ']'),
-        makeSymboleReader(stream),
         makeRegExpReader(stream),
 
         // keep it always in the end

@@ -1,5 +1,5 @@
 import { Keyword, Keywords, ReservedWords } from "keywords";
-import { SyntaxSymbol, Symbols, AssigmentOperator } from "symbols";
+import { SyntaxSymbol, Symbols, AssignmentOperator } from "symbols";
 import { Token, TokenType } from "token";
 import { CommentNode, CssBlockNode, CssImportNode, JsImportNamespace, JsImportNode, NodeType, SyntaxTree, VarDeclaraionNode } from "./syntaxTree";
 
@@ -141,22 +141,42 @@ function metaPropery(stream: TokenStream) : void {
     )(stream);
 }
 
+function leftHandRecurciveRule(leftRule : TokenParser, rightRule : TokenParser) : TokenParser {
+    const optionalRight = optional(rightRule);
+    return flushed(function(stream : TokenStream) : ReturnType<TokenParser> {
+        let result = leftRule(stream);
+        do {
+            let right = optionalRight(stream);
+            if (right) {
+                result += right;
+            } else {
+                break;
+            }
+        } while(true);
+        return result;
+    });
+}
+
 function memberExpression(stream: TokenStream) : void {
-    firstOf(
-        // PrimaryExpression[?Yield, ?Await]
-        primaryExpression,
-        // SuperProperty[?Yield, ?Await]
-        superPropery,
-        // MetaProperty
-        metaPropery,
-        // new MemberExpression[?Yield, ?Await] Arguments[?Yield, ?Await]
-        sequence(keyword(Keywords._new), memberExpression, roundBracket),
-        // MemberExpression[?Yield, ?Await] [ Expression[+In, ?Yield, ?Await] ]
-        sequence(memberExpression, squareBracket),
-        // MemberExpression[?Yield, ?Await] . IdentifierName
-        sequence(memberExpression, symbol(Symbols.dot), identifier),
-        // MemberExpression[?Yield, ?Await] TemplateLiteral[?Yield, ?Await, +Tagged]
-        sequence(memberExpression, anyTempateStringLiteral),
+    return leftHandRecurciveRule(
+        firstOf(
+            // PrimaryExpression[?Yield, ?Await]
+            primaryExpression,
+            // SuperProperty[?Yield, ?Await]
+            superPropery,
+            // MetaProperty
+            metaPropery,
+            // new MemberExpression[?Yield, ?Await] Arguments[?Yield, ?Await]
+            sequence(keyword(Keywords._new), memberExpression, roundBracket),
+        ),
+        firstOf(
+            // MemberExpression[?Yield, ?Await] [ Expression[+In, ?Yield, ?Await] ]
+            squareBracket,
+            // MemberExpression[?Yield, ?Await] . IdentifierName
+            sequence(symbol(Symbols.dot), identifier),
+            // MemberExpression[?Yield, ?Await] TemplateLiteral[?Yield, ?Await, +Tagged]
+            anyTempateStringLiteral,
+        )
     )(stream);
 }
 
@@ -170,59 +190,69 @@ function newExpression(stream: TokenStream) : void {
 }
 
 function callExpression(stream: TokenStream) : void {
-    firstOf(
-        // CoverCallExpressionAndAsyncArrowHead[?Yield, ?Await]
-        sequence(memberExpression, roundBracket),
-        // SuperCall[?Yield, ?Await]
-        sequence(keyword(Keywords._super), roundBracket),
-        // ImportCall[?Yield, ?Await]
-        sequence(keyword(Keywords._import), roundBracket),
-        // CallExpression[?Yield, ?Await] Arguments[?Yield, ?Await]
-        sequence(callExpression, roundBracket),
-        // CallExpression[?Yield, ?Await] [ Expression[+In, ?Yield, ?Await] ]
-        sequence(callExpression, squareBracket),
-        // CallExpression[?Yield, ?Await] . IdentifierName
-        sequence(callExpression, symbol(Symbols.dot), identifier),
-        // CallExpression[?Yield, ?Await] TemplateLiteral[?Yield, ?Await, +Tagged]
-        sequence(callExpression, anyTempateStringLiteral),
+    leftHandRecurciveRule(
+        firstOf(
+            // CoverCallExpressionAndAsyncArrowHead[?Yield, ?Await]
+            sequence(memberExpression, roundBracket),
+            // SuperCall[?Yield, ?Await]
+            sequence(keyword(Keywords._super), roundBracket),
+            // ImportCall[?Yield, ?Await]
+            sequence(keyword(Keywords._import), roundBracket),
+        ),
+        firstOf(
+            // CallExpression[?Yield, ?Await] Arguments[?Yield, ?Await]
+            roundBracket,
+            // CallExpression[?Yield, ?Await] [ Expression[+In, ?Yield, ?Await] ]
+            squareBracket,
+            // CallExpression[?Yield, ?Await] . IdentifierName
+            sequence(symbol(Symbols.dot), identifier),
+            // CallExpression[?Yield, ?Await] TemplateLiteral[?Yield, ?Await, +Tagged]
+            anyTempateStringLiteral,
+        )
     )(stream);
 }
 
 function optionalChain(stream: TokenStream) : void {
-    firstOf(
-        //?. Arguments[?Yield, ?Await]
-        sequence(symbol(Symbols.optionalChain), roundBracket),
-        //?. [ Expression[+In, ?Yield, ?Await] ]
-        sequence(symbol(Symbols.optionalChain), squareBracket),
-        //?. IdentifierName
-        sequence(symbol(Symbols.optionalChain), identifier),
-        //?. TemplateLiteral[?Yield, ?Await, +Tagged]
-        sequence(symbol(Symbols.optionalChain), anyTempateStringLiteral),
-        //OptionalChain[?Yield, ?Await] Arguments[?Yield, ?Await]
-        sequence(optionalChain, roundBracket),
-        //OptionalChain[?Yield, ?Await] [ Expression[+In, ?Yield, ?Await] ]
-        sequence(optionalChain, squareBracket),
-        //OptionalChain[?Yield, ?Await] . IdentifierName
-        sequence(optionalChain, identifier),
-        //OptionalChain[?Yield, ?Await] TemplateLiteral[?Yield, ?Await, +Tagged]
-        sequence(optionalChain, anyTempateStringLiteral),
+    leftHandRecurciveRule(
+        firstOf(
+            //?. Arguments[?Yield, ?Await]
+            sequence(symbol(Symbols.optionalChain), roundBracket),
+            //?. [ Expression[+In, ?Yield, ?Await] ]
+            sequence(symbol(Symbols.optionalChain), squareBracket),
+            //?. IdentifierName
+            sequence(symbol(Symbols.optionalChain), identifier),
+            //?. TemplateLiteral[?Yield, ?Await, +Tagged]
+            sequence(symbol(Symbols.optionalChain), anyTempateStringLiteral),
+        ),
+        firstOf(
+            //OptionalChain[?Yield, ?Await] Arguments[?Yield, ?Await]
+            roundBracket,
+            //OptionalChain[?Yield, ?Await] [ Expression[+In, ?Yield, ?Await] ]
+            squareBracket,
+            //OptionalChain[?Yield, ?Await] . IdentifierName
+            identifier,
+            //OptionalChain[?Yield, ?Await] TemplateLiteral[?Yield, ?Await, +Tagged]
+            anyTempateStringLiteral,
+        )
 
     )(stream);
 }
 
 function optionalExpression(stream: TokenStream) : void {
-    firstOf(
-        // MemberExpression[?Yield, ?Await] OptionalChain[?Yield, ?Await]
-        sequence(memberExpression, optionalChain),
-        // CallExpression[?Yield, ?Await] OptionalChain[?Yield, ?Await]
-        sequence(callExpression, optionalChain),
+    leftHandRecurciveRule(
+        firstOf(
+            // MemberExpression[?Yield, ?Await] OptionalChain[?Yield, ?Await]
+            sequence(memberExpression, optionalChain),
+            // CallExpression[?Yield, ?Await] OptionalChain[?Yield, ?Await]
+            sequence(callExpression, optionalChain),
+        ),
         // OptionalExpression[?Yield, ?Await] OptionalChain[?Yield, ?Await]
-        sequence(optionalExpression, optionalChain),
+        optionalChain,
     )(stream);
 }
 
 function leftHandSideExpression(stream: TokenStream) : void {
-    firstOf(
+    longestOf(
         // NewExpression[?Yield, ?Await]
         newExpression,
         //CallExpression[?Yield, ?Await]
@@ -280,10 +310,27 @@ function regexpLiteral(reg : RegExp, errorString = undefined) : TokenParser {
 }
 
 function numericLiteral(stream : TokenStream) : void {
+    const numberRule = function(stream : TokenStream) {
+        const numberPart = optional(regexpLiteral(/^[0-9\_]+([eE][\-\+][0-9\_]+)?n?$/))(stream);
+        // TODO exponentioal part is odd here
+        let fraction = undefined
+        const dot = optional(symbol(Symbols.dot))(stream); //TODO no spaces
+        if (dot) {
+            fraction = optional(regexpLiteral(/^[0-9\_]+([eE][\-\+][0-9\_]+)?n?$/))(stream);
+        }
+
+        if (numberPart === undefined && fraction === undefined) {
+            throw new Error("it's not a number");
+        }
+
+        return numberPart + dot + fraction;
+    }
+
     firstOf(
         // DecimalLiteral
         // DecimalBigIntegerLiteral
-        regexpLiteral(/^[0-9\_]*(\.[0-9\_]*)?([eE][\-\+][0-9\_]+)?n?$/), //TODO fix, the point symbol will not work
+        numberRule,
+
         // NonDecimalIntegerLiteral[+Sep]
         // NonDecimalIntegerLiteral[+Sep] BigIntLiteralSuffix
         nonDecimalIntergerLiteral,
@@ -421,7 +468,6 @@ export function sequence(...parsers: TokenParser[]) : TokenParser {
     };
 }
 
-// TODO deprecated
 export function longestOf(...parsers: TokenParser[]) : TokenParser {
     return function(stream: TokenStream) : ReturnType<TokenParser> {
         let errors = [];
@@ -477,7 +523,10 @@ export function optional(parser: TokenParser) : TokenParser {
         const parserStream = new CommonChildTokenStream(stream);
 
         try {
-            const result = parser(parserStream);
+            let result = parser(parserStream);
+            if (result === undefined) {
+                result = parserStream.rawValue();
+            }
             parserStream.flush();
             return result;
         } catch(e) {
@@ -609,7 +658,13 @@ function roundBracket(stream: TokenStream) : string {
 }
 
 function parseCssSelector(stream: TokenStream) : string {
-    const selector = optional(anyLiteral)(stream); //TODO it also maybe an *
+    const selector = sequence(
+        optional(oneOfSymbols(Symbols.dot, Symbols.numero)),
+        //TODO css use dot without spaces
+        anyLiteral,
+    )(stream).join(''); //TODO it also maybe an *
+    // TODO rewrite with leftHand
+
     const attribure = optional(squareBracket)(stream);
 
     if (selector || attribure) {
@@ -734,41 +789,41 @@ function unaryExpression(stream : TokenStream) : void {
 }
 
 function bitwiseOrExpression(stream : TokenStream) : void {
-    firstOf(
+    leftHandRecurciveRule(
         // BitwiseXORExpression[?In, ?Yield, ?Await]
         bitwiseXorExpression,
         // BitwiseORExpression[?In, ?Yield, ?Await] | BitwiseXORExpression[?In, ?Yield, ?Await]
-        sequence(bitwiseOrExpression, symbol(Symbols.bitwiseOr), bitwiseXorExpression)
+        sequence(symbol(Symbols.bitwiseOr), bitwiseXorExpression)
     )(stream);
 }
 
 function bitwiseXorExpression(stream : TokenStream) : void {
-    firstOf(
+    leftHandRecurciveRule(
         // BitwiseANDExpression[?In, ?Yield, ?Await]
         bitwiseAndExpression,
         // BitwiseXORExpression[?In, ?Yield, ?Await] ^ BitwiseANDExpression[?In, ?Yield, ?Await]
-        sequence(bitwiseXorExpression, symbol(Symbols.bitwiseXor), bitwiseAndExpression)
+        sequence(symbol(Symbols.bitwiseXor), bitwiseAndExpression)
     )(stream);
 }
 
 function bitwiseAndExpression(stream : TokenStream) : void {
-    firstOf(
+    leftHandRecurciveRule(
         // EqualityExpression[?In, ?Yield, ?Await]
         equalityExpression,
         // BitwiseANDExpression[?In, ?Yield, ?Await] & EqualityExpression[?In, ?Yield, ?Await]
-        sequence(bitwiseAndExpression, symbol(Symbols.bitwiseAnd), equalityExpression)
+        sequence(symbol(Symbols.bitwiseAnd), equalityExpression)
     )(stream);
 }
 
 function equalityExpression(stream : TokenStream) : void {
-    firstOf(
+    leftHandRecurciveRule(
         // RelationalExpression[?In, ?Yield, ?Await]
         relationalExpression,
         // EqualityExpression[?In, ?Yield, ?Await] == RelationalExpression[?In, ?Yield, ?Await]
         // EqualityExpression[?In, ?Yield, ?Await] != RelationalExpression[?In, ?Yield, ?Await]
         // EqualityExpression[?In, ?Yield, ?Await] === RelationalExpression[?In, ?Yield, ?Await]
         // EqualityExpression[?In, ?Yield, ?Await] !== RelationalExpression[?In, ?Yield, ?Await]
-        sequence(equalityExpression, oneOfSymbols(
+        sequence(oneOfSymbols(
             Symbols.eq2,
             Symbols.notEq2,
             Symbols.eq3,
@@ -778,34 +833,36 @@ function equalityExpression(stream : TokenStream) : void {
 }
 
 function relationalExpression(stream : TokenStream) : void {
-    firstOf(
+    leftHandRecurciveRule(
         // ShiftExpression[?Yield, ?Await]
         shiftExpression,
-        // RelationalExpression[?In, ?Yield, ?Await] < ShiftExpression[?Yield, ?Await]
-        // RelationalExpression[?In, ?Yield, ?Await] > ShiftExpression[?Yield, ?Await]
-        // RelationalExpression[?In, ?Yield, ?Await] <= ShiftExpression[?Yield, ?Await]
-        // RelationalExpression[?In, ?Yield, ?Await] >= ShiftExpression[?Yield, ?Await]
-        sequence(relationalExpression, oneOfSymbols(
-            Symbols.lt,
-            Symbols.gt,
-            Symbols.lteq,
-            Symbols.gteq,
-        ), shiftExpression),
-        // RelationalExpression[?In, ?Yield, ?Await] instanceof ShiftExpression[?Yield, ?Await]
-        sequence(relationalExpression, keyword(Keywords._instanceof), shiftExpression),
-        // [+In] RelationalExpression[+In, ?Yield, ?Await] in ShiftExpression[?Yield, ?Await]
-        sequence(relationalExpression, keyword(Keywords._in), shiftExpression),
+        firstOf(
+            // RelationalExpression[?In, ?Yield, ?Await] < ShiftExpression[?Yield, ?Await]
+            // RelationalExpression[?In, ?Yield, ?Await] > ShiftExpression[?Yield, ?Await]
+            // RelationalExpression[?In, ?Yield, ?Await] <= ShiftExpression[?Yield, ?Await]
+            // RelationalExpression[?In, ?Yield, ?Await] >= ShiftExpression[?Yield, ?Await]
+            sequence(oneOfSymbols(
+                Symbols.lt,
+                Symbols.gt,
+                Symbols.lteq,
+                Symbols.gteq,
+            ), shiftExpression),
+            // RelationalExpression[?In, ?Yield, ?Await] instanceof ShiftExpression[?Yield, ?Await]
+            sequence(keyword(Keywords._instanceof), shiftExpression),
+            // [+In] RelationalExpression[+In, ?Yield, ?Await] in ShiftExpression[?Yield, ?Await]
+            sequence(keyword(Keywords._in), shiftExpression),
+        )
     )(stream);
 }
 
 function shiftExpression(stream : TokenStream) : void {
-    firstOf(
+    leftHandRecurciveRule(
         // AdditiveExpression[?Yield, ?Await]
         additiveExpression,
         // ShiftExpression[?Yield, ?Await] << AdditiveExpression[?Yield, ?Await]
         // ShiftExpression[?Yield, ?Await] >> AdditiveExpression[?Yield, ?Await]
         // ShiftExpression[?Yield, ?Await] >>> AdditiveExpression[?Yield, ?Await]
-        sequence(shiftExpression, oneOfSymbols(
+        sequence(oneOfSymbols(
             Symbols.shiftLeft,
             Symbols.shiftRight,
             Symbols.shiftRight3,
@@ -814,12 +871,12 @@ function shiftExpression(stream : TokenStream) : void {
 }
 
 function additiveExpression(stream : TokenStream) : void {
-    firstOf(
+    leftHandRecurciveRule(
         // MultiplicativeExpression[?Yield, ?Await]
         multiplicativeExpression,
         // AdditiveExpression[?Yield, ?Await] + MultiplicativeExpression[?Yield, ?Await]
         // AdditiveExpression[?Yield, ?Await] - MultiplicativeExpression[?Yield, ?Await]
-        sequence(additiveExpression, oneOfSymbols(
+        sequence(oneOfSymbols(
             Symbols.plus,
             Symbols.minus,
         ), multiplicativeExpression)
@@ -827,13 +884,13 @@ function additiveExpression(stream : TokenStream) : void {
 }
 
 function multiplicativeExpression(stream : TokenStream) : void {
-    firstOf(
+    leftHandRecurciveRule(
         // ExponentiationExpression[?Yield, ?Await]
         exponentiationExpression,
         // MultiplicativeExpression[?Yield, ?Await] MultiplicativeOperator ExponentiationExpression[?Yield, ?Await]
         // MultiplicativeOperator : one of
         // * / %
-        sequence(multiplicativeExpression, oneOfSymbols(
+        sequence(oneOfSymbols(
             Symbols.astersik,
             Symbols.div,
             Symbols.percent,
@@ -842,48 +899,39 @@ function multiplicativeExpression(stream : TokenStream) : void {
 }
 
 function exponentiationExpression(stream : TokenStream) : void {
-    firstOf(
+    leftHandRecurciveRule(
         // UnaryExpression[?Yield, ?Await]
         unaryExpression,
         // UpdateExpression[?Yield, ?Await] ** ExponentiationExpression[?Yield, ?Await]
-        sequence(updateExpression, symbol(Symbols.astersik2), exponentiationExpression),
+        sequence(symbol(Symbols.astersik2), exponentiationExpression),
     )(stream);
 }
 
-
-
 function logicalAndExpression(stream : TokenStream) : void {
-    firstOf(
+    leftHandRecurciveRule(
         // BitwiseORExpression[?In, ?Yield, ?Await]
         bitwiseOrExpression,
         // LogicalANDExpression[?In, ?Yield, ?Await] && BitwiseORExpression[?In, ?Yield, ?Await]
-        sequence(logicalAndExpression, symbol(Symbols.and), bitwiseOrExpression),
+        sequence(symbol(Symbols.and), bitwiseOrExpression),
     )(stream);
 }
 
-
 function logicalOrExpression(stream : TokenStream) : void {
-    firstOf(
+    leftHandRecurciveRule(
         // LogicalANDExpression[?In, ?Yield, ?Await]
         logicalAndExpression,
         // LogicalORExpression[?In, ?Yield, ?Await] || LogicalANDExpression[?In, ?Yield, ?Await]
-        sequence(logicalOrExpression, symbol(Symbols.or), logicalAndExpression)
+        sequence(symbol(Symbols.or), logicalAndExpression)
     )(stream);
 }
 
 function coalesceExpression(stream : TokenStream) : void {
-    firstOf(
+    return leftHandRecurciveRule(
         // CoalesceExpressionHead[?In, ?Yield, ?Await] ?? BitwiseORExpression[?In, ?Yield, ?Await]
-        sequence(coalesceExpressionHead, symbol(Symbols.coalesce), bitwiseOrExpression)
-    )(stream);
-}
-
-function coalesceExpressionHead(stream : TokenStream) : void {
-    firstOf(
-        // CoalesceExpression[?In, ?Yield, ?Await]
-        coalesceExpression,
-        // BitwiseORExpression[?In, ?Yield, ?Await]
-        bitwiseOrExpression
+        bitwiseOrExpression,
+        sequence(
+            symbol(Symbols.coalesce), bitwiseOrExpression
+        )
     )(stream);
 }
 
@@ -897,16 +945,13 @@ function shortCircuitExpression(stream : TokenStream) : void {
 }
 
 function conditionalExpression(stream : TokenStream) : void {
-    longestOf(
-        shortCircuitExpression,
-        sequence(
-            shortCircuitExpression,
-            symbol(Symbols.question),
-            assignmentExpression,
-            symbol(Symbols.colon),
-            assignmentExpression,
-        )
-    )(stream);
+    shortCircuitExpression(stream);
+    optional(sequence(
+        symbol(Symbols.question),
+        assignmentExpression,
+        symbol(Symbols.colon),
+        assignmentExpression,
+    ))(stream);
 }
 
 function yeildExpression(stream : TokenStream) : void {
@@ -950,7 +995,7 @@ function assignmentExpression(stream : TokenStream) : void {
         // LeftHandSideExpression[?Yield, ?Await] ??= AssignmentExpression[?In, ?Yield, ?Await]
         sequence(
             leftHandSideExpression,
-            oneOfSymbols(Symbols.eq, ...AssigmentOperator, Symbols.eq2and, Symbols.eq2or, Symbols.eq2questions),
+            oneOfSymbols(Symbols.eq, ...AssignmentOperator, Symbols.eq2and, Symbols.eq2or, Symbols.eq2questions),
             assignmentExpression,
         )
     )(stream);
