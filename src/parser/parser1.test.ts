@@ -3,7 +3,7 @@ import { StringInputStream } from "stream/input";
 import { Symbols } from "symbols";
 import { makeLiteralToken, makeSpaceToken, makeStringToken } from "token/helpers";
 import { lexer } from "./lexer";
-import { ArrayTokenStream, commaList, CommonChildTokenStream, firstOf, keyword, longestOf, oneOfSymbols, optional, parse, parseCssBlock, parseCssImport, parseJsImport, parseJsVarStatement, sequence, symbol, TokenStream } from "./parser1";
+import { ArrayTokenStream, commaList, CommonChildTokenStream, firstOf, keyword, longestOf, oneOfSymbols, optional, parse, parseCssBlock, parseCssImport, parseJsImport, parseJsStatement, parseJsVarStatement, sequence, symbol, TokenStream } from "./parser1";
 import { NodeType } from "./syntaxTree";
 
 describe('parser', () => {
@@ -91,6 +91,20 @@ describe('parsers', () => {
             expect(stream.rawValue()).toEqual('let fn = (test) => {}');
             expect(stream.currentPosition()).toEqual(11);
         });
+    });
+});
+
+describe('parseJsStatement', () => {
+    test('for loop', () => {
+        const script = `
+for (var i = 0; i < 10; i++) {
+   chopok(i);
+}`;
+        const tokens = lexer(new StringInputStream(script))
+        const stream = new CommonChildTokenStream(new ArrayTokenStream(tokens));
+        const node = parseJsStatement(stream);
+        expect(node).toEqual({"type": NodeType.JsStatement});
+        expect(stream.rawValue()).toEqual(script);
     });
 
 });
@@ -301,6 +315,4 @@ describe('parserUtils', () => {
         expect(node).toEqual('**');
         expect(stream.currentPosition()).toEqual(1);
     });
-
-
 });

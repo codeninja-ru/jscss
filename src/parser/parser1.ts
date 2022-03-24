@@ -1,7 +1,7 @@
 import { Keyword, Keywords, ReservedWords } from "keywords";
 import { SyntaxSymbol, Symbols, AssignmentOperator } from "symbols";
 import { Token, TokenType } from "token";
-import { CommentNode, CssBlockNode, CssImportNode, JsImportNamespace, JsImportNode, NodeType, SyntaxTree, VarDeclaraionNode } from "./syntaxTree";
+import { CommentNode, CssBlockNode, CssImportNode, JsImportNamespace, JsImportNode, Node, NodeType, SyntaxTree, VarDeclaraionNode } from "./syntaxTree";
 
 export interface TokenStream {
     take(idx: number): Token;
@@ -96,9 +96,9 @@ export class CommonChildTokenStream implements ChildTokenStream {
 
 type TokenParser = (stream: TokenStream) => any;
 
-export function keyword(keyword: Keyword): TokenParser {
+export function keyword(keyword: Keyword, peekFn : TokenStreamReader = peekAndSkipSpaces): TokenParser {
     return function(stream: TokenStream) : string {
-        const token = peekAndSkipSpaces(stream);
+        const token = peekFn(stream);
         if (token.type == TokenType.Literal && keyword.equal(token)) {
             return token.value;
         } else {
@@ -298,13 +298,13 @@ function nonDecimalIntergerLiteral(stream : TokenStream) : void {
     )(stream);
 }
 
-function regexpLiteral(reg : RegExp, errorString = undefined) : TokenParser {
+function regexpLiteral(reg : RegExp, peekFn : TokenStreamReader = peekAndSkipSpaces) : TokenParser {
     return function(stream : TokenStream) : ReturnType<TokenParser> {
         const token = peekAndSkipSpaces(stream);
         if (token.type == TokenType.Literal && reg.test(token.value)) {
             return token.value;
         } else {
-            throw new Error(errorString ? errorString : `expected literal matched to regexp ${reg}, but token was given ${token}`);
+            throw new Error(`expected literal matched to regexp ${reg}, but token was given ${token}`);
         }
     };
 }
@@ -312,11 +312,16 @@ function regexpLiteral(reg : RegExp, errorString = undefined) : TokenParser {
 function numericLiteral(stream : TokenStream) : void {
     const numberRule = function(stream : TokenStream) {
         const numberPart = optional(regexpLiteral(/^[0-9\_]+([eE][\-\+][0-9\_]+)?n?$/))(stream);
-        // TODO exponentioal part is odd here
-        let fraction = undefined
-        const dot = optional(symbol(Symbols.dot))(stream); //TODO no spaces
+        // NOTE: exponentioal part is odd here
+        let fraction = undefined;
+        let dot;
+        if (numberPart === undefined) {
+            dot = symbol(Symbols.dot, peekAndSkipSpaces)(stream);
+        } else {
+            dot = optional(symbol(Symbols.dot, peekNextToken))(stream);
+        }
         if (dot) {
-            fraction = optional(regexpLiteral(/^[0-9\_]+([eE][\-\+][0-9\_]+)?n?$/))(stream);
+            fraction = optional(regexpLiteral(/^[0-9\_]+([eE][\-\+][0-9\_]+)?n?$/, peekNextToken))(stream);
         }
 
         if (numberPart === undefined && fraction === undefined) {
@@ -408,9 +413,9 @@ function anyLiteral(stream: TokenStream) : string {
     throw new Error(`any literal is expteced, but ${JSON.stringify(token)} was given`);
 }
 
-export function symbol(ch: SyntaxSymbol) : TokenParser {
+export function symbol(ch: SyntaxSymbol, peekFn : TokenStreamReader = peekAndSkipSpaces) : TokenParser {
     return function(stream: TokenStream) : string {
-        const token = peekAndSkipSpaces(stream);
+        const token = peekFn(stream);
         if (token.type == TokenType.Symbol && ch.equal(token)) {
             return token.value;
         }
@@ -462,7 +467,7 @@ export function sequence(...parsers: TokenParser[]) : TokenParser {
             result.push(parser(parserStream));
         }
 
-        // TODO flush is might be not needed if we call sequence inside firstOf/or
+        // TODO flush might be not needed if we call sequence inside firstOf/or
         parserStream.flush();
         return result;
     };
@@ -621,6 +626,7 @@ function parseComment(stream: TokenStream) : CommentNode {
     }
 }
 
+type TokenStreamReader = (stream: TokenStream) => Token;
 function peekAndSkipSpaces(stream: TokenStream) : Token {
     while (!stream.eof()) {
         const token = stream.next();
@@ -635,6 +641,34 @@ function peekAndSkipSpaces(stream: TokenStream) : Token {
     }
 
     throw new Error(`end of the file`);
+};
+
+function peekNoLineTerminatorHere(stream: TokenStream) : Token {
+    while (!stream.eof()) {
+        const token = stream.next();
+        switch(token.type) {
+            case TokenType.Comment:
+            case TokenType.MultilineComment:
+                continue;
+            case TokenType.Space:
+                if (token.value.indexOf("\n") != -1) {
+                    throw new Error('no line terminator here')
+                }
+                continue;
+            default:
+                return token;
+        }
+    }
+
+    throw new Error(`end of the file`);
+};
+
+function peekNextToken(stream : TokenStream) : Token {
+    if (stream.eof()) {
+        throw new Error(`end of the file`);
+    }
+
+    return stream.next();
 }
 
 function squareBracket(stream: TokenStream) : string {
@@ -1008,6 +1042,214 @@ export function parseJsVarStatement(stream: TokenStream) : VarDeclaraionNode {
 
     return {
         type: NodeType.VarDeclaration,
+    }
+}
+
+function cannotStartWith(...parsers : TokenParser[]) : TokenParser {
+    return function(stream : TokenStream) : ReturnType<TokenParser> {
+        for (const parser of parsers) {
+            const stubStream = new CommonChildTokenStream(stream);
+            try {
+                const token = parser(stubStream);
+                throw new Error(`cannot start with ${token}`)
+            } catch (e) {
+                // it's ok
+            }
+        }
+    };
+}
+
+function expression(stream : TokenStream) : void {
+    // Expression :
+    // AssignmentExpression[?In, ?Yield, ?Await]
+    // Expression[?In, ?Yield, ?Await] , AssignmentExpression[?In, ?Yield, ?Await]
+
+    commaList(assignmentExpression)(stream);
+}
+
+function expressionStatement(stream : TokenStream) : void {
+    //[lookahead ∉ { {, function, async [no LineTerminator here] function, class, let [ }] Expression[+In, ?Yield, ?Await] ;
+    cannotStartWith(
+        anyBlock,
+        keyword(Keywords._function),
+        sequence(keyword(Keywords._async), keyword(Keywords._function, peekNoLineTerminatorHere)),
+        keyword(Keywords._class),
+        keyword(Keywords._let),
+        roundBracket,
+    )(stream);
+
+    expression(stream);
+
+    symbol(Symbols.semicolon)(stream);
+}
+
+function ifStatement(stream : TokenStream) : void {
+    keyword(Keywords._if)(stream);
+    roundBracket(stream);
+    parseJsStatement(stream);
+    const hasElse = optional(keyword(Keywords._else))(stream);
+    if (hasElse) {
+        parseJsStatement(stream);
+    }
+}
+
+function breakableStatement(stream : TokenStream) : void {
+    longestOf(
+        //TODO
+        // IterationStatement[?Yield, ?Await, ?Return]
+        firstOf(
+            // DoWhileStatement[?Yield, ?Await, ?Return]
+            sequence(
+                keyword(Keywords._do),
+                parseJsStatement,
+                keyword(Keywords._while),
+                roundBracket,
+                symbol(Symbols.semicolon),
+            ),
+            // WhileStatement[?Yield, ?Await, ?Return]
+            sequence(
+                keyword(Keywords._while),
+                roundBracket,
+                parseJsStatement,
+            ),
+            // ForStatement[?Yield, ?Await, ?Return]
+            // ForInOfStatement[?Yield, ?Await, ?Return]
+            sequence(
+                keyword(Keywords._for),
+                optional(keyword(Keywords._await)),
+                roundBracket,
+                parseJsStatement,
+            ),
+        ),
+        // SwitchStatement[?Yield, ?Await, ?Return]
+        sequence(keyword(Keywords._case), anyBlock)
+    )(stream);
+}
+
+function noLineTerminatorHere(stream : TokenStream) : void {
+    while(!stream.eof()) {
+        const token = stream.takeNext();
+        if (token.type == TokenType.Space) {
+            if (token.value.indexOf('\n') != -1) {
+                stream.next();
+                continue;
+            } else {
+                throw new Error('no line terminator here');
+            }
+        } else {
+            break;
+        }
+    }
+}
+
+function continueStatement(stream : TokenStream) : void {
+    keyword(Keywords._continue)(stream);
+    optional(
+        sequence(
+            noLineTerminatorHere,
+            bindingIdentifier,
+        )
+    )(stream),
+    symbol(Symbols.semicolon)(stream);
+}
+
+function breakStatement(stream : TokenStream) : void {
+    keyword(Keywords._break),
+    optional(
+        sequence(
+            noLineTerminatorHere,
+            bindingIdentifier,
+        )
+    )(stream),
+    symbol(Symbols.semicolon)(stream);
+}
+
+function returnStatement(stream : TokenStream) : void {
+    keyword(Keywords._return)(stream);
+    optional(
+        sequence(
+            noLineTerminatorHere,
+            expression,
+        )
+    )(stream),
+    symbol(Symbols.semicolon)(stream);
+}
+
+function withStatement(stream : TokenStream) : void {
+    keyword(Keywords._with)(stream);
+    roundBracket(stream);
+    parseJsStatement(stream);
+}
+
+function lableStatement(stream : TokenStream) : void {
+    // LabelIdentifier[?Yield, ?Await] : LabelledItem[?Yield, ?Await, ?Return]
+    //
+    bindingIdentifier(stream);
+    symbol(Symbols.colon)(stream);
+    firstOf(
+        // Statement[?Yield, ?Await, ?Return]
+        parseJsStatement,
+        // FunctionDeclaration[?Yield, ?Await, ~Default]
+        functionExpression,
+    )(stream);
+}
+
+function throwStatement(stream : TokenStream) : void {
+    keyword(Keywords._throw)(stream);
+    noLineTerminatorHere(stream);
+    expression(stream);
+    symbol(Symbols.semicolon);
+}
+
+function tryStatement(stream : TokenStream) : void {
+    keyword(Keywords._try)(stream);
+    anyBlock(stream);
+    optional(sequence(
+        keyword(Keywords._catch),
+        optional(roundBracket),
+        anyBlock,
+    ))(stream);
+    optional(sequence(
+        keyword(Keywords._finally),
+        optional(roundBracket),
+        anyBlock,
+    ))(stream);
+}
+
+export function parseJsStatement(stream : TokenStream) : Node {
+    firstOf(
+        // BlockStatement[?Yield, ?Await, ?Return]
+        anyBlock,
+        // VariableStatement[?Yield, ?Await]
+        variableDeclaration, //NOTE declaration includes let and const
+        // EmptyStatement
+        symbol(Symbols.semicolon),
+        // ExpressionStatement[?Yield, ?Await]
+        expressionStatement,
+        // IfStatement[?Yield, ?Await, ?Return]
+        ifStatement,
+        // BreakableStatement[?Yield, ?Await, ?Return]
+        breakableStatement,
+        // ContinueStatement[?Yield, ?Await]
+        continueStatement,
+        // BreakStatement[?Yield, ?Await]
+        breakStatement,
+        // [+Return]ReturnStatement[?Yield, ?Await]
+        returnStatement,
+        // WithStatement[?Yield, ?Await, ?Return]
+        withStatement,
+        // LabelledStatement[?Yield, ?Await, ?Return]
+        lableStatement,
+        // ThrowStatement[?Yield, ?Await]
+        throwStatement,
+        // TryStatement[?Yield, ?Await, ?Return]
+        tryStatement,
+        // DebuggerStatement
+        sequence(keyword(Keywords._debugger), symbol(Symbols.semicolon))
+    )(stream);
+
+    return {
+        type: NodeType.JsStatement,
     }
 }
 

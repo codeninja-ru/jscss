@@ -23,6 +23,7 @@ export const Symbols = {
     dot: new SyntaxSymbol('.'),
     question: new SyntaxSymbol('?'),
     colon: new SyntaxSymbol(':'),
+    semicolon: new SyntaxSymbol(';'),
     div: new SyntaxSymbol('/'),
     percent: new SyntaxSymbol('%'),
     numero: new SyntaxSymbol('#'),

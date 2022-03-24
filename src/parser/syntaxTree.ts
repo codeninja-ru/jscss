@@ -5,6 +5,7 @@ export enum NodeType {
     Comment,
     Raw,
     VarDeclaration,
+    JsStatement,
     CssBlock,
     CssImport,
 }
