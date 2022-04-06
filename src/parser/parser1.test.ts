@@ -3,7 +3,7 @@ import { StringInputStream } from "stream/input";
 import { Symbols } from "symbols";
 import { makeLiteralToken, makeSpaceToken, makeStringToken } from "token/helpers";
 import { lexer } from "./lexer";
-import { ArrayTokenStream, commaList, CommonChildTokenStream, firstOf, keyword, longestOf, oneOfSymbols, optional, parse, parseCssBlock, parseCssImport, parseJsImport, parseJsStatement, parseJsVarStatement, sequence, symbol, TokenStream } from "./parser1";
+import { ArrayTokenStream, commaList, CommonChildTokenStream, firstOf, keyword, longestOf, oneOfSymbols, optional, parse, parseCssBlock, parseCssImport, parseJsImport, parseJsScript, parseJsStatement, parseJsVarStatement, sequence, symbol, TokenStream } from "./parser1";
 import { NodeType } from "./syntaxTree";
 
 describe('parser', () => {
@@ -105,6 +105,52 @@ for (var i = 0; i < 10; i++) {
         const node = parseJsStatement(stream);
         expect(node).toEqual({"type": NodeType.JsStatement});
         expect(stream.rawValue()).toEqual(script);
+    });
+
+    test('console.log()', () => {
+        const script = `console.log(1)`;
+        const tokens = lexer(new StringInputStream(script))
+        const stream = new CommonChildTokenStream(new ArrayTokenStream(tokens));
+        const node = parseJsStatement(stream);
+        expect(node).toEqual({"type": NodeType.JsStatement});
+        expect(stream.rawValue()).toEqual(script);
+    });
+
+});
+
+describe('parseJsScript()', () => {
+    test('simple js script', () => {
+        const script = `
+for (var i = 0; i < 10; i++) {
+   chopok(i);
+console.log('hi');
+} function test(t) { alert(t); } if (1) alert(1); else alert(2);
+`;
+        const tokens = lexer(new StringInputStream(script))
+        const stream = new CommonChildTokenStream(new ArrayTokenStream(tokens));
+        const node = parseJsScript(stream);
+        expect(node).toEqual({"type": NodeType.JsScript});
+        expect(stream.rawValue()).toEqual(script);
+    });
+
+    test('if statement', () => {
+        const script = `
+if (1) alert(1); else alert(2);
+`;
+        const tokens = lexer(new StringInputStream(script))
+        const stream = new CommonChildTokenStream(new ArrayTokenStream(tokens));
+        const node = parseJsScript(stream);
+        expect(stream.rawValue()).toEqual(script);
+        expect(node).toEqual({"type": NodeType.JsScript});
+    });
+
+    fit('parse a simple expression', () => {
+        const script = `alert(1);`;
+        const tokens = lexer(new StringInputStream(script))
+        const stream = new CommonChildTokenStream(new ArrayTokenStream(tokens));
+        const node = parseJsScript(stream);
+        expect(stream.rawValue()).toEqual(script);
+        expect(node).toEqual({"type": NodeType.JsScript});
     });
 
 });

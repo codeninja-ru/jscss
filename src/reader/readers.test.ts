@@ -1,6 +1,6 @@
 import { StringInputStream } from "stream/input";
 import { TokenType } from "token";
-import { makeBracketsReader, makeRegExpReader, makeSemicolonRader, makeStringReader, makeTemplateStringReader } from "./readers";
+import { makeBracketsReader, makeRegExpReader, makeStringReader, makeTemplateStringReader } from "./readers";
 
 describe('makeStringReader()', () => {
     test('correct strings', () => {
@@ -38,16 +38,6 @@ describe('makeTemplateStringReader', () => {
     test('simple template', () => {
         const stream = new StringInputStream('`hello, \\`${userName}\\`` rest of the stream');
         expect(makeTemplateStringReader(stream)()).toEqual({ type: TokenType.TemplateString, value: '`hello, \\`${userName}\\``' });
-    });
-
-});
-
-describe('makeSemicolonReader', () => {
-    test('semicolon', () => {
-        expect(makeSemicolonRader(new StringInputStream(';rest'))()).toEqual({
-            type: TokenType.Semicolon,
-            value: ';',
-        });
     });
 
 });

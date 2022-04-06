@@ -1,5 +1,5 @@
 import { BlockInputStream, InputStream, KindOfSpaceInputStream, LiteralInputStream, readToEnd } from "stream/input";
-import { Token, TokenType, SpaceToken, SemicolonToken, CommaToken } from "token";
+import { CommaToken, SpaceToken, Token, TokenType } from "token";
 
 export type Reader = () => Token | null;
 
@@ -128,10 +128,10 @@ function takeWhile(stream: InputStream, fn: (ch: string) => boolean): string {
     return result;
 }
 
-export function makeSymboleReader(stream: InputStream): Reader {
+export function makeSymbolReader(stream: InputStream): Reader {
     return function() {
         var symbolsFn = (ch: string) => {
-            return ".=<>-*+&|^@".includes(ch);
+            return ".=<>-*+&|^@;".includes(ch);
         };
 
         var result = takeWhile(stream, symbolsFn);
@@ -202,26 +202,13 @@ export function makeTemplateStringReader(stream: InputStream): Reader {
     };
 }
 
-export function makeSemicolonRader(stream: InputStream): Reader {
-    return function() {
-        if (stream.peek() == ';') {
-            return {
-                type: TokenType.Semicolon,
-                value: stream.next(),
-            } as SemicolonToken;
-        }
-
-        return null;
-    }
-}
-
 /**
  * does nothing, throws an error
  * @param stream 
  * @param error error message
  * @returns 
  */
-export function makeUnexpectedSymbolReader(stream: InputStream): Reader {
+export function makeUnexpectedReader(stream: InputStream): Reader {
     return function() {
         var ch = stream.peek();
         throw stream.formatError(`unexpected symbol '${ch}' code: ${ch.charCodeAt(0)}`);

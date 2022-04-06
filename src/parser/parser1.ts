@@ -1,7 +1,7 @@
 import { Keyword, Keywords, ReservedWords } from "keywords";
-import { SyntaxSymbol, Symbols, AssignmentOperator } from "symbols";
+import { AssignmentOperator, Symbols, SyntaxSymbol } from "symbols";
 import { Token, TokenType } from "token";
-import { CommentNode, CssBlockNode, CssImportNode, JsImportNamespace, JsImportNode, Node, NodeType, SyntaxTree, VarDeclaraionNode } from "./syntaxTree";
+import { CommentNode, CssBlockNode, CssImportNode, IfNode, JsImportNamespace, JsImportNode, JsScriptNode, LazyNode, MultiNode, Node, NodeType, SyntaxTree, VarDeclaraionNode } from "./syntaxTree";
 
 export interface TokenStream {
     take(idx: number): Token;
@@ -116,11 +116,15 @@ function comma(stream: TokenStream) : string {
     throw new Error(`, is expected, but ${JSON.stringify(token)} was given`);
 }
 
-function functionExpression(stream: TokenStream) : void {
+function functionExpression(stream: TokenStream) : Node {
     keyword(Keywords._function)(stream);
     optional(identifier)(stream);
     roundBracket(stream);
     anyBlock(stream);
+
+    return {
+        type: NodeType.FunctionExpression
+    };
 }
 
 function superPropery(stream: TokenStream) : void {
@@ -355,8 +359,20 @@ function literal(stream : TokenStream) : void {
     )(stream);
 }
 
+function generatorExpression(stream : TokenStream) : void {
+    return sequence(keyword(Keywords._function), symbol(Symbols.astersik), identifier, roundBracket, anyBlock)(stream);
+}
+
+function asyncFunctionExpression(stream : TokenStream) : void {
+    return sequence(keyword(Keywords._async), keyword(Keywords._function), identifier, roundBracket, anyBlock)(stream);
+}
+
+function asyncGeneratorExpression(stream : TokenStream) : void {
+    return sequence(keyword(Keywords._async), keyword(Keywords._function), symbol(Symbols.dot), identifier, roundBracket, anyBlock)(stream);
+}
+
 function primaryExpression(stream: TokenStream) : void {
-    firstOf(
+    longestOf(
         // this
         keyword(Keywords._this),
         // IdentifierReference[?Yield, ?Await]
@@ -372,11 +388,11 @@ function primaryExpression(stream: TokenStream) : void {
         // ClassExpression[?Yield, ?Await]
         classExpression,
         // GeneratorExpression
-        sequence(keyword(Keywords._function), symbol(Symbols.astersik), identifier, roundBracket, anyBlock),
+        generatorExpression,
         // AsyncFunctionExpression
-        sequence(keyword(Keywords._async), keyword(Keywords._function), identifier, roundBracket, anyBlock),
+        asyncFunctionExpression,
         // AsyncGeneratorExpression
-        sequence(keyword(Keywords._async), keyword(Keywords._function), symbol(Symbols.dot), identifier, roundBracket, anyBlock),
+        asyncGeneratorExpression,
         // RegularExpressionLiteral
         regularExpressionLiteral,
         // TemplateLiteral[?Yield, ?Await, ~Tagged]
@@ -386,10 +402,13 @@ function primaryExpression(stream: TokenStream) : void {
     )(stream);
 }
 
-function anyBlock(stream: TokenStream) : string {
+function anyBlock(stream: TokenStream) : LazyNode {
     const token = peekAndSkipSpaces(stream);
     if (token.type == TokenType.Block || token.type == TokenType.LazyBlock) {
-        return token.value;
+        return {
+            type: NodeType.Lazy,
+            value: token.value,
+        };
     }
 
     throw new Error(`block is expected, but ${JSON.stringify(token)} was given`);
@@ -420,7 +439,7 @@ export function symbol(ch: SyntaxSymbol, peekFn : TokenStreamReader = peekAndSki
             return token.value;
         }
 
-        throw new Error(`${ch} is expected, but ${JSON.stringify(token)} was given`);
+        throw new Error(`${ch.name} is expected, but ${JSON.stringify(token)} was given`);
     };
 }
 
@@ -671,21 +690,27 @@ function peekNextToken(stream : TokenStream) : Token {
     return stream.next();
 }
 
-function squareBracket(stream: TokenStream) : string {
+function squareBracket(stream: TokenStream) : LazyNode {
     const token = peekAndSkipSpaces(stream);
 
     if (token.type == TokenType.SquareBrackets) {
-        return token.value;
+        return {
+            type: NodeType.Lazy,
+            value: token.value,
+        };
     }
 
     throw new Error('squere brackets were expected, but ${JSON.stringify(token) was given}');
 }
 
-function roundBracket(stream: TokenStream) : string {
+function roundBracket(stream: TokenStream) : LazyNode {
     const token = peekAndSkipSpaces(stream);
 
     if (token.type == TokenType.RoundBrackets) {
-        return token.value;
+        return {
+            type: NodeType.Lazy,
+            value: token.value,
+        };
     }
 
     throw new Error('round brackets were expected, but ${JSON.stringify(token) was given}');
@@ -752,8 +777,8 @@ function identifier(stream: TokenStream) : string {
     return bindingIdentifier;
 }
 
-function bindingIdentifier(stream : TokenStream) : void {
-    firstOf(
+function bindingIdentifier(stream : TokenStream) : Node {
+    return firstOf(
         // Identifier
         identifier,
         // yield
@@ -763,8 +788,8 @@ function bindingIdentifier(stream : TokenStream) : void {
     )(stream);
 }
 
-function variableDeclaration(stream : TokenStream) : void {
-    firstOf(
+function variableDeclaration(stream : TokenStream) : VarDeclaraionNode {
+    const name = firstOf(
         // BindingIdentifier
         bindingIdentifier,
         // BindingPatten
@@ -775,8 +800,15 @@ function variableDeclaration(stream : TokenStream) : void {
     // Initializer
     const eq = optional(symbol(Symbols.eq))(stream);
 
+    let value;
     if (eq) {
-       assignmentExpression(stream);
+       value = assignmentExpression(stream);
+    }
+
+    return {
+        type: NodeType.VarDeclaration,
+        name,
+        value,
     }
 }
 
@@ -942,7 +974,7 @@ function exponentiationExpression(stream : TokenStream) : void {
 }
 
 function logicalAndExpression(stream : TokenStream) : void {
-    leftHandRecurciveRule(
+    return leftHandRecurciveRule(
         // BitwiseORExpression[?In, ?Yield, ?Await]
         bitwiseOrExpression,
         // LogicalANDExpression[?In, ?Yield, ?Await] && BitwiseORExpression[?In, ?Yield, ?Await]
@@ -951,7 +983,7 @@ function logicalAndExpression(stream : TokenStream) : void {
 }
 
 function logicalOrExpression(stream : TokenStream) : void {
-    leftHandRecurciveRule(
+    return leftHandRecurciveRule(
         // LogicalANDExpression[?In, ?Yield, ?Await]
         logicalAndExpression,
         // LogicalORExpression[?In, ?Yield, ?Await] || LogicalANDExpression[?In, ?Yield, ?Await]
@@ -970,7 +1002,7 @@ function coalesceExpression(stream : TokenStream) : void {
 }
 
 function shortCircuitExpression(stream : TokenStream) : void {
-    firstOf(
+    return firstOf(
         // LogicalORExpression[?In, ?Yield, ?Await]
         logicalOrExpression,
         // CoalesceExpression[?In, ?Yield, ?Await]
@@ -1012,8 +1044,8 @@ function asyncArrowFunction(stream : TokenStream) : void {
     firstOf(anyBlock, assignmentExpression)(stream);
 }
 
-function assignmentExpression(stream : TokenStream) : void {
-    longestOf(
+function assignmentExpression(stream : TokenStream) : Node {
+    return longestOf(
         // ConditionalExpression[?In, ?Yield, ?Await]
         conditionalExpression,
         // [+Yield]YieldExpression[?In, ?Await]
@@ -1035,13 +1067,15 @@ function assignmentExpression(stream : TokenStream) : void {
     )(stream);
 }
 
-export function parseJsVarStatement(stream: TokenStream) : VarDeclaraionNode {
+export function parseJsVarStatement(stream: TokenStream) : MultiNode {
     firstOf(keyword(Keywords._var), keyword(Keywords._const), keyword(Keywords._let))(stream);
 
-    commaList(variableDeclaration)(stream);
+    const items = commaList(variableDeclaration)(stream);
 
+    optional(symbol(Symbols.semicolon))(stream);
     return {
-        type: NodeType.VarDeclaration,
+        type: NodeType.VarStatement,
+        items,
     }
 }
 
@@ -1059,15 +1093,18 @@ function cannotStartWith(...parsers : TokenParser[]) : TokenParser {
     };
 }
 
-function expression(stream : TokenStream) : void {
+export function expression(stream : TokenStream) : MultiNode {
     // Expression :
     // AssignmentExpression[?In, ?Yield, ?Await]
     // Expression[?In, ?Yield, ?Await] , AssignmentExpression[?In, ?Yield, ?Await]
 
-    commaList(assignmentExpression)(stream);
+    return {
+        type: NodeType.Expression,
+        items: commaList(assignmentExpression)(stream)
+    };
 }
 
-function expressionStatement(stream : TokenStream) : void {
+function expressionStatement(stream : TokenStream) : Node {
     //[lookahead ∉ { {, function, async [no LineTerminator here] function, class, let [ }] Expression[+In, ?Yield, ?Await] ;
     cannotStartWith(
         anyBlock,
@@ -1078,18 +1115,28 @@ function expressionStatement(stream : TokenStream) : void {
         roundBracket,
     )(stream);
 
-    expression(stream);
+    const expr = expression(stream);
 
     symbol(Symbols.semicolon)(stream);
+
+    return expr;
 }
 
-function ifStatement(stream : TokenStream) : void {
+function ifStatement(stream : TokenStream) : IfNode {
     keyword(Keywords._if)(stream);
-    roundBracket(stream);
-    parseJsStatement(stream);
+    const cond = roundBracket(stream);
+    const left = parseJsStatement(stream);
     const hasElse = optional(keyword(Keywords._else))(stream);
+    let right;
     if (hasElse) {
-        parseJsStatement(stream);
+        right = parseJsStatement(stream);
+    }
+
+    return {
+        type: NodeType.IfStatement,
+        cond: cond,
+        left: left,
+        right: right,
     }
 }
 
@@ -1217,11 +1264,11 @@ function tryStatement(stream : TokenStream) : void {
 }
 
 export function parseJsStatement(stream : TokenStream) : Node {
-    firstOf(
+    return longestOf(
         // BlockStatement[?Yield, ?Await, ?Return]
         anyBlock,
         // VariableStatement[?Yield, ?Await]
-        variableDeclaration, //NOTE declaration includes let and const
+        parseJsVarStatement,
         // EmptyStatement
         symbol(Symbols.semicolon),
         // ExpressionStatement[?Yield, ?Await]
@@ -1252,6 +1299,58 @@ export function parseJsStatement(stream : TokenStream) : Node {
         type: NodeType.JsStatement,
     }
 }
+
+function hoistableDeclaration(stream : TokenStream) : void {
+    firstOf(
+        //NOTE I replaced declation by expression
+        // FunctionDeclaration[?Yield, ?Await, ?Default]
+        functionExpression,
+        // GeneratorDeclaration[?Yield, ?Await, ?Default]
+        generatorExpression,
+        // AsyncFunctionDeclaration[?Yield, ?Await, ?Default]
+        asyncFunctionExpression,
+        // AsyncGeneratorDeclaration[?Yield, ?Await, ?Default]
+        asyncGeneratorExpression,
+    )(stream);
+}
+
+
+function declaration(stream : TokenStream) : void {
+    firstOf(
+        // HoistableDeclaration[?Yield, ?Await, ~Default]
+        hoistableDeclaration,
+        // ClassDeclaration[?Yield, ?Await, ~Default]
+        classExpression,
+        // LexicalDeclaration[+In, ?Yield, ?Await]
+        variableDeclaration,
+    )(stream);
+}
+
+
+function statementListItem(stream : TokenStream) : void {
+    return longestOf(
+        parseJsStatement,
+        declaration,
+    )(stream);
+}
+
+
+export function parseJsScript(stream : TokenStream) : JsScriptNode {
+    let results = [] as Node[];
+    while(!stream.eof()) {
+        const result = optional(statementListItem)(stream);
+        if (result === undefined) {
+            break;
+        }
+        results.push(result);
+    }
+
+    return {
+        type: NodeType.JsScript,
+        items: results,
+    }
+}
+
 
 const TOP_LEVEL_PARSERS = [
     parseComment,
