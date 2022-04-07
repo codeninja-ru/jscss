@@ -1,4 +1,4 @@
-import { CommaToken, LazyBlockToken, LiteralToken, RoundBracketsToken, SemicolonToken, SpaceToken, SquareBracketsToken, StringToken, SymbolToken, TokenType } from "./Token";
+import { CommaToken, LazyBlockToken, LiteralToken, RoundBracketsToken, SpaceToken, SquareBracketsToken, StringToken, SymbolToken, TokenType } from "./Token";
 
 export function makeLiteralToken(value: string): LiteralToken  {
     return {
@@ -19,13 +19,6 @@ export function makeSpaceToken(value: string = ' '): SpaceToken {
         type: TokenType.Space,
         value,
     };
-}
-
-export function makeSemicolonToken(): SemicolonToken {
-    return {
-        type: TokenType.Semicolon,
-        value: ';',
-    }
 }
 
 export function makeLazyBlockToken(value: string): LazyBlockToken {

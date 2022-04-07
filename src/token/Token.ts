@@ -4,7 +4,7 @@ export type Token = SpaceToken | CommentToken |
     CommaToken | StringToken |
     SymbolToken | TemplateStringToken |
     RoundBracketsToken | SquareBracketsToken |
-    SemicolonToken | SlashBracketsToken;
+    SlashBracketsToken;
 
 export enum TokenType {
     Space,
@@ -20,7 +20,6 @@ export enum TokenType {
     RoundBrackets,
     SquareBrackets,
     SlashBrackets,
-    Semicolon,
 }
 
 interface BaseToken {
@@ -90,11 +89,5 @@ export interface SquareBracketsToken extends BaseToken {
 
 export interface SlashBracketsToken extends BaseToken {
     type: TokenType.SlashBrackets,
-    readonly value: string;
-}
-
-
-export interface SemicolonToken extends BaseToken {
-    type: TokenType.Semicolon;
     readonly value: string;
 }

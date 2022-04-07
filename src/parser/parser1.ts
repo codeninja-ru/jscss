@@ -94,7 +94,7 @@ export class CommonChildTokenStream implements ChildTokenStream {
     }
 }
 
-type TokenParser = (stream: TokenStream) => any;
+export type TokenParser = (stream: TokenStream) => any;
 
 export function keyword(keyword: Keyword, peekFn : TokenStreamReader = peekAndSkipSpaces): TokenParser {
     return function(stream: TokenStream) : string {
@@ -690,14 +690,11 @@ function peekNextToken(stream : TokenStream) : Token {
     return stream.next();
 }
 
-function squareBracket(stream: TokenStream) : LazyNode {
+function squareBracket(stream: TokenStream) : string {
     const token = peekAndSkipSpaces(stream);
 
     if (token.type == TokenType.SquareBrackets) {
-        return {
-            type: NodeType.Lazy,
-            value: token.value,
-        };
+        return token.value;
     }
 
     throw new Error('squere brackets were expected, but ${JSON.stringify(token) was given}');
@@ -800,15 +797,13 @@ function variableDeclaration(stream : TokenStream) : VarDeclaraionNode {
     // Initializer
     const eq = optional(symbol(Symbols.eq))(stream);
 
-    let value;
     if (eq) {
-       value = assignmentExpression(stream);
+       assignmentExpression(stream);
     }
 
     return {
         type: NodeType.VarDeclaration,
         name,
-        value,
     }
 }
 
@@ -1117,7 +1112,8 @@ function expressionStatement(stream : TokenStream) : Node {
 
     const expr = expression(stream);
 
-    symbol(Symbols.semicolon)(stream);
+    // NOTE here it's optional, but in the spec it's mandatory
+    optional(symbol(Symbols.semicolon))(stream);
 
     return expr;
 }
@@ -1264,7 +1260,7 @@ function tryStatement(stream : TokenStream) : void {
 }
 
 export function parseJsStatement(stream : TokenStream) : Node {
-    return longestOf(
+    longestOf(
         // BlockStatement[?Yield, ?Await, ?Return]
         anyBlock,
         // VariableStatement[?Yield, ?Await]

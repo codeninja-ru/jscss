@@ -1,6 +1,6 @@
 import { StringInputStream } from "stream/input";
 import { TokenType } from "token";
-import { makeCommaToken, makeLazyBlockToken, makeLiteralToken, makeRoundBracketsToken, makeSemicolonToken, makeSpaceToken, makeSquareBracketsToken, makeStringToken, makeSymbolToken } from "token/helpers";
+import { makeCommaToken, makeLazyBlockToken, makeLiteralToken, makeRoundBracketsToken, makeSpaceToken, makeSquareBracketsToken, makeStringToken, makeSymbolToken } from "token/helpers";
 import { lexer } from "./lexer";
 
 const impr = makeLiteralToken('import');
@@ -9,7 +9,7 @@ const spn = makeSpaceToken("\n");
 const spnspn = makeSpaceToken("\n\n");
 const lodash = makeLiteralToken('_');
 const frm = makeLiteralToken('from');
-const smcl = makeSemicolonToken();
+const smcl = makeSymbolToken(';');
 const comma = makeCommaToken();
 
 
@@ -60,7 +60,7 @@ describe('parseStream()', () => {
             frm,
             sp,
             makeStringToken("'lodash'"),
-            makeSemicolonToken(),
+            smcl,
             spn,
         ]);
     });
