@@ -1,120 +1,11 @@
-import { Keyword, Keywords, ReservedWords } from "keywords";
-import { AssignmentOperator, Symbols, SyntaxSymbol } from "symbols";
-import { Token, TokenType } from "token";
-import { CommentNode, CssBlockNode, CssImportNode, IfNode, JsImportNamespace, JsImportNode, JsScriptNode, LazyNode, MultiNode, Node, NodeType, SyntaxTree, VarDeclaraionNode } from "./syntaxTree";
-
-export interface TokenStream {
-    take(idx: number): Token;
-    takeNext(): Token;
-    next(): Token;
-    movePosition(newPos: number): void;
-    eof(): boolean;
-    currentPosition(): number;
-};
-
-interface ChildTokenStream extends TokenStream {
-    flush() : void;
-    rawValue() : string;
-}
-
-export class ArrayTokenStream implements TokenStream {
-    private pos : number = 0;
-    constructor(private tokens : Token[]) {
-    }
-
-    take(idx: number): Token {
-        return this.tokens[idx];
-    }
-
-    next(): Token {
-        return this.tokens[this.pos++];
-    }
-
-    takeNext() : Token {
-        return this.tokens[this.pos + 1];
-    }
-
-    movePosition(newPos: number): void {
-        this.pos = newPos;
-    }
-
-    currentPosition() : number {
-        return this.pos;
-    }
-
-    eof(): boolean {
-        return this.tokens.length <= this.pos;
-    }
-}
-
-
-export class CommonChildTokenStream implements ChildTokenStream {
-    private pos : number;
-    private startPos : number;
-    constructor(private parent: TokenStream) {
-        this.pos = parent.currentPosition();
-        this.startPos = parent.currentPosition();
-    }
-
-    next() : Token {
-        return this.take(this.pos++);
-    }
-
-    take(idx: number) : Token {
-        return this.parent.take(idx);
-    }
-
-    takeNext() : Token {
-        return this.parent.take(this.pos + 1);
-    }
-
-    movePosition(idx: number) {
-        this.pos = idx;
-    }
-
-    eof() : boolean {
-        return this.parent.eof();
-    }
-
-    rawValue() : string {
-        let result = '';
-        for (let i = this.startPos; i < this.pos; i++) {
-            result += this.parent.take(i).value;
-        }
-
-        return result;
-    }
-
-    flush() {
-        this.parent.movePosition(this.pos);
-    }
-
-    currentPosition() {
-        return this.pos;
-    }
-}
-
-export type TokenParser = (stream: TokenStream) => any;
-
-export function keyword(keyword: Keyword, peekFn : TokenStreamReader = peekAndSkipSpaces): TokenParser {
-    return function(stream: TokenStream) : string {
-        const token = peekFn(stream);
-        if (token.type == TokenType.Literal && keyword.equal(token)) {
-            return token.value;
-        } else {
-            throw new Error(`keyword ${keyword.name} is expected, but ${JSON.stringify(token)} was given`);
-        }
-    };
-}
-
-function comma(stream: TokenStream) : string {
-    const token = peekAndSkipSpaces(stream);
-    if (token.type == TokenType.Comma) {
-        return token.value;
-    }
-
-    throw new Error(`, is expected, but ${JSON.stringify(token)} was given`);
-}
+import { Keywords, ReservedWords } from "keywords";
+import { AssignmentOperator, Symbols } from "symbols";
+import { TokenType } from "token";
+import { anyBlock, anyLiteral, anyString, anyTempateStringLiteral, commaList, firstOf, keyword, leftHandRecurciveRule, longestOf, noLineTerminatorHere, oneOfSymbols, optional, roundBracket, sequence, squareBracket, symbol } from "./parserUtils";
+import { CommentNode, CssBlockNode, CssImportNode, IfNode, JsImportNamespace, JsImportNode, JsScriptNode, MultiNode, Node, NodeType, SyntaxTree, VarDeclaraionNode } from "./syntaxTree";
+import { TokenParser } from "./tokenParser";
+import { CommonChildTokenStream, TokenStream } from "./tokenStream";
+import { peekAndSkipSpaces, peekNextToken, peekNoLineTerminatorHere, TokenStreamReader } from "./tokenStreamReader";
 
 function functionExpression(stream: TokenStream) : Node {
     keyword(Keywords._function)(stream);
@@ -143,22 +34,6 @@ function metaPropery(stream: TokenStream) : void {
         // ImportMeta
         sequence(keyword(Keywords._import), symbol(Symbols.dot), keyword(Keywords._meta)),
     )(stream);
-}
-
-function leftHandRecurciveRule(leftRule : TokenParser, rightRule : TokenParser) : TokenParser {
-    const optionalRight = optional(rightRule);
-    return flushed(function(stream : TokenStream) : ReturnType<TokenParser> {
-        let result = leftRule(stream);
-        do {
-            let right = optionalRight(stream);
-            if (right) {
-                result += right;
-            } else {
-                break;
-            }
-        } while(true);
-        return result;
-    });
 }
 
 function memberExpression(stream: TokenStream) : void {
@@ -278,6 +153,17 @@ function classExpression(stream: TokenStream) : void {
     anyBlock(stream);
 }
 
+function nonDecimalIntergerLiteral(stream : TokenStream) : void {
+    firstOf(
+        // BinaryIntegerLiteral[?Sep]
+        regexpLiteral(/^0[bB][0-1\_]+n?$/),
+        // OctalIntegerLiteral[?Sep]
+        regexpLiteral(/^0[oO][0-7\_]+n?$/),
+        // HexIntegerLiteral[?Sep]
+        regexpLiteral(/^0[xX][0-9a-fA-F\_]+n?$/),
+    )(stream);
+}
+
 function regularExpressionLiteral(stream: TokenStream) : string {
     const body = regularExpressionBody(stream);
     if (!stream.eof()) {
@@ -291,20 +177,9 @@ function regularExpressionLiteral(stream: TokenStream) : string {
     return body;
 }
 
-function nonDecimalIntergerLiteral(stream : TokenStream) : void {
-    firstOf(
-        // BinaryIntegerLiteral[?Sep]
-        regexpLiteral(/^0[bB][0-1\_]+n?$/),
-        // OctalIntegerLiteral[?Sep]
-        regexpLiteral(/^0[oO][0-7\_]+n?$/),
-        // HexIntegerLiteral[?Sep]
-        regexpLiteral(/^0[xX][0-9a-fA-F\_]+n?$/),
-    )(stream);
-}
-
 function regexpLiteral(reg : RegExp, peekFn : TokenStreamReader = peekAndSkipSpaces) : TokenParser {
     return function(stream : TokenStream) : ReturnType<TokenParser> {
-        const token = peekAndSkipSpaces(stream);
+        const token = peekFn(stream);
         if (token.type == TokenType.Literal && reg.test(token.value)) {
             return token.value;
         } else {
@@ -402,18 +277,6 @@ function primaryExpression(stream: TokenStream) : void {
     )(stream);
 }
 
-function anyBlock(stream: TokenStream) : LazyNode {
-    const token = peekAndSkipSpaces(stream);
-    if (token.type == TokenType.Block || token.type == TokenType.LazyBlock) {
-        return {
-            type: NodeType.Lazy,
-            value: token.value,
-        };
-    }
-
-    throw new Error(`block is expected, but ${JSON.stringify(token)} was given`);
-}
-
 function regularExpressionBody(stream: TokenStream) : string {
     const token = peekAndSkipSpaces(stream);
     if (token.type == TokenType.SlashBrackets) {
@@ -421,142 +284,6 @@ function regularExpressionBody(stream: TokenStream) : string {
     }
 
     throw new Error(`regular expression is expteced, but ${JSON.stringify(token)} was given`);
-}
-
-function anyLiteral(stream: TokenStream) : string {
-    const token = peekAndSkipSpaces(stream);
-    if (token.type == TokenType.Literal) {
-        return token.value;
-    }
-
-    throw new Error(`any literal is expteced, but ${JSON.stringify(token)} was given`);
-}
-
-export function symbol(ch: SyntaxSymbol, peekFn : TokenStreamReader = peekAndSkipSpaces) : TokenParser {
-    return function(stream: TokenStream) : string {
-        const token = peekFn(stream);
-        if (token.type == TokenType.Symbol && ch.equal(token)) {
-            return token.value;
-        }
-
-        throw new Error(`${ch.name} is expected, but ${JSON.stringify(token)} was given`);
-    };
-}
-
-interface SymbolArray {
-    [idx: string] : true;
-}
-export function oneOfSymbols(...chars: SyntaxSymbol[]) : TokenParser {
-    let symbols = {} as SymbolArray;
-    chars.forEach((ch) => symbols[ch.name] = true);
-
-    return function(stream: TokenStream) : string {
-        const token = peekAndSkipSpaces(stream);
-        if (token.type == TokenType.Symbol && token.value in symbols) {
-            return token.value;
-        }
-
-        throw new Error(`one of ${chars} is expected, but ${JSON.stringify(token)} was given`);
-    };
-}
-
-function anyString(stream: TokenStream) : string {
-    const token = peekAndSkipSpaces(stream);
-    if (token.type == TokenType.String) {
-        return token.value;
-    }
-
-    throw new Error(`string literal is expected, byt ${JSON.stringify(token)} was given`);
-}
-
-function anyTempateStringLiteral(stream: TokenStream) : string {
-    const token = peekAndSkipSpaces(stream);
-    if (token.type == TokenType.TemplateString) {
-        return token.value;
-    }
-
-    throw new Error(`template string literal is expected, byt ${JSON.stringify(token)} was given`);
-}
-
-export function sequence(...parsers: TokenParser[]) : TokenParser {
-    return function(stream: TokenStream) : ReturnType<TokenParser> {
-        const parserStream = new CommonChildTokenStream(stream);
-        const result = [];
-        for (const parser of parsers) {
-            result.push(parser(parserStream));
-        }
-
-        // TODO flush might be not needed if we call sequence inside firstOf/or
-        parserStream.flush();
-        return result;
-    };
-}
-
-export function longestOf(...parsers: TokenParser[]) : TokenParser {
-    return function(stream: TokenStream) : ReturnType<TokenParser> {
-        let errors = [];
-        let result = [] as Array<[ReturnType<TokenParser>, ChildTokenStream]>;
-        for (let i = 0; i < parsers.length; i++) {
-            try {
-                let parserStream = new CommonChildTokenStream(stream);
-                result.push([parsers[i](parserStream), parserStream]);
-            } catch( e ) {
-                errors.push(e);
-            }
-        }
-
-        if (result.length == 0) {
-            throw new Error(`none of the parsers worked`)
-        } else {
-            const [longestResult, longestStream] = result.reduce((prevValue, curValue) => {
-                if (curValue[1].currentPosition() > prevValue[1].currentPosition()) {
-                    return curValue;
-                } else {
-                    return prevValue;
-                }
-
-            });
-
-            longestStream.flush();
-            return longestResult;
-        }
-    };
-}
-
-// TODO reanme to or
-export function firstOf(...parsers: TokenParser[]) : TokenParser {
-    return function(stream: TokenStream) : any[] {
-        let errors = [];
-        for (let i = 0; i < parsers.length; i++) {
-            try {
-                let parserStream = new CommonChildTokenStream(stream);
-                const result = parsers[i](parserStream);
-                parserStream.flush();
-                return result;
-            } catch( e ) {
-                errors.push(e);
-            }
-        }
-
-        throw new Error(`none of the parsers worked`)
-    };
-}
-
-export function optional(parser: TokenParser) : TokenParser {
-    return function(stream: TokenStream) : any {
-        const parserStream = new CommonChildTokenStream(stream);
-
-        try {
-            let result = parser(parserStream);
-            if (result === undefined) {
-                result = parserStream.rawValue();
-            }
-            parserStream.flush();
-            return result;
-        } catch(e) {
-            return undefined;
-        }
-    };
 }
 
 // varName as varAlias
@@ -574,49 +301,9 @@ function importNamespace(stream: TokenStream) : JsImportNamespace {
     }
 }
 
-export function commaList(parser: TokenParser) : TokenParser {
-    return list(parser, comma);
-}
-
-function flushed(parser : TokenParser) : TokenParser {
-    return function(stream: TokenStream) : ReturnType<TokenParser> {
-        const childStream = new CommonChildTokenStream(stream);
-        let result;
-        try {
-            result = parser(childStream);
-            childStream.flush();
-        } catch(e) {
-            throw e;
-        }
-
-        return result;
-    };
-}
-
-function list(parser: TokenParser, separator: TokenParser) : TokenParser {
-    return function(stream: TokenStream) : ReturnType<TokenParser> {
-        let result = [];
-        do {
-            try {
-                result.push(flushed(parser)(stream));
-            } catch(e) {
-                break;
-            }
-        } while( optional(separator)(stream) );
-
-        if (result.length == 0) {
-            throw new Error(`list of elements is exptected`);
-        }
-
-        return result;
-    };
-}
-
 export function parseJsImport(stream: TokenStream) : JsImportNode {
     keyword(Keywords._import)(stream);
-    const importClause = commaList((stream) => {
-        return firstOf(anyBlock, importNamespace)(stream);
-    })(stream);
+    const importClause = commaList(firstOf(anyBlock, importNamespace))(stream);
 
     keyword(Keywords._from)(stream);
 
@@ -643,74 +330,6 @@ function parseComment(stream: TokenStream) : CommentNode {
         default:
             throw new Error('comment is expected');
     }
-}
-
-type TokenStreamReader = (stream: TokenStream) => Token;
-function peekAndSkipSpaces(stream: TokenStream) : Token {
-    while (!stream.eof()) {
-        const token = stream.next();
-        switch(token.type) {
-            case TokenType.Space:
-            case TokenType.Comment:
-            case TokenType.MultilineComment:
-                continue;
-            default:
-                return token;
-        }
-    }
-
-    throw new Error(`end of the file`);
-};
-
-function peekNoLineTerminatorHere(stream: TokenStream) : Token {
-    while (!stream.eof()) {
-        const token = stream.next();
-        switch(token.type) {
-            case TokenType.Comment:
-            case TokenType.MultilineComment:
-                continue;
-            case TokenType.Space:
-                if (token.value.indexOf("\n") != -1) {
-                    throw new Error('no line terminator here')
-                }
-                continue;
-            default:
-                return token;
-        }
-    }
-
-    throw new Error(`end of the file`);
-};
-
-function peekNextToken(stream : TokenStream) : Token {
-    if (stream.eof()) {
-        throw new Error(`end of the file`);
-    }
-
-    return stream.next();
-}
-
-function squareBracket(stream: TokenStream) : string {
-    const token = peekAndSkipSpaces(stream);
-
-    if (token.type == TokenType.SquareBrackets) {
-        return token.value;
-    }
-
-    throw new Error('squere brackets were expected, but ${JSON.stringify(token) was given}');
-}
-
-function roundBracket(stream: TokenStream) : LazyNode {
-    const token = peekAndSkipSpaces(stream);
-
-    if (token.type == TokenType.RoundBrackets) {
-        return {
-            type: NodeType.Lazy,
-            value: token.value,
-        };
-    }
-
-    throw new Error('round brackets were expected, but ${JSON.stringify(token) was given}');
 }
 
 function parseCssSelector(stream: TokenStream) : string {
@@ -1169,21 +788,6 @@ function breakableStatement(stream : TokenStream) : void {
     )(stream);
 }
 
-function noLineTerminatorHere(stream : TokenStream) : void {
-    while(!stream.eof()) {
-        const token = stream.takeNext();
-        if (token.type == TokenType.Space) {
-            if (token.value.indexOf('\n') != -1) {
-                stream.next();
-                continue;
-            } else {
-                throw new Error('no line terminator here');
-            }
-        } else {
-            break;
-        }
-    }
-}
 
 function continueStatement(stream : TokenStream) : void {
     keyword(Keywords._continue)(stream);
@@ -1321,7 +925,6 @@ function declaration(stream : TokenStream) : void {
         variableDeclaration,
     )(stream);
 }
-
 
 function statementListItem(stream : TokenStream) : void {
     return longestOf(
