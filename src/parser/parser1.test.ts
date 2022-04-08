@@ -16,7 +16,7 @@ function testParserFunction(fn : TokenParser , script : string) : Node {
 }
 
 describe('parser', () => {
-    test('import parsing', () => {
+    it('import parsing', () => {
         const tokens = [
             makeLiteralToken('import'),
             makeSpaceToken(),
@@ -35,14 +35,14 @@ describe('parser', () => {
 });
 
 describe('parsers', () => {
-    test('parseJsImport()', () => {
+    it('parseJsImport()', () => {
         const tokens = lexer(new StringInputStream(`import * as test from 'somelib';`))
 
         const node = parseJsImport(new ArrayTokenStream(tokens));
         expect(node).toEqual({"path": "'somelib'", "type": NodeType.JsImport, "vars": [{"varAlias": "test", "varName": "*"}]});
     });
 
-    test('parseCssBlock()', () => {
+    it('parseCssBlock()', () => {
         const tokens = lexer(new StringInputStream(`a:hover, #id.class div, .class1 > .class2, input[type=button] { color: #555; }`));
 
         const node = parseCssBlock(new ArrayTokenStream(tokens));
@@ -52,7 +52,7 @@ describe('parsers', () => {
         }, "selectors": ["a:hover", "#id.class div", ".class1 > .class2", "input[type=button]"], "type": NodeType.CssBlock});
     });
 
-    test('parseCssImport()', () => {
+    it('parseCssImport()', () => {
         const tokens = lexer(new StringInputStream(`@import 'style.css';`));
 
         const node = parseCssImport(new ArrayTokenStream(tokens));
@@ -60,7 +60,7 @@ describe('parsers', () => {
     });
 
     describe('parseJsVarStatement()', () => {
-        test('simple', () => {
+        it('simple', () => {
             const tokens = lexer(new StringInputStream(`const a = 1;`))
             const stream = new ArrayTokenStream(tokens);
             const node = parseJsVarStatement(stream);
@@ -70,7 +70,7 @@ describe('parsers', () => {
             expect(stream.currentPosition()).toEqual(8);
         });
 
-        test('function', () => {
+        it('function', () => {
             const tokens = lexer(new StringInputStream(`let fn = function(test) {};`))
             const stream = new CommonChildTokenStream(new ArrayTokenStream(tokens));
             const node = parseJsVarStatement(stream);
@@ -81,7 +81,7 @@ describe('parsers', () => {
             expect(stream.currentPosition()).toEqual(11);
         });
 
-        test('destracting', () => {
+        it('destracting', () => {
             const tokens = lexer(new StringInputStream(`let {a, b} = fn(kek)[1].test`))
             const stream = new CommonChildTokenStream(new ArrayTokenStream(tokens));
             const node = parseJsVarStatement(stream);
@@ -92,7 +92,7 @@ describe('parsers', () => {
             expect(stream.currentPosition()).toEqual(11);
         });
 
-        test('multilple assignment', () => {
+        it('multilple assignment', () => {
             const tokens = lexer(new StringInputStream(`var t1 = 1, t2 = .2, t3 = 3;`))
             const stream = new CommonChildTokenStream(new ArrayTokenStream(tokens));
             const node = parseJsVarStatement(stream);
@@ -105,7 +105,7 @@ describe('parsers', () => {
             expect(stream.currentPosition()).toEqual(23);
         });
 
-        test('arrow function', () => {
+        it('arrow function', () => {
             const tokens = lexer(new StringInputStream(`let fn = (test) => {};`))
             const stream = new CommonChildTokenStream(new ArrayTokenStream(tokens));
             const node = parseJsVarStatement(stream);
@@ -117,7 +117,7 @@ describe('parsers', () => {
 });
 
 describe('parseJsStatement', () => {
-    test('for loop', () => {
+    it('for loop', () => {
         const script = `
 for (var i = 0; i < 10; i++) {
    chopok(i);
@@ -129,7 +129,7 @@ for (var i = 0; i < 10; i++) {
         expect(node).toEqual({"type": NodeType.JsStatement});
     });
 
-    test('console.log()', () => {
+    it('console.log()', () => {
         const script = `console.log(1)`;
         const node = testParserFunction(parseJsStatement, script);
         expect(node.type).toEqual(NodeType.JsStatement);
@@ -138,11 +138,11 @@ for (var i = 0; i < 10; i++) {
 });
 
 describe('parseJsScript()', () => {
-    test('simple js script', () => {
+    it('simple js script', () => {
         const script = `for (var i = 0; i < 10; i++) {
    chopok(i);
 console.log('hi');
-} function test(t) { alert(t); } if (1) alert(1); else alert(2);`;
+} function it(t) { alert(t); } if (1) alert(1); else alert(2);`;
         const node = testParserFunction(parseJsScript, script);
         expect(node.type).toEqual(NodeType.JsScript);
     });
@@ -165,20 +165,20 @@ console.log('hi');
 
 //TODO move parseUtils to a seprate file
 describe('parserUtils', () => {
-    test('keyword', () => {
+    it('keyword', () => {
         const tokens = lexer(new StringInputStream(`var`))
         const node = keyword(Keywords._var)(new ArrayTokenStream(tokens));
         expect(node).toEqual('var');
     });
 
     describe('commaList()', () => {
-        test('correct simple rule', () => {
+        it('correct simple rule', () => {
             const tokens = lexer(new StringInputStream(`var, var , var var`))
             const node = commaList(keyword(Keywords._var))(new ArrayTokenStream(tokens));
             expect(node).toEqual(['var', 'var', 'var']);
         });
 
-        test('complex rule', () => {
+        it('complex rule', () => {
             const tokens = lexer(new StringInputStream(`var if, var if async, var var`))
             const stream = new ArrayTokenStream(tokens);
             const node = commaList(
@@ -198,14 +198,14 @@ describe('parserUtils', () => {
             expect(stream.currentPosition()).toEqual(11);
         });
 
-        test('invalid simple rule', () => {
+        it('invalid simple rule', () => {
             const tokens = lexer(new StringInputStream(`xvar, var  var`))
             expect(() => {
                 commaList(keyword(Keywords._var))(new ArrayTokenStream(tokens));
             }).toThrowError("list of elements is exptected");
         });
 
-        test('interapted in the middle', () => {
+        it('interapted in the middle', () => {
             const tokens = lexer(new StringInputStream(`var, xvar, var`))
             const stream = new ArrayTokenStream(tokens);
             const node = commaList(keyword(Keywords._var))(stream);
@@ -215,7 +215,7 @@ describe('parserUtils', () => {
     });
 
     describe('firstOf()', () => {
-        test('correct simple rules', () => {
+        it('correct simple rules', () => {
             const tokens = lexer(new StringInputStream(`var var`))
             const stream = new ArrayTokenStream(tokens);
             const node = firstOf(
@@ -227,7 +227,7 @@ describe('parserUtils', () => {
             expect(stream.currentPosition()).toEqual(1);
         });
 
-        test('none of rules is matched', () => {
+        it('none of rules is matched', () => {
             const tokens = lexer(new StringInputStream(`instanceof`))
             const stream = new ArrayTokenStream(tokens);
             expect(() => {
@@ -243,7 +243,7 @@ describe('parserUtils', () => {
     });
 
     describe('longestOf', () => {
-        test('correct simple rules', () => {
+        it('correct simple rules', () => {
             const tokens = lexer(new StringInputStream(`var var`))
             const stream = new ArrayTokenStream(tokens);
             const node = longestOf(
@@ -255,7 +255,7 @@ describe('parserUtils', () => {
             expect(stream.currentPosition()).toEqual(1);
         });
 
-        test('longest sequence', () => {
+        it('longest sequence', () => {
             const tokens = lexer(new StringInputStream(`if async var`))
             const stream = new ArrayTokenStream(tokens);
             const node = longestOf(
@@ -278,7 +278,7 @@ describe('parserUtils', () => {
             expect(stream.currentPosition()).toEqual(5);
         });
 
-        test('recursive sequence', () => {
+        it('recursive sequence', () => {
             const tokens = lexer(new StringInputStream(`if + if + if + var`))
             const stream = new ArrayTokenStream(tokens);
 
@@ -298,7 +298,7 @@ describe('parserUtils', () => {
             expect(stream.currentPosition()).toEqual(9);
         });
 
-        test('none of rules is matched', () => {
+        it('none of rules is matched', () => {
             const tokens = lexer(new StringInputStream(`instanceof`))
             const stream = new ArrayTokenStream(tokens);
             expect(() => {
@@ -313,7 +313,7 @@ describe('parserUtils', () => {
     });
 
     describe('optional()', () => {
-        test('value is present', () => {
+        it('value is present', () => {
             const tokens = lexer(new StringInputStream(`var`))
             const stream = new ArrayTokenStream(tokens);
             const node = optional(keyword(Keywords._var))(stream);
@@ -321,7 +321,7 @@ describe('parserUtils', () => {
             expect(stream.currentPosition()).toEqual(1);
         });
 
-        test('value is not present', () => {
+        it('value is not present', () => {
             const tokens = lexer(new StringInputStream(`no var`))
             const stream = new ArrayTokenStream(tokens);
             const node = optional(keyword(Keywords._var))(stream);
@@ -331,7 +331,7 @@ describe('parserUtils', () => {
     });
 
     describe('sequence()', () => {
-        test('correct sequence', () => {
+        it('correct sequence', () => {
             const tokens = lexer(new StringInputStream(`var if const no`))
             const stream = new ArrayTokenStream(tokens);
             const node = sequence(keyword(Keywords._var), keyword(Keywords._if), keyword(Keywords._const))(stream);
@@ -339,7 +339,7 @@ describe('parserUtils', () => {
             expect(stream.currentPosition()).toEqual(5);
         });
 
-        test('invalid sequence', () => {
+        it('invalid sequence', () => {
             const tokens = lexer(new StringInputStream(`var no if const`))
             const stream = new ArrayTokenStream(tokens);
             expect(() => {
@@ -349,7 +349,7 @@ describe('parserUtils', () => {
         });
     });
 
-    test('symbol()', () => {
+    it('symbol()', () => {
         const tokens = lexer(new StringInputStream(`**`))
         const stream = new ArrayTokenStream(tokens);
         const node = symbol(Symbols.astersik2)(stream);
@@ -357,7 +357,7 @@ describe('parserUtils', () => {
         expect(stream.currentPosition()).toEqual(1);
     });
 
-    test('oneOfSymbols()', () => {
+    it('oneOfSymbols()', () => {
         const tokens = lexer(new StringInputStream(`**`))
         const stream = new ArrayTokenStream(tokens);
         const node = oneOfSymbols(
