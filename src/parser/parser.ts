@@ -1,11 +1,11 @@
 import { Keywords, ReservedWords } from "keywords";
 import { AssignmentOperator, Symbols } from "symbols";
 import { TokenType } from "token";
-import { anyBlock, anyLiteral, anyString, anyTempateStringLiteral, commaList, firstOf, keyword, leftHandRecurciveRule, longestOf, noLineTerminatorHere, oneOfSymbols, optional, roundBracket, sequence, squareBracket, symbol } from "./parserUtils";
-import { CommentNode, CssBlockNode, CssImportNode, IfNode, JsImportNamespace, JsImportNode, JsScriptNode, MultiNode, Node, NodeType, SyntaxTree, VarDeclaraionNode } from "./syntaxTree";
+import { anyBlock, anyLiteral, anyString, anyTempateStringLiteral, commaList, firstOf, keyword, leftHandRecurciveRule, longestOf, loop, noLineTerminatorHere, oneOfSymbols, optional, regexpLiteral, roundBracket, sequence, squareBracket, symbol } from "./parserUtils";
+import { CommentNode, CssBlockNode, CssImportNode, IfNode, JsImportNamespace, JsImportNode, JsModuleNode, JsScriptNode, MultiNode, Node, NodeType, SyntaxTree, VarDeclaraionNode } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { CommonChildTokenStream, TokenStream } from "./tokenStream";
-import { peekAndSkipSpaces, peekNextToken, peekNoLineTerminatorHere, TokenStreamReader } from "./tokenStreamReader";
+import { peekAndSkipSpaces, peekNextToken, peekNoLineTerminatorHere } from "./tokenStreamReader";
 
 function functionExpression(stream: TokenStream) : Node {
     keyword(Keywords._function)(stream);
@@ -175,17 +175,6 @@ function regularExpressionLiteral(stream: TokenStream) : string {
     }
 
     return body;
-}
-
-function regexpLiteral(reg : RegExp, peekFn : TokenStreamReader = peekAndSkipSpaces) : TokenParser {
-    return function(stream : TokenStream) : ReturnType<TokenParser> {
-        const token = peekFn(stream);
-        if (token.type == TokenType.Literal && reg.test(token.value)) {
-            return token.value;
-        } else {
-            throw new Error(`expected literal matched to regexp ${reg}, but token was given ${token}`);
-        }
-    };
 }
 
 function numericLiteral(stream : TokenStream) : void {
@@ -933,23 +922,20 @@ function statementListItem(stream : TokenStream) : void {
     )(stream);
 }
 
-
+// Script
 export function parseJsScript(stream : TokenStream) : JsScriptNode {
-    let results = [] as Node[];
-    while(!stream.eof()) {
-        const result = optional(statementListItem)(stream);
-        if (result === undefined) {
-            break;
-        }
-        results.push(result);
-    }
-
     return {
         type: NodeType.JsScript,
-        items: results,
+        items: loop(statementListItem)(stream),
     }
 }
 
+export function parseJsModule(stream : TokenStream) : JsModuleNode {
+    return {
+        type: NodeType.JsModule,
+        items: loop(statementListItem)(stream),
+    };
+}
 
 const TOP_LEVEL_PARSERS = [
     parseComment,

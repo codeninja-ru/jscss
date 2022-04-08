@@ -266,3 +266,30 @@ export function roundBracket(stream: TokenStream) : LazyNode {
 
     throw new Error('round brackets were expected, but ${JSON.stringify(token) was given}');
 }
+
+export function regexpLiteral(reg : RegExp, peekFn : TokenStreamReader = peekAndSkipSpaces) : TokenParser {
+    return function(stream : TokenStream) : ReturnType<TokenParser> {
+        const token = peekFn(stream);
+        if (token.type == TokenType.Literal && reg.test(token.value)) {
+            return token.value;
+        } else {
+            throw new Error(`expected literal matched to regexp ${reg}, but token was given ${token}`);
+        }
+    };
+}
+
+export function loop(parser : TokenParser) : TokenParser {
+    return function(stream : TokenStream) : ReturnType<TokenParser> {
+        let results = [] as ReturnType<TokenParser>[];
+        while(!stream.eof()) {
+            const result = optional(parser)(stream);
+            if (result === undefined) {
+                break;
+            }
+            results.push(result);
+        }
+
+        return results;
+
+    };
+}

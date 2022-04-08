@@ -14,6 +14,7 @@ export enum NodeType {
     IfStatement,
     ExpressionStatement,
     Expression,
+    JsModule,
 
     Lazy,
 }
@@ -65,6 +66,10 @@ export interface IfNode extends Node {
 
 export interface JsScriptNode extends MultiNode {
     type: NodeType.JsScript,
+}
+
+export interface JsModuleNode extends MultiNode {
+    type: NodeType.JsModule,
 }
 
 export interface CssBlockNode extends Node {
