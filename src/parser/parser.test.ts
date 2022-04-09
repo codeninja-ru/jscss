@@ -1,7 +1,6 @@
 import { StringInputStream } from "stream/input";
-import { makeLiteralToken, makeSpaceToken, makeStringToken } from "token/helpers";
 import { lexer } from "./lexer";
-import { parse, parseCssBlock, parseCssImport, parseJsImport, parseJsScript, parseJsStatement, parseJsVarStatement } from "./parser";
+import { parseCssBlock, parseCssImport, parseJsModule, parseJsScript, parseJsStatement, parseJsVarStatement } from "./parser";
 import { Node, NodeType } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { ArrayTokenStream, CommonChildTokenStream } from "./tokenStream";
@@ -15,31 +14,14 @@ function testParserFunction(fn : TokenParser , script : string) : Node {
     return node;
 }
 
-describe('parser', () => {
-    it('import parsing', () => {
-        const tokens = [
-            makeLiteralToken('import'),
-            makeSpaceToken(),
-            makeLiteralToken('_'),
-            makeSpaceToken(),
-            makeLiteralToken('from'),
-            makeSpaceToken(),
-            makeStringToken('"lodash"'),
-        ]; //lexer(new StringInputStream(`import _ from 'lodash';`))
-        const syntaxTree = parse(new ArrayTokenStream(tokens));
-
-        expect(syntaxTree).toEqual([
-            { type: NodeType.JsImport, vars: [{ varName: '_' }], path: '"lodash"', rawValue: 'import _ from "lodash"' }
-        ]);
-    });
-});
-
 describe('parsers', () => {
-    it('parseJsImport()', () => {
-        const tokens = lexer(new StringInputStream(`import * as test from 'somelib';`))
+    it('import parsing', () => {
+        testParserFunction(parseJsModule, "import _ from 'lodash';");
+        testParserFunction(parseJsModule, "import _ from 'lodash'");
+    });
 
-        const node = parseJsImport(new ArrayTokenStream(tokens));
-        expect(node).toEqual({"path": "'somelib'", "type": NodeType.JsImport, "vars": [{"varAlias": "test", "varName": "*"}]});
+    it('parseJsImport()', () => {
+        testParserFunction(parseJsModule, `import * as test from 'somelib';`);
     });
 
     it('parseCssBlock()', () => {
@@ -159,6 +141,19 @@ console.log('hi');
         const node = parseJsScript(stream);
         expect(stream.rawValue()).toEqual(script);
         expect(node.type).toEqual(NodeType.JsScript);
+    });
+});
+
+describe('parseJsModule()', () => {
+    it('simple module', () => {
+        testParserFunction(parseJsModule, `import 'test';
+import * as a1 from "module";
+import _ from 'lodash';
+import {name1, name2} from "module";
+export function func() {};
+export const varName = name1;
+export default class {};`);
+
     });
 
 });

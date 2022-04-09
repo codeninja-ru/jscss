@@ -33,7 +33,7 @@ export function keyword(keyword: Keyword, peekFn : TokenStreamReader = peekAndSk
     };
 }
 
-function comma(stream: TokenStream) : string {
+export function comma(stream: TokenStream) : string {
     const token = peekAndSkipSpaces(stream);
     if (token.type == TokenType.Comma) {
         return token.value;

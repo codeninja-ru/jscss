@@ -1,8 +1,8 @@
 import { Keywords, ReservedWords } from "keywords";
 import { AssignmentOperator, Symbols } from "symbols";
 import { TokenType } from "token";
-import { anyBlock, anyLiteral, anyString, anyTempateStringLiteral, commaList, firstOf, keyword, leftHandRecurciveRule, longestOf, loop, noLineTerminatorHere, oneOfSymbols, optional, regexpLiteral, roundBracket, sequence, squareBracket, symbol } from "./parserUtils";
-import { CommentNode, CssBlockNode, CssImportNode, IfNode, JsImportNamespace, JsImportNode, JsModuleNode, JsScriptNode, MultiNode, Node, NodeType, SyntaxTree, VarDeclaraionNode } from "./syntaxTree";
+import { anyBlock, anyLiteral, anyString, anyTempateStringLiteral, comma, commaList, firstOf, keyword, leftHandRecurciveRule, longestOf, loop, noLineTerminatorHere, oneOfSymbols, optional, regexpLiteral, roundBracket, sequence, squareBracket, symbol } from "./parserUtils";
+import { CommentNode, CssBlockNode, CssImportNode, IfNode, JsModuleNode, JsScriptNode, MultiNode, Node, NodeType, SyntaxTree, VarDeclaraionNode } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { CommonChildTokenStream, TokenStream } from "./tokenStream";
 import { peekAndSkipSpaces, peekNextToken, peekNoLineTerminatorHere } from "./tokenStreamReader";
@@ -146,9 +146,16 @@ function classHeritage(stream: TokenStream) : void {
     leftHandSideExpression(stream);
 }
 
-function classExpression(stream: TokenStream) : void {
+function classDeclaration(stream : TokenStream) : void {
     keyword(Keywords._class)(stream);
-    optional(identifier)(stream);
+    optional(bindingIdentifier)(stream);
+    classTail(stream);
+}
+
+const classExpression = classDeclaration;
+
+function classTail(stream : TokenStream) : void {
+    // ClassHeritage[?Yield, ?Await]opt { ClassBody[?Yield, ?Await]opt }
     optional(classHeritage)(stream);
     anyBlock(stream);
 }
@@ -275,36 +282,6 @@ function regularExpressionBody(stream: TokenStream) : string {
     throw new Error(`regular expression is expteced, but ${JSON.stringify(token)} was given`);
 }
 
-// varName as varAlias
-function importNamespace(stream: TokenStream) : JsImportNamespace {
-    const varName = firstOf(anyLiteral, symbol(Symbols.astersik))(stream);
-    const asKeyword = optional(keyword(Keywords._as))(stream);
-    let varAlias = undefined;
-    if (asKeyword) {
-        varAlias = anyLiteral(stream);
-    }
-
-    return {
-        varName,
-        varAlias,
-    }
-}
-
-export function parseJsImport(stream: TokenStream) : JsImportNode {
-    keyword(Keywords._import)(stream);
-    const importClause = commaList(firstOf(anyBlock, importNamespace))(stream);
-
-    keyword(Keywords._from)(stream);
-
-    const moduleSpecifier = anyString(stream);
-
-    return {
-        type: NodeType.JsImport,
-        vars: importClause,
-        path: moduleSpecifier,
-    } as JsImportNode;
-}
-
 function parseComment(stream: TokenStream) : CommentNode {
     const token = stream.next();
 
@@ -373,8 +350,13 @@ export function parseCssImport(stream: TokenStream) : CssImportNode {
     }
 }
 
+function identifierName(stream : TokenStream) : string {
+    // NOTE it's a simplification of cause
+    return anyLiteral(stream);
+}
+
 function identifier(stream: TokenStream) : string {
-    const bindingIdentifier = anyLiteral(stream);
+    const bindingIdentifier = identifierName(stream);
     if (bindingIdentifier in ReservedWords) {
         throw new Error(`${bindingIdentifier} is a reseved word`);
     }
@@ -909,7 +891,7 @@ function declaration(stream : TokenStream) : void {
         // HoistableDeclaration[?Yield, ?Await, ~Default]
         hoistableDeclaration,
         // ClassDeclaration[?Yield, ?Await, ~Default]
-        classExpression,
+        classDeclaration,
         // LexicalDeclaration[+In, ?Yield, ?Await]
         variableDeclaration,
     )(stream);
@@ -930,16 +912,110 @@ export function parseJsScript(stream : TokenStream) : JsScriptNode {
     }
 }
 
+function nameSpaceImport(stream : TokenStream) : void {
+    symbol(Symbols.astersik)(stream);
+    keyword(Keywords._as)(stream);
+    bindingIdentifier(stream);
+}
+
+function importDeclaration(stream : TokenStream) : Node {
+    keyword(Keywords._import)(stream);
+
+    firstOf(
+        // import ImportClause FromClause ;
+        sequence(
+            firstOf(
+                // ImportedDefaultBinding
+                bindingIdentifier,
+                // NameSpaceImport
+                nameSpaceImport,
+                // NamedImports
+                anyBlock,
+                // ImportedDefaultBinding , NameSpaceImport
+                // ImportedDefaultBinding , NamedImports
+                sequence(bindingIdentifier, comma, firstOf(
+                    nameSpaceImport,
+                    anyBlock
+                )),
+            ),
+            keyword(Keywords._from),
+        ),
+        // import ModuleSpecifier ;
+        anyString,
+    )(stream);
+
+    symbol(Symbols.semicolon);
+
+    return {
+        type: NodeType.ImportDeclaration,
+    };
+}
+
+function exportFromClause(stream : TokenStream) : void {
+    firstOf(
+        // *
+        // * as IdentifierName
+        sequence(
+            symbol(Symbols.astersik),
+            optional(keyword(Keywords._as)),
+            identifierName,
+        ),
+        // NamedExports
+        anyBlock,
+    )(stream);
+}
+
+function exportDeclaration(stream : TokenStream) : void {
+    keyword(Keywords._export)(stream);
+    firstOf(
+        // export ExportFromClause FromClause ;
+        sequence(exportFromClause, keyword(Keywords._from), anyString, symbol(Symbols.semicolon)),
+        // export NamedExports ;
+        sequence(anyBlock, symbol(Symbols.semicolon)),
+        // export VariableStatement[~Yield, ~Await]
+        parseJsVarStatement,
+        // export Declaration[~Yield, ~Await]
+        declaration,
+        // export default HoistableDeclaration[~Yield, ~Await, +Default]
+        sequence(keyword(Keywords._default), hoistableDeclaration),
+        // export default ClassDeclaration[~Yield, ~Await, +Default]
+        sequence(keyword(Keywords._default), classDeclaration),
+        // export default [lookahead ∉ { function, async [no LineTerminator here] function, class }] AssignmentExpression[+In, ~Yield, ~Await] ;
+        sequence(
+            keyword(Keywords._default),
+            cannotStartWith(
+                keyword(Keywords._function),
+                sequence(keyword(Keywords._async), keyword(Keywords._function, peekNoLineTerminatorHere)),
+                keyword(Keywords._class),
+            ),
+            assignmentExpression,
+            symbol(Symbols.semicolon)
+        )
+    )(stream);
+}
+
+
+function moduleItem(stream : TokenStream) : void {
+    return firstOf(
+        // ImportDeclaration
+        importDeclaration,
+        // ExportDeclaration
+        exportDeclaration,
+        // StatementListItem
+        statementListItem,
+    )(stream);
+}
+
+
 export function parseJsModule(stream : TokenStream) : JsModuleNode {
     return {
         type: NodeType.JsModule,
-        items: loop(statementListItem)(stream),
+        items: loop(moduleItem)(stream),
     };
 }
 
 const TOP_LEVEL_PARSERS = [
     parseComment,
-    parseJsImport,
 
     parseCssBlock,
     parseCssImport,

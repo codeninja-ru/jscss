@@ -21,6 +21,7 @@ export const Symbols = {
     plus: new SyntaxSymbol('+'),
     at: new SyntaxSymbol('@'),
     dot: new SyntaxSymbol('.'),
+    comma: new SyntaxSymbol(','),
     question: new SyntaxSymbol('?'),
     colon: new SyntaxSymbol(':'),
     semicolon: new SyntaxSymbol(';'),

@@ -15,6 +15,8 @@ export enum NodeType {
     ExpressionStatement,
     Expression,
     JsModule,
+    ImportDeclaration,
+    ExportDeclaration,
 
     Lazy,
 }

@@ -47,6 +47,7 @@ export const Keywords = {
     _yield: new Keyword('yield'),
     _this: new Keyword('this'),
     _throw: new Keyword('throw'),
+    _default: new Keyword('default'),
     _debugger: new Keyword('debugger'),
 
     _var: new Keyword('var'),
