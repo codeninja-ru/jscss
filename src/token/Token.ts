@@ -13,7 +13,7 @@ export enum TokenType {
     Block,
     LazyBlock,
     Literal,
-    Comma,
+    Comma, // TODO remove and use Symbol instead
     String,
     Symbol,
     TemplateString,

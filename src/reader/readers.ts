@@ -1,5 +1,5 @@
 import { BlockInputStream, InputStream, KindOfSpaceInputStream, LiteralInputStream, readToEnd } from "stream/input";
-import { CommaToken, SpaceToken, Token, TokenType } from "token";
+import { CommaToken, SpaceToken, SymbolToken, Token, TokenType } from "token";
 
 export type Reader = () => Token | null;
 
@@ -25,6 +25,21 @@ export function makeCommaReader(stream: InputStream): Reader {
                 type: TokenType.Comma,
                 value: ','
             } as CommaToken;
+        }
+
+        return null;
+    };
+}
+
+export function makeSemicolonReader(stream: InputStream): Reader {
+    return function() {
+        var ch = stream.peek();
+        if (ch == ';') {
+            stream.next();
+            return {
+                type: TokenType.Symbol,
+                value: ';'
+            } as SymbolToken;
         }
 
         return null;
@@ -131,7 +146,7 @@ function takeWhile(stream: InputStream, fn: (ch: string) => boolean): string {
 export function makeSymbolReader(stream: InputStream): Reader {
     return function() {
         var symbolsFn = (ch: string) => {
-            return ".=<>-*+&|^@;".includes(ch);
+            return ".=<>-*+&|^@".includes(ch);
         };
 
         var result = takeWhile(stream, symbolsFn);

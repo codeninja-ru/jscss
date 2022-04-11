@@ -2,7 +2,7 @@ import { Keywords } from "keywords";
 import { StringInputStream } from "stream/input";
 import { Symbols } from "symbols";
 import { lexer } from "./lexer";
-import { commaList, firstOf, keyword, longestOf, oneOfSymbols, optional, sequence, symbol } from "./parserUtils";
+import { anyLiteral, commaList, firstOf, keyword, longestOf, noLineTerminatorHere, oneOfSymbols, optional, sequence, symbol } from "./parserUtils";
 import { ArrayTokenStream, TokenStream } from "./tokenStream";
 
 describe('parserUtils', () => {
@@ -210,4 +210,41 @@ describe('parserUtils', () => {
         expect(node).toEqual('**');
         expect(stream.currentPosition()).toEqual(1);
     });
+
+    describe('noLineTerminatorHere()', () => {
+        it('noLineTerminatorHere() without spaces', () => {
+            const tokens = lexer(new StringInputStream(`i++`))
+            const stream = new ArrayTokenStream(tokens);
+
+            const literal = anyLiteral(stream);
+            expect(literal).toEqual('i');
+            noLineTerminatorHere(stream);
+            const node = symbol(Symbols.plus2)(stream);
+            expect(node).toEqual('++');
+        });
+
+        it('noLineTerminatorHere() with spaces', () => {
+            const tokens = lexer(new StringInputStream(`i  ++`))
+            const stream = new ArrayTokenStream(tokens);
+
+            const literal = anyLiteral(stream);
+            expect(literal).toEqual('i');
+            noLineTerminatorHere(stream);
+            const node = symbol(Symbols.plus2)(stream);
+            expect(node).toEqual('++');
+        });
+
+        it('noLineTerminatorHere() with lineTerminator', () => {
+            const tokens = lexer(new StringInputStream(`i \n ++`))
+            const stream = new ArrayTokenStream(tokens);
+
+            const literal = anyLiteral(stream);
+            expect(literal).toEqual('i');
+            expect(() => {
+                noLineTerminatorHere(stream);
+            }).toThrowError();
+        });
+
+    });
+
 });

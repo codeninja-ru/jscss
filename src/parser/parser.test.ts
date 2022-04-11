@@ -116,7 +116,6 @@ for (var i = 0; i < 10; i++) {
         const node = testParserFunction(parseJsStatement, script);
         expect(node.type).toEqual(NodeType.JsStatement);
     });
-
 });
 
 describe('parseJsScript()', () => {
@@ -142,6 +141,21 @@ console.log('hi');
         expect(stream.rawValue()).toEqual(script);
         expect(node.type).toEqual(NodeType.JsScript);
     });
+
+    it('expressions', () => {
+        testParserFunction(parseJsScript, "i++;");
+        testParserFunction(parseJsScript, "var i = 2 + 1 * 10 ^ 2;");
+        testParserFunction(parseJsScript, "var fn = (i) => { alert(i) }");
+        testParserFunction(parseJsScript, "var fn = i => { alert(i) }");
+        testParserFunction(parseJsScript, "const fn = .2 + 1.2 - 0.2");
+        testParserFunction(parseJsScript, "let fn = a[1].test && c.test || b(args)");
+        testParserFunction(parseJsScript, "var fn = a << b & c[1](2)");
+        testParserFunction(parseJsScript, "i--");
+        testParserFunction(parseJsScript, "--i");
+        testParserFunction(parseJsScript, "--i");
+        testParserFunction(parseJsScript, "--i + foo");
+    });
+
 });
 
 describe('parseJsModule()', () => {

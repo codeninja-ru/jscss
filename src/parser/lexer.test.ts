@@ -108,4 +108,12 @@ function process(css) {
             makeSymbolToken('.'), makeLiteralToken('test')
         ]);
     });
+
+    test('semicolon', () => {
+        const tokens = lexer(new StringInputStream(`++;--`));
+        expect(tokens).toEqual([
+            makeSymbolToken('++'), smcl, makeSymbolToken('--'),
+        ]);
+    });
+
 });

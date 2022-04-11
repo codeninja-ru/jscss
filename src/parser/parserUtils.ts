@@ -10,7 +10,7 @@ export function noLineTerminatorHere(stream : TokenStream) : void {
     while(!stream.eof()) {
         const token = stream.takeNext();
         if (token.type == TokenType.Space) {
-            if (token.value.indexOf('\n') != -1) {
+            if (token.value.indexOf('\n') === -1) {
                 stream.next();
                 continue;
             } else {

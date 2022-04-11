@@ -93,15 +93,18 @@ function callExpression(stream: TokenStream) : void {
 
 function optionalChain(stream: TokenStream) : void {
     leftHandRecurciveRule(
-        firstOf(
+        sequence(
+            symbol(Symbols.optionalChain),
             //?. Arguments[?Yield, ?Await]
-            sequence(symbol(Symbols.optionalChain), roundBracket),
             //?. [ Expression[+In, ?Yield, ?Await] ]
-            sequence(symbol(Symbols.optionalChain), squareBracket),
             //?. IdentifierName
-            sequence(symbol(Symbols.optionalChain), identifier),
             //?. TemplateLiteral[?Yield, ?Await, +Tagged]
-            sequence(symbol(Symbols.optionalChain), anyTempateStringLiteral),
+            firstOf(
+                roundBracket,
+                squareBracket,
+                identifier,
+                anyTempateStringLiteral
+            )
         ),
         firstOf(
             //OptionalChain[?Yield, ?Await] Arguments[?Yield, ?Await]
@@ -243,7 +246,7 @@ function asyncGeneratorExpression(stream : TokenStream) : void {
 }
 
 function primaryExpression(stream: TokenStream) : void {
-    longestOf(
+    firstOf(
         // this
         keyword(Keywords._this),
         // IdentifierReference[?Yield, ?Await]
@@ -397,14 +400,14 @@ function variableDeclaration(stream : TokenStream) : VarDeclaraionNode {
     }
 }
 
-function updateExpression(stream : TokenStream) : void {
+export function updateExpression(stream : TokenStream) : void {
     firstOf(
         // LeftHandSideExpression[?Yield, ?Await]
-        leftHandSideExpression,
         // LeftHandSideExpression[?Yield, ?Await] [no LineTerminator here] ++
-        sequence(leftHandSideExpression, symbol(Symbols.plus2)),
         // LeftHandSideExpression[?Yield, ?Await] [no LineTerminator here] --
-        sequence(leftHandSideExpression, symbol(Symbols.minus2)),
+        sequence(leftHandSideExpression, optional(
+            sequence(noLineTerminatorHere, oneOfSymbols(Symbols.plus2, Symbols.minus2))
+        )),
         // ++ UnaryExpression[?Yield, ?Await]
         // -- UnaryExpression[?Yield, ?Await]
         sequence(oneOfSymbols(
@@ -587,7 +590,7 @@ function coalesceExpression(stream : TokenStream) : void {
 }
 
 function shortCircuitExpression(stream : TokenStream) : void {
-    return firstOf(
+    return longestOf(
         // LogicalORExpression[?In, ?Yield, ?Await]
         logicalOrExpression,
         // CoalesceExpression[?In, ?Yield, ?Await]
@@ -607,10 +610,8 @@ function conditionalExpression(stream : TokenStream) : void {
 
 function yeildExpression(stream : TokenStream) : void {
     keyword(Keywords._yield)(stream);
-
-    //TODO no line terminator here
+    noLineTerminatorHere(stream);
     optional(symbol(Symbols.astersik))(stream);
-
     assignmentExpression(stream);
 }
 
@@ -863,7 +864,7 @@ export function parseJsStatement(stream : TokenStream) : Node {
         // TryStatement[?Yield, ?Await, ?Return]
         tryStatement,
         // DebuggerStatement
-        sequence(keyword(Keywords._debugger), symbol(Symbols.semicolon))
+        sequence(keyword(Keywords._debugger), symbol(Symbols.semicolon)),
     )(stream);
 
     return {
@@ -898,9 +899,11 @@ function declaration(stream : TokenStream) : void {
 }
 
 function statementListItem(stream : TokenStream) : void {
-    return longestOf(
+    return firstOf(
         parseJsStatement,
         declaration,
+
+        //TODO put CSS rules here
     )(stream);
 }
 

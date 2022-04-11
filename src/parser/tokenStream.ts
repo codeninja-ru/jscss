@@ -7,6 +7,7 @@ export interface TokenStream {
     movePosition(newPos: number): void;
     eof(): boolean;
     currentPosition(): number;
+    length(): number;
 };
 
 export interface ChildTokenStream extends TokenStream {
@@ -28,7 +29,7 @@ export class ArrayTokenStream implements TokenStream {
     }
 
     takeNext() : Token {
-        return this.tokens[this.pos + 1];
+        return this.tokens[this.pos];
     }
 
     movePosition(newPos: number): void {
@@ -39,8 +40,12 @@ export class ArrayTokenStream implements TokenStream {
         return this.pos;
     }
 
-    eof(): boolean {
+    eof() : boolean {
         return this.tokens.length <= this.pos;
+    }
+
+    length() : number {
+        return this.tokens.length;
     }
 }
 
@@ -61,7 +66,7 @@ export class CommonChildTokenStream implements ChildTokenStream {
     }
 
     takeNext() : Token {
-        return this.parent.take(this.pos + 1);
+        return this.parent.take(this.pos);
     }
 
     movePosition(idx: number) {
@@ -69,7 +74,7 @@ export class CommonChildTokenStream implements ChildTokenStream {
     }
 
     eof() : boolean {
-        return this.parent.eof();
+        return this.parent.length() <= this.pos;
     }
 
     rawValue() : string {
@@ -87,5 +92,9 @@ export class CommonChildTokenStream implements ChildTokenStream {
 
     currentPosition() {
         return this.pos;
+    }
+
+    length() : number {
+        return this.parent.length();
     }
 }
