@@ -24,7 +24,7 @@ describe('parsers', () => {
         testParserFunction(parseJsModule, `import * as test from 'somelib';`);
     });
 
-    it('parseCssBlock()', () => {
+    xit('parseCssBlock()', () => {
         const tokens = lexer(new StringInputStream(`a:hover, #id.class div, .class1 > .class2, input[type=button] { color: #555; }`));
 
         const node = parseCssBlock(new ArrayTokenStream(tokens));
@@ -131,6 +131,10 @@ console.log('hi');
     it('if statement', () => {
         const node = testParserFunction(parseJsScript, 'if (1) alert(1); else alert(2);');
         expect(node.type).toEqual(NodeType.JsScript);
+        testParserFunction(parseJsScript, 'if (1) {} else {};');
+        testParserFunction(parseJsScript, 'if (1) {};');
+        testParserFunction(parseJsScript, 'if (1) alert(1);');
+        testParserFunction(parseJsScript, 'if (1) {} else if (2) {}');
     });
 
     it('parse a simple expression', () => {
@@ -142,8 +146,15 @@ console.log('hi');
         expect(node.type).toEqual(NodeType.JsScript);
     });
 
+    it('conditional expressions', () => {
+        testParserFunction(parseJsScript, "var x = isTrue() ? 1 : 2;");
+        testParserFunction(parseJsScript, "var x = a == b ? 1 : 2");
+        testParserFunction(parseJsScript, "var x = a(1) == b[2] ? 1 : 2");
+        testParserFunction(parseJsScript, "var x = a(1) == b[2] ? 1 : c.test");
+        testParserFunction(parseJsScript, "x = a == b ? 1 : 2");
+    });
+
     it('expressions', () => {
-        testParserFunction(parseJsScript, "i++;");
         testParserFunction(parseJsScript, "var i = 2 + 1 * 10 ^ 2;");
         testParserFunction(parseJsScript, "var fn = (i) => { alert(i) }");
         testParserFunction(parseJsScript, "var fn = i => { alert(i) }");
@@ -151,8 +162,10 @@ console.log('hi');
         testParserFunction(parseJsScript, "let fn = a[1].test && c.test || b(args)");
         testParserFunction(parseJsScript, "var fn = a << b & c[1](2)");
         testParserFunction(parseJsScript, "i--");
+        testParserFunction(parseJsScript, "i++;");
+        testParserFunction(parseJsScript, "i++");
         testParserFunction(parseJsScript, "--i");
-        testParserFunction(parseJsScript, "--i");
+        testParserFunction(parseJsScript, "--i;");
         testParserFunction(parseJsScript, "--i + foo");
     });
 

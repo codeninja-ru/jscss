@@ -1,7 +1,7 @@
 import { Keywords, ReservedWords } from "keywords";
 import { AssignmentOperator, Symbols } from "symbols";
 import { TokenType } from "token";
-import { anyBlock, anyLiteral, anyString, anyTempateStringLiteral, comma, commaList, firstOf, keyword, leftHandRecurciveRule, longestOf, loop, noLineTerminatorHere, oneOfSymbols, optional, regexpLiteral, roundBracket, sequence, squareBracket, symbol } from "./parserUtils";
+import { anyBlock, anyLiteral, anyString, anyTempateStringLiteral, comma, commaList, firstOf, keyword, leftHandRecurciveRule, longestOf, loop, noLineTerminatorHere, noSpacesHere, oneOfSymbols, optional, regexpLiteral, roundBracket, sequence, squareBracket, symbol } from "./parserUtils";
 import { CommentNode, CssBlockNode, CssImportNode, IfNode, JsModuleNode, JsScriptNode, MultiNode, Node, NodeType, SyntaxTree, VarDeclaraionNode } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { CommonChildTokenStream, TokenStream } from "./tokenStream";
@@ -302,18 +302,28 @@ function parseComment(stream: TokenStream) : CommentNode {
 }
 
 function parseCssSelector(stream: TokenStream) : string {
-    const selector = sequence(
+    //TODO broken
+    const selector =
+        sequence(
         optional(oneOfSymbols(Symbols.dot, Symbols.numero)),
-        //TODO css use dot without spaces
+        noSpacesHere,
         anyLiteral,
+        optional(
+            sequence(
+                noSpacesHere,
+                symbol(Symbols.colon),
+                noSpacesHere,
+                anyLiteral
+            ),
+        ),
+        optional(sequence(noSpacesHere, squareBracket)),
     )(stream).join(''); //TODO it also maybe an *
     // TODO rewrite with leftHand
 
-    const attribure = optional(squareBracket)(stream);
+    if (selector) {
 
-    if (selector || attribure) {
-
-        const combinator = optional(oneOfSymbols(
+        const combinator = optional(
+            oneOfSymbols(
             Symbols.astersik,
             Symbols.lt,
             Symbols.tilde,
@@ -323,7 +333,6 @@ function parseCssSelector(stream: TokenStream) : string {
         const nextSelector = optional(parseCssSelector)(stream);
 
         return (selector ? selector : "")
-            + (attribure ? attribure : "")
             + (combinator ? " " + combinator : "")
             + (nextSelector ? " " + nextSelector : "");
     }
@@ -760,7 +769,6 @@ function breakableStatement(stream : TokenStream) : void {
     )(stream);
 }
 
-
 function continueStatement(stream : TokenStream) : void {
     keyword(Keywords._continue)(stream);
     optional(
@@ -886,7 +894,6 @@ function hoistableDeclaration(stream : TokenStream) : void {
     )(stream);
 }
 
-
 function declaration(stream : TokenStream) : void {
     firstOf(
         // HoistableDeclaration[?Yield, ?Await, ~Default]
@@ -997,7 +1004,6 @@ function exportDeclaration(stream : TokenStream) : void {
     )(stream);
 }
 
-
 function moduleItem(stream : TokenStream) : void {
     return firstOf(
         // ImportDeclaration
@@ -1008,7 +1014,6 @@ function moduleItem(stream : TokenStream) : void {
         statementListItem,
     )(stream);
 }
-
 
 export function parseJsModule(stream : TokenStream) : JsModuleNode {
     return {

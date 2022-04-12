@@ -22,6 +22,17 @@ export function noLineTerminatorHere(stream : TokenStream) : void {
     }
 }
 
+export function noSpacesHere(stream : TokenStream) : void {
+    while(!stream.eof()) {
+        const token = stream.takeNext();
+        if (token.type == TokenType.Space) {
+            throw new Error('no spaces here');
+        } else {
+            break;
+        }
+    }
+}
+
 export function keyword(keyword: Keyword, peekFn : TokenStreamReader = peekAndSkipSpaces): TokenParser {
     return function(stream: TokenStream) : string {
         const token = peekFn(stream);

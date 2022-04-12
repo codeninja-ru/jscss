@@ -21,18 +21,19 @@ describe('class KindOfSpaceInputStream', () => {
 
 describe('class LiteralInputStream', () => {
     test('->isLiteral()', () => {
-        expect(LiteralInputStream.isLiteral('.')).toBeTruthy();
-        expect(LiteralInputStream.isLiteral('#')).toBeTruthy();
+        expect(LiteralInputStream.isLiteral('.')).toBeFalsy();
+        expect(LiteralInputStream.isLiteral('#')).toBeFalsy();
         expect(LiteralInputStream.isLiteral('f')).toBeTruthy();
+        expect(LiteralInputStream.isLiteral('_')).toBeTruthy();
         expect(LiteralInputStream.isLiteral('1')).toBeTruthy();
         expect(LiteralInputStream.isLiteral(' ')).toBeFalsy();
     });
 
     test('reads to the end of the literal', () => {
-        expect(readToEnd(new LiteralInputStream(new StringInputStream('.className .nextClassName')))).toEqual('.className');
-        expect(readToEnd(new LiteralInputStream(new StringInputStream('.className, .nextClassName')))).toEqual('.className');
-        expect(readToEnd(new LiteralInputStream(new StringInputStream('#className, .nextClassName')))).toEqual('#className');
-        expect(readToEnd(new LiteralInputStream(new StringInputStream('#className:hover, .nextClassName')))).toEqual('#className:hover');
+        expect(readToEnd(new LiteralInputStream(new StringInputStream('className .nextClassName')))).toEqual('className');
+        expect(readToEnd(new LiteralInputStream(new StringInputStream('className, .nextClassName')))).toEqual('className');
+        expect(readToEnd(new LiteralInputStream(new StringInputStream('className, .nextClassName')))).toEqual('className');
+        expect(readToEnd(new LiteralInputStream(new StringInputStream('className:hover, .nextClassName')))).toEqual('className');
     });
 });
 

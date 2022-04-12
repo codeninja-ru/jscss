@@ -87,14 +87,19 @@ function process(css) {
         expect(tokens).toEqual([
             spn,
             impr, sp, lodash, sp, frm, sp, makeStringToken("'lodash'"), smcl, spn,
-            impr, sp, makeLazyBlockToken('{foo}'), sp, frm, sp, makeStringToken("'bar'"), smcl,
+            impr, sp, makeLazyBlockToken('{foo}'), sp, frm, sp,
+            makeStringToken("'bar'"), smcl,
             spnspn,
-            makeLiteralToken('const'), sp, makeLiteralToken('BACKGROUD_COLOR'), sp, makeSymbolToken('='), sp, makeStringToken("'#fff'"), smcl,
+            makeLiteralToken('const'), sp, makeLiteralToken('BACKGROUD_COLOR'), sp,
+            makeSymbolToken('='), sp, makeStringToken("'#fff'"), smcl,
             spnspn,
-            makeLiteralToken('function'), sp, makeLiteralToken('process'), makeRoundBracketsToken('(css)'), sp, makeLazyBlockToken("{\n    return _(css).map((val) => val + 1);\n}"),
+            makeLiteralToken('function'), sp, makeLiteralToken('process'),
+            makeRoundBracketsToken('(css)'), sp, makeLazyBlockToken("{\n    return _(css).map((val) => val + 1);\n}"),
             spnspn,
-            makeSymbolToken('.'), makeLiteralToken('className'), comma, sp, makeLiteralToken('tagName'), comma, sp, makeLiteralToken('#elementId'), comma, sp,
-            makeSymbolToken('.'), makeLiteralToken('className:hover'), sp,
+            makeSymbolToken('.'), makeLiteralToken('className'), comma, sp, makeLiteralToken('tagName'), comma, sp,
+            makeSymbolToken('#'), makeLiteralToken('elementId'), comma, sp,
+            makeSymbolToken('.'), makeLiteralToken('className'), makeSymbolToken(':'),
+            makeLiteralToken('hover'), sp,
             makeLazyBlockToken("{\n    color: #eee;\n    foo: $\{foo\};\n}"), spn
         ]);
     });
@@ -108,6 +113,16 @@ function process(css) {
             makeSymbolToken('.'), makeLiteralToken('test')
         ]);
     });
+
+    test('conditions', () => {
+        const tokens = lexer(new StringInputStream(`test?true:false`));
+        expect(tokens).toEqual([
+            makeLiteralToken('test'), makeSymbolToken('?'),
+            makeLiteralToken('true'), makeSymbolToken(':'),
+            makeLiteralToken('false')
+        ]);
+    });
+
 
     test('semicolon', () => {
         const tokens = lexer(new StringInputStream(`++;--`));
