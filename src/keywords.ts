@@ -60,4 +60,7 @@ export const Keywords = {
     _null: new Keyword('null'),
     _true: new Keyword('true'),
     _false: new Keyword('false'),
+
+    cssCharset: new Keyword('charset'),
+    cssUrl: new Keyword('url'),
 }

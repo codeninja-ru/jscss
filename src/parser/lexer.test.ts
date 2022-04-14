@@ -131,4 +131,12 @@ function process(css) {
         ]);
     });
 
+    test('css comments', () => {
+        const script = '<!-- this is a comment -->';
+        const tokens = lexer(new StringInputStream(script));
+        expect(tokens).toEqual([
+            makeCommaToken(script)
+        ]);
+    });
+
 });

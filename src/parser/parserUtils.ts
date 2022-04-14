@@ -1,5 +1,5 @@
 import { Keyword } from "keywords";
-import { SyntaxSymbol } from "symbols";
+import { Symbols, SyntaxSymbol } from "symbols";
 import { TokenType } from "token";
 import { LazyNode, NodeType } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
@@ -57,12 +57,28 @@ export function commaList(parser: TokenParser) : TokenParser {
     return list(parser, comma);
 }
 
-function flushed(parser : TokenParser) : TokenParser {
+export function flushed(parser : TokenParser) : TokenParser {
     return function(stream: TokenStream) : ReturnType<TokenParser> {
         const childStream = new CommonChildTokenStream(stream);
         let result;
         try {
             result = parser(childStream);
+            childStream.flush();
+        } catch(e) {
+            throw e;
+        }
+
+        return result;
+    };
+}
+
+export function rawValue(parser : TokenParser) : TokenParser {
+    return function(stream: TokenStream) : ReturnType<TokenParser> {
+        const childStream = new CommonChildTokenStream(stream);
+        let result;
+        try {
+            parser(childStream);
+            result = childStream.rawValue();
             childStream.flush();
         } catch(e) {
             throw e;
@@ -226,6 +242,8 @@ export function symbol(ch: SyntaxSymbol, peekFn : TokenStreamReader = peekAndSki
         throw new Error(`${ch.name} is expected, but ${JSON.stringify(token)} was given`);
     };
 }
+
+export const semicolon = symbol(Symbols.semicolon);
 
 export function anyBlock(stream: TokenStream) : LazyNode {
     const token = peekAndSkipSpaces(stream);
