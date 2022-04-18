@@ -135,7 +135,7 @@ function process(css) {
         const script = '<!-- this is a comment -->';
         const tokens = lexer(new StringInputStream(script));
         expect(tokens).toEqual([
-            makeCommaToken(script)
+            { type: TokenType.CssComment, value: '<!-- this is a comment -->'}
         ]);
     });
 

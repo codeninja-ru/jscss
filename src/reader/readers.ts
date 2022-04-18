@@ -143,13 +143,17 @@ function takeWhile(stream: InputStream, fn: (ch: string) => boolean): string {
     return result;
 }
 
+export function readSymbol(stream : InputStream) : string {
+    var symbolsFn = (ch: string) => {
+        return ".=<>-*+&|^@?:#".includes(ch);
+    };
+
+    return takeWhile(stream, symbolsFn);
+}
+
 export function makeSymbolReader(stream: InputStream): Reader {
     return function() {
-        var symbolsFn = (ch: string) => {
-            return ".=<>-*+&|^@?:#".includes(ch);
-        };
-
-        var result = takeWhile(stream, symbolsFn);
+        var result = readSymbol(stream);
 
         if (result.length > 0) {
             return {

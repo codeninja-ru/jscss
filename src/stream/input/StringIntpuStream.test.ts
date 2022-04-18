@@ -22,14 +22,17 @@ describe('class StringInputStream', () => {
     });
 
     test('readUntil()', () => {
-        const input = new StringInputStream('test 123\nqwerty');
+        let input = new StringInputStream('test 123_qwerty');
         expect(input.formatError('error')).toEqual(new Error('error (1:0)'));
         expect(input.readUntil('123')).toEqual('test 123');
-        expect(input.readUntil('123')).toBeNull();
-        expect(input.readUntil('test')).toBeNull();
+        expect(input.readUntil('123')).toEqual('_qwerty')
+        expect(input.readUntil('test')).toEqual('');
         expect(input.formatError('error')).toEqual(new Error('error (1:0)'));
+
+        input = new StringInputStream('test 123\nqwerty');
+        expect(input.readUntil('123')).toEqual('test 123');
         expect(input.readUntil('qwerty')).toEqual('\nqwerty');
-        expect(input.readUntil('qwerty')).toBeNull();
+        expect(input.readUntil('qwerty')).toEqual('');
         expect(input.formatError('error')).toEqual(new Error('error (2:0)'));
     });
 });

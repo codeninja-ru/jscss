@@ -1,6 +1,7 @@
 import { Keywords } from "keywords";
 import { StringInputStream } from "stream/input";
 import { Symbols } from "symbols";
+import { TokenType } from "token";
 import { lexer } from "./lexer";
 import { anyLiteral, commaList, firstOf, keyword, longestOf, noLineTerminatorHere, oneOfSymbols, optional, sequence, symbol } from "./parserUtils";
 import { ArrayTokenStream, TokenStream } from "./tokenStream";
@@ -185,7 +186,7 @@ describe('parserUtils', () => {
             const stream = new ArrayTokenStream(tokens);
             expect(() => {
                 sequence(keyword(Keywords._var), keyword(Keywords._if), keyword(Keywords._const))(stream);
-            }).toThrowError("keyword if is expected, but {\"type\":5,\"value\":\"no\"} was given");
+            }).toThrowError("keyword if is expected, but {\"type\":" + TokenType.Literal + ",\"value\":\"no\"} was given");
             expect(stream.currentPosition()).toEqual(0);
         });
     });

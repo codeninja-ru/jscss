@@ -31,10 +31,12 @@ export class StringInputStream implements InputStream {
         return new Error(msg + " (" + this.line + ":" + this.col + ")");
     }
 
-    readUntil(str: string) : string | null {
+    readUntil(str: string) : string {
         const idx = this.input.indexOf(str, this.pos);
         if (idx == -1) {
-            return null;
+            const result = this.input.substr(this.pos);
+            this.pos = this.input.length;
+            return result;
         }
 
         const result = this.input.substr(this.pos, idx + str.length);

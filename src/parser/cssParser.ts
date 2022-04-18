@@ -2,7 +2,7 @@
 
 import { Keywords } from "keywords";
 import { Symbols } from "symbols";
-import { anyBlock, anyLiteral, anyString, comma, commaList, firstOf, keyword, list, loop, noSpacesHere, optional, rawValue, regexpLiteral, roundBracket, semicolon, sequence, squareBracket, symbol } from "./parserUtils";
+import { anyBlock, anyLiteral, anyString, commaList, firstOf, keyword, list, loop, noSpacesHere, oneOfSymbols, optional, rawValue, roundBracket, semicolon, sequence, squareBracket, symbol } from "./parserUtils";
 import { CssBlockNode, NodeType } from "./syntaxTree";
 import { TokenStream } from "./tokenStream";
 
@@ -16,6 +16,7 @@ import { TokenStream } from "./tokenStream";
  *
  * */
 function stylesheetItem(stream : TokenStream) : void {
+    //TODO everything that starts with @ can be optimized by combining together
     firstOf(
         // [ CHARSET_SYM STRING ';' ]?
         sequence(symbol(Symbols.at), noSpacesHere, keyword(Keywords.cssCharset), anyString, symbol(Symbols.semicolon)),
@@ -97,6 +98,22 @@ function selector(stream : TokenStream) : void {
 
 /**
  * implements:
+ * combinator
+  : '+' S*
+  | '>' S*
+  ;
+ *
+ * */
+function combinator(stream : TokenStream) : void {
+    oneOfSymbols(
+        Symbols.plus,
+        Symbols.lt,
+    )(stream);
+}
+
+
+/**
+ * implements:
  * simple_selector
   : element_name [ HASH | class | attrib | pseudo ]*
   | [ HASH | class | attrib | pseudo ]+
@@ -172,5 +189,56 @@ function pseudo(stream : TokenStream) : void {
                 roundBracket, //TODO parse
             )
         )
+    )(stream);
+}
+
+/**
+ * implements:
+ * media
+  : MEDIA_SYM S* media_list '{' S* ruleset* '}' S*
+  ;
+ *
+ * */
+function mediaStatement(stream : TokenStream) : void {
+    sequence(
+        symbol(Symbols.at),
+        noSpacesHere,
+        keyword(Keywords.cssMedia),
+        mediaList,
+        anyBlock, //TODO parse
+    )(stream);
+}
+
+/**
+ * implements:
+ * page
+  : PAGE_SYM S* pseudo_page?
+    '{' S* declaration? [ ';' S* declaration? ]* '}' S*
+  ;
+ *
+ * */
+function pageStatement(stream : TokenStream) : void {
+    sequence(
+        //TODO
+        symbol(Symbols.at),
+        noSpacesHere,
+        keyword(Keywords.cssPage),
+        optional(pseudoPage),
+        anyBlock, // TODO parse
+    )(stream);
+}
+
+/**
+ * implements:
+ * pseudo_page
+  : ':' IDENT S*
+  ;
+ *
+ * */
+function pseudoPage(stream : TokenStream) : void {
+    sequence(
+        symbol(Symbols.colon),
+        noSpacesHere,
+        ident,
     )(stream);
 }

@@ -1,4 +1,4 @@
-import { makeCommentAndRegexpReader } from 'reader/comment';
+import { makeCommentAndRegexpReader, makeCssCommentReader } from 'reader/comment';
 import { makeBlockReader, makeBracketsReader, makeCommaReader, makeLiteralReader, makeRegExpReader, makeSemicolonReader, makeSpaceReader, makeStringReader, makeSymbolReader, makeTemplateStringReader, makeUnexpectedReader, Reader } from 'reader/readers';
 import { InputStream } from 'stream/input';
 import { StringOutputStream } from 'stream/output';
@@ -11,6 +11,7 @@ export function lexer(stream: InputStream) {
         makeSpaceReader(stream),
         makeCommaReader(stream),
         makeSemicolonReader(stream),
+        makeCssCommentReader(stream), // it's in coflit with makeSymbol, so we put it first
         makeSymbolReader(stream),
         makeLiteralReader(stream),
         makeBlockReader(stream),

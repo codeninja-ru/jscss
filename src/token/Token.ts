@@ -1,4 +1,4 @@
-export type Token = SpaceToken | CommentToken |
+export type Token = SpaceToken | CommentToken | CssCommentToken |
     MultilineCommentToken | BlockToken |
     LiteralToken | LazyBlockToken |
     CommaToken | StringToken |
@@ -10,6 +10,7 @@ export enum TokenType {
     Space,
     Comment,
     MultilineComment,
+    CssComment,
     Block,
     LazyBlock,
     Literal,
@@ -39,6 +40,11 @@ export interface CommentToken extends BaseToken {
 
 export interface MultilineCommentToken extends BaseToken { //TODO merge with comment
     type: TokenType.MultilineComment,
+    readonly value: string;
+}
+
+export interface CssCommentToken extends BaseToken { //TODO merge with comment
+    type: TokenType.CssComment;
     readonly value: string;
 }
 
