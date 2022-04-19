@@ -2,8 +2,10 @@
 
 import { Keywords } from "keywords";
 import { Symbols } from "symbols";
-import { anyBlock, anyLiteral, anyString, commaList, firstOf, keyword, list, loop, noSpacesHere, oneOfSymbols, optional, rawValue, roundBracket, semicolon, sequence, squareBracket, symbol } from "./parserUtils";
+import { TokenType } from "token";
+import { anyLiteral, anyString, block, commaList, firstOf, keyword, list, loop, noSpacesHere, oneOfSymbols, optional, rawValue, regexpLiteral, roundBracket, semicolon, sequence, squareBracket, symbol } from "./parserUtils";
 import { CssBlockNode, NodeType } from "./syntaxTree";
+import { TokenParser } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
 
 /**
@@ -28,7 +30,6 @@ function stylesheetItem(stream : TokenStream) : void {
 }
 
 export function parseCssStyleSheet(stream : TokenStream) : void {
-    //TODO
     loop(stylesheetItem)(stream);
 }
 
@@ -46,11 +47,21 @@ function importStatement(stream : TokenStream) : void {
         keyword(Keywords._import),
         firstOf(
             anyString,
-            sequence(keyword(Keywords.cssUrl), noSpacesHere, roundBracket)
+            uri,
         ),
         optional(mediaList),
         semicolon,
     )(stream);
+}
+
+/**
+ * implements:
+ * "url("{w}{string}{w}")" {return URI;}
+"url("{w}{url}{w}")"    {return URI;}
+ *
+ * */
+function uri(stream : TokenStream) : void {
+    sequence(keyword(Keywords.cssUrl), noSpacesHere, roundBracket)(stream);
 }
 
 /**
@@ -77,13 +88,91 @@ function ident(stream : TokenStream) : void {
  * */
 function rulesetStatement(stream : TokenStream) : CssBlockNode {
     const selectors = commaList(selector)(stream);
-    const cssBlock = anyBlock(stream); //TODO parse '{' S* declaration? [ ';' S* declaration? ]* '}' S*
+    const cssBlock = block(TokenType.LazyBlock, list(
+        declaration,
+        symbol(Symbols.semicolon)
+    ))(stream);
 
     return {
         type: NodeType.CssBlock,
         selectors,
         block: cssBlock,
     }
+}
+
+/**
+ * implements:
+ * declaration
+  : property ':' S* expr prio?
+  ;
+ *
+ * */
+function declaration(stream : TokenStream) : void {
+    sequence(
+        ident,
+        symbol(Symbols.semicolon),
+        expr,
+        optional(sequence(
+            // prio
+            // : IMPORTANT_SYM S*
+            symbol(Symbols.not),
+            keyword(Keywords.cssImportant),
+        )),
+    )(stream);
+}
+
+/**
+ * implements:
+ * expr
+  : term [ operator? term ]*
+  ;
+ *
+ * */
+function expr(stream : TokenStream) : void {
+    term(stream);
+    loop(
+        sequence(
+            optional(oneOfSymbols(Symbols.div, Symbols.comma)),
+            term,
+        )
+    )(stream);
+}
+
+/**
+ * implements:
+ * term
+  : unary_operator?
+    [ NUMBER S* | PERCENTAGE S* | LENGTH S* | EMS S* | EXS S* | ANGLE S* |
+      TIME S* | FREQ S* ]
+  | STRING S* | IDENT S* | URI S* | hexcolor | function
+  ;
+ *
+ * */
+function term(stream : TokenStream) : void {
+    sequence(
+        optional(unaryOperator),
+        firstOf(
+            // [ NUMBER S* | PERCENTAGE S* | LENGTH S* | EMS S* | EXS S* | ANGLE S* | TIME S* | FREQ S* ]
+            regexpLiteral(/^([0-9]+|[0-9]*\.[0-9]+)(\%|px|cm|mm|in|pt|pc|em|ex|deg|rad|grad|ms|s|hz|khz)?$/g),
+            anyString,
+            ident,
+            uri,
+            sequence(symbol(Symbols.numero), noSpacesHere, anyLiteral),
+            functionCallDoNothing,
+        )
+
+    )(stream);
+}
+
+/**
+ * implements:
+ * unary_operator
+  : '-' | '+'
+  ;
+ *
+ * */
+function unaryOperator(stream : TokenStream) : void {
+    oneOfSymbols(Symbols.plus, Symbols.minus)(stream);
 }
 
 /**
@@ -183,12 +272,16 @@ function pseudo(stream : TokenStream) : void {
         symbol(Symbols.colon),
         firstOf(
             ident,
-            sequence(
-                ident,
-                noSpacesHere,
-                roundBracket, //TODO parse
-            )
+            functionCallDoNothing,
         )
+    )(stream);
+}
+
+function functionCallDoNothing(stream : TokenStream) : ReturnType<TokenParser> {
+    sequence(
+        ident,
+        noSpacesHere,
+        roundBracket,
     )(stream);
 }
 
@@ -205,7 +298,7 @@ function mediaStatement(stream : TokenStream) : void {
         noSpacesHere,
         keyword(Keywords.cssMedia),
         mediaList,
-        anyBlock, //TODO parse
+        block(TokenType.LazyBlock, rulesetStatement)
     )(stream);
 }
 
@@ -219,12 +312,15 @@ function mediaStatement(stream : TokenStream) : void {
  * */
 function pageStatement(stream : TokenStream) : void {
     sequence(
-        //TODO
         symbol(Symbols.at),
         noSpacesHere,
         keyword(Keywords.cssPage),
         optional(pseudoPage),
-        anyBlock, // TODO parse
+        block(TokenType.LazyBlock, list(
+            declaration,
+            symbol(Symbols.semicolon),
+            true, // list can be empty
+        ))
     )(stream);
 }
 

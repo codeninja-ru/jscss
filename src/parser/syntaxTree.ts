@@ -19,6 +19,13 @@ export enum NodeType {
     ExportDeclaration,
 
     Lazy,
+    Block,
+}
+
+export enum BlockType {
+    RoundBracket,
+    SquareBracket,
+    CurlyBracket,
 }
 
 export interface Node {
@@ -76,9 +83,14 @@ export interface JsModuleNode extends MultiNode {
 
 export interface CssBlockNode extends Node {
     type: NodeType.CssBlock,
-    selectors: any,
-    block: any,
+    readonly selectors: any,
+    readonly block: any,
+}
 
+export interface BlockNode extends Node {
+    type: NodeType.Block,
+    blockType:  BlockType,
+    readonly items: Node[];
 }
 
 export interface CssImportNode extends Node {

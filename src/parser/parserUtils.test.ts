@@ -3,7 +3,8 @@ import { StringInputStream } from "stream/input";
 import { Symbols } from "symbols";
 import { TokenType } from "token";
 import { lexer } from "./lexer";
-import { anyLiteral, commaList, firstOf, keyword, longestOf, noLineTerminatorHere, oneOfSymbols, optional, sequence, symbol } from "./parserUtils";
+import { anyLiteral, block, commaList, firstOf, keyword, longestOf, noLineTerminatorHere, oneOfSymbols, optional, sequence, symbol } from "./parserUtils";
+import { BlockType, NodeType } from "./syntaxTree";
 import { ArrayTokenStream, TokenStream } from "./tokenStream";
 
 describe('parserUtils', () => {
@@ -243,6 +244,62 @@ describe('parserUtils', () => {
             expect(literal).toEqual('i');
             expect(() => {
                 noLineTerminatorHere(stream);
+            }).toThrowError();
+        });
+    });
+
+    describe('block()', () => {
+        it('parses block with simple content', () => {
+            const tokens = lexer(new StringInputStream(`(1,2,3,4)`))
+            const stream = new ArrayTokenStream(tokens);
+
+            const node = block(
+                TokenType.RoundBrackets,
+                commaList(anyLiteral)
+            )(stream);
+
+            expect(node.type).toEqual(NodeType.Block);
+            expect(node.blockType).toEqual(BlockType.RoundBracket);
+            expect(node.items).toEqual(["1", "2", "3", "4"]);
+        });
+
+        it('parses curly bracket block', () => {
+            const tokens = lexer(new StringInputStream(`{1,2,3,4}`))
+            const stream = new ArrayTokenStream(tokens);
+
+            const node = block(
+                TokenType.LazyBlock,
+                commaList(anyLiteral)
+            )(stream);
+
+            expect(node.type).toEqual(NodeType.Block);
+            expect(node.blockType).toEqual(BlockType.CurlyBracket);
+            expect(node.items).toEqual(["1", "2", "3", "4"]);
+        });
+
+        it('empty block', () => {
+            const tokens = lexer(new StringInputStream(`[]`))
+            const stream = new ArrayTokenStream(tokens);
+
+            const node = block(
+                TokenType.SquareBrackets,
+                optional(commaList(anyLiteral))
+            )(stream);
+
+            expect(node.type).toEqual(NodeType.Block);
+            expect(node.blockType).toEqual(BlockType.SquareBracket);
+            expect(node.items).toEqual(undefined);
+        });
+
+        it('wrong block type', () => {
+            const tokens = lexer(new StringInputStream(`[]`))
+            const stream = new ArrayTokenStream(tokens);
+
+            expect(() => {
+                block(
+                    TokenType.RoundBrackets,
+                    optional(commaList(anyLiteral))
+                )(stream);
             }).toThrowError();
         });
 

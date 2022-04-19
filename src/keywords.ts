@@ -65,4 +65,5 @@ export const Keywords = {
     cssUrl: new Keyword('url'),
     cssMedia: new Keyword('media'),
     cssPage: new Keyword('page'),
+    cssImportant: new Keyword('important'),
 }

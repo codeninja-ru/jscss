@@ -1,9 +1,11 @@
 import { Keyword } from "keywords";
+import { StringInputStream } from "stream/input";
 import { Symbols, SyntaxSymbol } from "symbols";
-import { TokenType } from "token";
-import { LazyNode, NodeType } from "./syntaxTree";
+import { Token, TokenType } from "token";
+import { lexer } from "./lexer";
+import { BlockNode, BlockType, LazyNode, NodeType } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
-import { ChildTokenStream, CommonChildTokenStream, TokenStream } from "./tokenStream";
+import { ArrayTokenStream, ChildTokenStream, CommonChildTokenStream, TokenStream } from "./tokenStream";
 import { peekAndSkipSpaces, TokenStreamReader } from "./tokenStreamReader";
 
 export function noLineTerminatorHere(stream : TokenStream) : void {
@@ -88,7 +90,7 @@ export function rawValue(parser : TokenParser) : TokenParser {
     };
 }
 
-export function list(parser: TokenParser, separator: TokenParser) : TokenParser {
+export function list(parser: TokenParser, separator: TokenParser, canListBeEmpty = false) : TokenParser {
     return function(stream: TokenStream) : ReturnType<TokenParser> {
         let result = [];
         do {
@@ -99,7 +101,7 @@ export function list(parser: TokenParser, separator: TokenParser) : TokenParser 
             }
         } while( optional(separator)(stream) );
 
-        if (result.length == 0) {
+        if (!canListBeEmpty && result.length == 0) {
             throw new Error(`list of elements is exptected`);
         }
 
@@ -245,7 +247,7 @@ export function symbol(ch: SyntaxSymbol, peekFn : TokenStreamReader = peekAndSki
 
 export const semicolon = symbol(Symbols.semicolon);
 
-export function anyBlock(stream: TokenStream) : LazyNode {
+export function lazyBlock(stream: TokenStream) : LazyNode {
     const token = peekAndSkipSpaces(stream);
     if (token.type == TokenType.Block || token.type == TokenType.LazyBlock) {
         return {
@@ -320,5 +322,36 @@ export function loop(parser : TokenParser) : TokenParser {
 
         return results;
 
+    };
+}
+
+type OneOfBlockToken = TokenType.Block | TokenType.LazyBlock | TokenType.RoundBrackets | TokenType.SquareBrackets | TokenType.SlashBrackets;
+export function block(expectedTokenType : OneOfBlockToken, parser : TokenParser) : TokenParser {
+    function getBlockType(token : Token) : BlockType {
+       switch(token.value[0]) {
+            case '(':
+            return BlockType.RoundBracket;
+            case '[':
+            return BlockType.SquareBracket;
+            case '{':
+            return BlockType.CurlyBracket;
+            default:
+            throw new Error(`bracket type ${token.value[0]} is unsupported`);
+        }
+    }
+    return function(stream : TokenStream) : ReturnType<TokenParser> {
+        const token = peekAndSkipSpaces(stream);
+        if (token.type == expectedTokenType) {
+            const tokens = lexer(new StringInputStream(token.value.slice(1, token.value.length - 1)));
+            const tokenStream = new ArrayTokenStream(tokens);
+            const blockType = getBlockType(token);
+            return {
+                type: NodeType.Block,
+                blockType: blockType,
+                items: parser(tokenStream),
+            } as BlockNode;
+        }
+
+        throw new Error(`block is expected, but ${JSON.stringify(token)} was given`);
     };
 }
