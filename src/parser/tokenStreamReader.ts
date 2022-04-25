@@ -3,6 +3,34 @@ import { TokenStream } from "./tokenStream";
 
 export type TokenStreamReader = (stream: TokenStream) => Token;
 
+export function isSpace(token : Token) : boolean {
+    return token.type == TokenType.Space;
+}
+
+export function isComment(token : Token) : boolean {
+    switch(token.type) {
+        case TokenType.Comment:
+        case TokenType.MultilineComment:
+        case TokenType.CssComment:
+            return true;
+        default:
+            return false;
+    }
+}
+
+export function isSpaceOrComment(token : Token) : boolean {
+    switch(token.type) {
+        case TokenType.Space:
+        case TokenType.Comment:
+        case TokenType.MultilineComment:
+        case TokenType.CssComment:
+            return true;
+        default:
+            return false;
+    }
+}
+
+
 export function peekNextToken(stream : TokenStream) : Token {
     if (stream.eof()) {
         throw new Error(`end of the file`);
@@ -14,13 +42,10 @@ export function peekNextToken(stream : TokenStream) : Token {
 export function peekAndSkipSpaces(stream: TokenStream) : Token {
     while (!stream.eof()) {
         const token = stream.next();
-        switch(token.type) {
-            case TokenType.Space:
-            case TokenType.Comment:
-            case TokenType.MultilineComment:
-                continue;
-            default:
-                return token;
+        if (isSpaceOrComment(token)) {
+            continue;
+        } else {
+            return token;
         }
     }
 
@@ -30,17 +55,15 @@ export function peekAndSkipSpaces(stream: TokenStream) : Token {
 export function peekNoLineTerminatorHere(stream: TokenStream) : Token {
     while (!stream.eof()) {
         const token = stream.next();
-        switch(token.type) {
-            case TokenType.Comment:
-            case TokenType.MultilineComment:
-                continue;
-            case TokenType.Space:
-                if (token.value.indexOf("\n") != -1) {
-                    throw new Error('no line terminator here')
-                }
-                continue;
-            default:
-                return token;
+        if (isComment(token)) {
+            continue;
+        } else if (isSpace(token)) {
+            if (token.value.indexOf("\n") != -1) {
+                throw new Error('no line terminator here')
+            }
+            continue;
+        } else {
+            return token;
         }
     }
 

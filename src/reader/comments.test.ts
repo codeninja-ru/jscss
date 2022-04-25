@@ -19,6 +19,22 @@ describe('makeCommentReader()', () => {
         });
     });
 
+    test('multiline comment, do not read forward', () => {
+        const reader = makeCommentAndRegexpReader(new StringInputStream("/* this is a comment \n\nnew line :-* */do_not_read"));
+        expect(reader()).toEqual({
+            type: TokenType.MultilineComment,
+            value: "/* this is a comment \n\nnew line :-* */"
+        });
+    });
+
+    test('multiline comment, do not read forward 2', () => {
+        const reader = makeCommentAndRegexpReader(new StringInputStream("/* test */no!"));
+        expect(reader()).toEqual({
+            type: TokenType.MultilineComment,
+            value: "/* test */"
+        });
+    });
+
     test('without the end', () => {
         const reader = makeCommentAndRegexpReader(new StringInputStream("/* this is a comment"));
         expect(reader()).toEqual({

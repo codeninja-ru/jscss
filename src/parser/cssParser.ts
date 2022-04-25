@@ -4,7 +4,7 @@ import { Keywords } from "keywords";
 import { Symbols } from "symbols";
 import { TokenType } from "token";
 import { anyLiteral, anyString, block, commaList, firstOf, keyword, list, loop, noSpacesHere, oneOfSymbols, optional, rawValue, regexpLiteral, roundBracket, semicolon, sequence, squareBracket, symbol } from "./parserUtils";
-import { CssBlockNode, NodeType } from "./syntaxTree";
+import { CssBlockNode, CssSelectorNode, NodeType } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
 
@@ -17,7 +17,7 @@ import { TokenStream } from "./tokenStream";
   ;
  *
  * */
-function stylesheetItem(stream : TokenStream) : void {
+export function stylesheetItem(stream : TokenStream) : void {
     //TODO everything that starts with @ can be optimized by combining together
     firstOf(
         // [ CHARSET_SYM STRING ';' ]?
@@ -71,12 +71,12 @@ function uri(stream : TokenStream) : void {
   ;
  * */
 function mediaList(stream : TokenStream) : void {
-    commaList(ident)(stream);
+    return commaList(ident)(stream);
 }
 
-function ident(stream : TokenStream) : void {
+function ident(stream : TokenStream) : string {
     //NOTE it can't be started with numbers, and content some chars, read the spec
-    anyLiteral(stream);
+    return anyLiteral(stream);
 }
 
 /**
@@ -86,11 +86,12 @@ function ident(stream : TokenStream) : void {
     '{' S* declaration? [ ';' S* declaration? ]* '}' S*
   ;
  * */
-function rulesetStatement(stream : TokenStream) : CssBlockNode {
+export function rulesetStatement(stream : TokenStream) : CssBlockNode {
     const selectors = commaList(selector)(stream);
     const cssBlock = block(TokenType.LazyBlock, list(
         declaration,
-        symbol(Symbols.semicolon)
+        symbol(Symbols.semicolon),
+        true,
     ))(stream);
 
     return {
@@ -180,9 +181,26 @@ function unaryOperator(stream : TokenStream) : void {
  * selector
   : simple_selector [ combinator selector | S+ [ combinator? selector ]? ]?
   ;
- * */
-function selector(stream : TokenStream) : void {
-    list(simpleSelector, optional(combinator))(stream); //TODO can we acutally do optional in the list?
+ * */ //TODO remove export
+export function selector(stream : TokenStream) : CssSelectorNode {
+    let result = [simpleSelector(stream)];
+    while(!stream.eof()) {
+        const comb = optional(combinator)(stream);
+        if (comb) {
+            result.push(comb);
+        }
+        const sel = optional(simpleSelector)(stream);
+        if (sel) {
+            result.push(sel);
+        } else {
+            break;
+        }
+    }
+
+    return {
+        type: NodeType.CssSelector,
+        items: result,
+    };
 }
 
 /**
@@ -211,8 +229,8 @@ function combinator(stream : TokenStream) : void {
   element_name
   : IDENT | '*'
   ;
- * */
-function simpleSelector(stream : TokenStream) : string {
+ * */ //TODO remove export
+export function simpleSelector(stream : TokenStream) : string {
     const elementName = firstOf(ident, symbol(Symbols.astersik));
     const cssClass = sequence(symbol(Symbols.dot), noSpacesHere, ident);
     const name = optional(elementName)(stream);

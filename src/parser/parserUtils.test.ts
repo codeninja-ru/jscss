@@ -3,7 +3,7 @@ import { StringInputStream } from "stream/input";
 import { Symbols } from "symbols";
 import { TokenType } from "token";
 import { lexer } from "./lexer";
-import { anyLiteral, block, commaList, firstOf, keyword, longestOf, noLineTerminatorHere, oneOfSymbols, optional, sequence, symbol } from "./parserUtils";
+import { anyLiteral, block, commaList, firstOf, keyword, longestOf, noLineTerminatorHere, oneOfSymbols, optional, sequence, spacesAndComments, symbol } from "./parserUtils";
 import { BlockType, NodeType } from "./syntaxTree";
 import { ArrayTokenStream, TokenStream } from "./tokenStream";
 
@@ -301,6 +301,21 @@ describe('parserUtils', () => {
                     optional(commaList(anyLiteral))
                 )(stream);
             }).toThrowError();
+        });
+
+    });
+
+    describe('spacesAndComments()', () => {
+        it('spaces and comments', () => {
+            const tokens = lexer(new StringInputStream(`  \n /* test */no!`))
+            const stream = new ArrayTokenStream(tokens);
+
+            const node = spacesAndComments(stream);
+            expect(node.type).toEqual(NodeType.Ignore);
+            expect(node.value).toEqual([
+                "  \n ",
+                "/* test */"
+            ]);
         });
 
     });

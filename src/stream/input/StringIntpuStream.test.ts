@@ -34,5 +34,11 @@ describe('class StringInputStream', () => {
         expect(input.readUntil('qwerty')).toEqual('\nqwerty');
         expect(input.readUntil('qwerty')).toEqual('');
         expect(input.formatError('error')).toEqual(new Error('error (2:0)'));
+
+        input = new StringInputStream('/* test */no');
+        input.next();
+        input.next();
+        expect(input.readUntil('*/')).toEqual(' test */');
+        expect(input.readUntil('test')).toEqual('no');
     });
 });

@@ -145,7 +145,7 @@ function takeWhile(stream: InputStream, fn: (ch: string) => boolean): string {
 
 export function readSymbol(stream : InputStream) : string {
     var symbolsFn = (ch: string) => {
-        return ".=<>-*+&|^@?:#".includes(ch);
+        return ".=<>-*+&|^@?:#!".includes(ch);
     };
 
     return takeWhile(stream, symbolsFn);

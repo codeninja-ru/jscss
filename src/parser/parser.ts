@@ -905,7 +905,7 @@ function declaration(stream : TokenStream) : void {
     )(stream);
 }
 
-function statementListItem(stream : TokenStream) : void {
+export function statementListItem(stream : TokenStream) : void {
     return firstOf(
         parseJsStatement,
         declaration,
@@ -1004,7 +1004,7 @@ function exportDeclaration(stream : TokenStream) : void {
     )(stream);
 }
 
-function moduleItem(stream : TokenStream) : void {
+export function moduleItem(stream : TokenStream) : void {
     return firstOf(
         // ImportDeclaration
         importDeclaration,

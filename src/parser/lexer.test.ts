@@ -104,6 +104,17 @@ function process(css) {
         ]);
     });
 
+    test('simple condition', () => {
+        const tokens = lexer(new StringInputStream(`1 != 2 ? yes : no`));
+        expect(tokens).toEqual([
+            makeLiteralToken('1'), sp, makeSymbolToken('!='), sp,
+            makeLiteralToken('2'), sp, makeSymbolToken('?'), sp,
+            makeLiteralToken('yes'), sp, makeSymbolToken(':'), sp,
+            makeLiteralToken('no')
+        ]);
+    });
+
+
     test('simple javascript var', () => {
         const tokens = lexer(new StringInputStream(`var name = fn(1,2)[1,2].test`));
         expect(tokens).toEqual([
@@ -123,7 +134,6 @@ function process(css) {
         ]);
     });
 
-
     test('semicolon', () => {
         const tokens = lexer(new StringInputStream(`++;--`));
         expect(tokens).toEqual([
@@ -138,5 +148,22 @@ function process(css) {
             { type: TokenType.CssComment, value: '<!-- this is a comment -->'}
         ]);
     });
+
+    test('css important', () => {
+        const script = '!important';
+        const tokens = lexer(new StringInputStream(script));
+        expect(tokens).toEqual([
+            makeSymbolToken('!'), makeLiteralToken('important')
+        ]);
+    });
+
+    test('lodash is the part of the literal', () => {
+        const script = 'var_name';
+        const tokens = lexer(new StringInputStream(script));
+        expect(tokens).toEqual([
+            makeLiteralToken('var_name')
+        ]);
+    });
+
 
 });

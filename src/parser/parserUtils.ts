@@ -6,7 +6,7 @@ import { lexer } from "./lexer";
 import { BlockNode, BlockType, LazyNode, NodeType } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { ArrayTokenStream, ChildTokenStream, CommonChildTokenStream, TokenStream } from "./tokenStream";
-import { peekAndSkipSpaces, TokenStreamReader } from "./tokenStreamReader";
+import { isSpaceOrComment, peekAndSkipSpaces, TokenStreamReader } from "./tokenStreamReader";
 
 export function noLineTerminatorHere(stream : TokenStream) : void {
     while(!stream.eof()) {
@@ -169,7 +169,7 @@ export function firstOf(...parsers: TokenParser[]) : TokenParser {
             }
         }
 
-        throw new Error(`none of the parsers worked`)
+        throw new Error(`unknow statement at ${JSON.stringify(stream.takeNext())}`)
     };
 }
 
@@ -309,6 +309,19 @@ export function regexpLiteral(reg : RegExp, peekFn : TokenStreamReader = peekAnd
     };
 }
 
+export function strictLoop(parser : TokenParser) : TokenParser {
+    return function(stream : TokenStream) : ReturnType<TokenParser> {
+        let results = [] as ReturnType<TokenParser>[];
+        while(!stream.eof()) {
+            const result = parser(stream);
+            results.push(result);
+        }
+
+        return results;
+
+    };
+}
+
 export function loop(parser : TokenParser) : TokenParser {
     return function(stream : TokenStream) : ReturnType<TokenParser> {
         let results = [] as ReturnType<TokenParser>[];
@@ -354,4 +367,21 @@ export function block(expectedTokenType : OneOfBlockToken, parser : TokenParser)
 
         throw new Error(`block is expected, but ${JSON.stringify(token)} was given`);
     };
+}
+
+export function spacesAndComments(stream : TokenStream) : ReturnType<TokenParser> {
+    const result = [];
+    while(!stream.eof()) {
+        const token = stream.takeNext();
+        if (isSpaceOrComment(token)) {
+            result.push(stream.next().value);
+        } else {
+            break;
+        }
+    }
+
+    return {
+        type: NodeType.Ignore,
+        value: result
+    }
 }

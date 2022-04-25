@@ -39,7 +39,7 @@ export class StringInputStream implements InputStream {
             return result;
         }
 
-        const result = this.input.substr(this.pos, idx + str.length);
+        const result = this.input.substr(this.pos, idx - this.pos + str.length);
         this.pos = idx + str.length;
 
         var lineCount = 0;

@@ -20,6 +20,11 @@ export enum NodeType {
 
     Lazy,
     Block,
+    Ignore,
+
+    CssSelector,
+
+    JssScript,
 }
 
 export enum BlockType {
@@ -77,6 +82,10 @@ export interface JsScriptNode extends MultiNode {
     type: NodeType.JsScript,
 }
 
+export interface JssScriptNode extends MultiNode {
+    type: NodeType.JssScript,
+}
+
 export interface JsModuleNode extends MultiNode {
     type: NodeType.JsModule,
 }
@@ -101,4 +110,9 @@ export interface CssImportNode extends Node {
 export interface LazyNode extends Node {
     type: NodeType.Lazy,
     value: string,
+}
+
+export interface CssSelectorNode extends Node {
+    type: NodeType.CssSelector,
+    items: string[];
 }
