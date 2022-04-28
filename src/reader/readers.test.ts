@@ -7,8 +7,8 @@ describe('makeStringReader()', () => {
         const reader1 = makeStringReader(new StringInputStream(`'test string \\'' next`), "'");
         const reader2 = makeStringReader(new StringInputStream('"test string \\"" next'), '"');
 
-        expect(reader1()).toEqual({ "type": TokenType.String, "value": "'test string \\''" });
-        expect(reader2()).toEqual({ "type": TokenType.String, "value": "\"test string \\\"\"" });
+        expect(reader1()).toEqual({ "type": TokenType.String, "value": "'test string \\''", position: expect.anything() });
+        expect(reader2()).toEqual({ "type": TokenType.String, "value": "\"test string \\\"\"", position: expect.anything()  });
     });
 
     test('incorect strings', () => {
@@ -25,19 +25,19 @@ describe('makeStringReader()', () => {
 describe('makeBracketsReader', () => {
     test('round brackets', () => {
         const stream = new StringInputStream('(arg1, foo(prop1, prop2[1]), ...rest) test of the stream');
-        expect(makeBracketsReader(stream, '(', ')')()).toEqual({ type: TokenType.RoundBrackets, value: '(arg1, foo(prop1, prop2[1]), ...rest)' });
+        expect(makeBracketsReader(stream, '(', ')')()).toEqual({ type: TokenType.RoundBrackets, value: '(arg1, foo(prop1, prop2[1]), ...rest)', position: expect.anything()  });
     });
 
     test('square brackets', () => {
         const stream = new StringInputStream('[1, 2, 3, [...array], 4] rest of the stream');
-        expect(makeBracketsReader(stream, '[', ']')()).toEqual({ type: TokenType.SquareBrackets, value: '[1, 2, 3, [...array], 4]' });
+        expect(makeBracketsReader(stream, '[', ']')()).toEqual({ type: TokenType.SquareBrackets, value: '[1, 2, 3, [...array], 4]', position: expect.anything()  });
     });
 });
 
 describe('makeTemplateStringReader', () => {
     test('simple template', () => {
         const stream = new StringInputStream('`hello, \\`${userName}\\`` rest of the stream');
-        expect(makeTemplateStringReader(stream)()).toEqual({ type: TokenType.TemplateString, value: '`hello, \\`${userName}\\``' });
+        expect(makeTemplateStringReader(stream)()).toEqual({ type: TokenType.TemplateString, value: '`hello, \\`${userName}\\``', position: expect.anything()  });
     });
 
 });
@@ -52,6 +52,7 @@ describe('makeRegExpReader', () => {
         const reader = makeRegExpReader(new StringInputStream(/[a-z]*\/(.?)/gi + ""));
         expect(reader()).toEqual({
             type: TokenType.SlashBrackets,
+            position: expect.anything(),
             value: "/[a-z]*\\/(.?)/"
         });
     });

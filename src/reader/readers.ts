@@ -8,7 +8,8 @@ export function makeSpaceReader(stream: InputStream): Reader {
         if (KindOfSpaceInputStream.isKindOfSpace(stream.peek())) {
             return {
                 type: TokenType.Space,
-                value: readToEnd(new KindOfSpaceInputStream(stream))
+                position: stream.position(),
+                value: readToEnd(new KindOfSpaceInputStream(stream)),
             } as SpaceToken;
         }
 
@@ -23,6 +24,7 @@ export function makeCommaReader(stream: InputStream): Reader {
             stream.next();
             return {
                 type: TokenType.Comma,
+                position: stream.position(),
                 value: ','
             } as CommaToken;
         }
@@ -38,6 +40,7 @@ export function makeSemicolonReader(stream: InputStream): Reader {
             stream.next();
             return {
                 type: TokenType.Symbol,
+                position: stream.position(),
                 value: ';'
             } as SymbolToken;
         }
@@ -51,6 +54,7 @@ export function makeLiteralReader(stream: InputStream): Reader {
         if (LiteralInputStream.isLiteral(stream.peek())) {
             return {
                 type: TokenType.Literal,
+                position: stream.position(),
                 value: readToEnd(new LiteralInputStream(stream))
             } as Token;
         }
@@ -64,6 +68,7 @@ export function makeBlockReader(stream: InputStream): Reader {
         if (BlockInputStream.isBlockStart(stream.peek())) {
             return {
                 type: TokenType.LazyBlock,
+                position: stream.position(),
                 value: readToEnd(new BlockInputStream(stream)),
             } as Token;
         }
@@ -86,6 +91,7 @@ export function makeStringReader(stream: InputStream, quatation: "'" | '"'): Rea
                 if (!isEscapeMode && ch == quatation) {
                     return {
                         type: TokenType.String,
+                        position: stream.position(),
                         value: result,
                     } as Token;
                 }
@@ -117,6 +123,7 @@ export function makeRegExpReader(stream: InputStream): Reader {
                     if (result.length > 2) { // regexp can't be empty (//)
                         return {
                             type: TokenType.SlashBrackets,
+                            position: stream.position(),
                             value: result,
                         } as Token;
                     } else {
@@ -158,6 +165,7 @@ export function makeSymbolReader(stream: InputStream): Reader {
         if (result.length > 0) {
             return {
                 type: TokenType.Symbol,
+                position: stream.position(),
                 value: result
             } as Token;
         }
@@ -182,6 +190,7 @@ export function makeBracketsReader(stream: InputStream, startBracket: '(' | '[',
                 if (level == 0) {
                     return {
                         type: startBracket == '(' ? TokenType.RoundBrackets : TokenType.SquareBrackets,
+                        position: stream.position(),
                         value: result
                     } as Token;
                 }
@@ -207,6 +216,7 @@ export function makeTemplateStringReader(stream: InputStream): Reader {
                 } else if (ch == '`') {
                     return {
                         type: TokenType.TemplateString,
+                        position: stream.position(),
                         value: result,
                     } as Token;
                 } else if (ch == ESCAPE_SYMBOL) {

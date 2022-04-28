@@ -31,7 +31,7 @@ describe('parseStream()', () => {
         const tokens = lexer(new StringInputStream(SIMPLE_CSS));
         expect(tokens).toEqual([
             spn,
-            { type: TokenType.Comment, value: '// this is a comment' },
+            { type: TokenType.Comment, position: expect.anything(), value: '// this is a comment' },
             spnspn,
             makeSymbolToken('.'),
             makeLiteralToken('className'),
@@ -44,7 +44,7 @@ describe('parseStream()', () => {
     font-size: 12px;
     color: \$\{color(\"#eee\")\};
     background: \$\{func()\};
-}`
+}`, position: expect.anything(),
             },
             spn,
         ]);
@@ -145,7 +145,7 @@ function process(css) {
         const script = '<!-- this is a comment -->';
         const tokens = lexer(new StringInputStream(script));
         expect(tokens).toEqual([
-            { type: TokenType.CssComment, value: '<!-- this is a comment -->'}
+            { type: TokenType.CssComment, value: '<!-- this is a comment -->', position: expect.anything()}
         ]);
     });
 

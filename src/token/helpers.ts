@@ -4,6 +4,7 @@ export function makeLiteralToken(value: string): LiteralToken  {
     return {
         type: TokenType.Literal,
         value,
+        position: expect.anything(),
     };
 }
 
@@ -11,12 +12,14 @@ export function makeStringToken(value: string): StringToken {
     return {
         type: TokenType.String,
         value,
+        position: expect.anything(),
     }
 }
 
 export function makeSpaceToken(value: string = ' '): SpaceToken {
     return {
         type: TokenType.Space,
+        position: expect.anything(),
         value,
     };
 }
@@ -24,6 +27,7 @@ export function makeSpaceToken(value: string = ' '): SpaceToken {
 export function makeLazyBlockToken(value: string): LazyBlockToken {
     return {
         type: TokenType.LazyBlock,
+        position: expect.anything(),
         value,
     }
 }
@@ -31,6 +35,7 @@ export function makeLazyBlockToken(value: string): LazyBlockToken {
 export function makeSymbolToken(value: string): SymbolToken {
     return {
         type: TokenType.Symbol,
+        position: expect.anything(),
         value,
     }
 }
@@ -38,6 +43,7 @@ export function makeSymbolToken(value: string): SymbolToken {
 export function makeRoundBracketsToken(value: string): RoundBracketsToken {
     return {
         type: TokenType.RoundBrackets,
+        position: expect.anything(),
         value,
     }
 }
@@ -45,6 +51,7 @@ export function makeRoundBracketsToken(value: string): RoundBracketsToken {
 export function makeSquareBracketsToken(value: string): SquareBracketsToken {
     return {
         type: TokenType.SquareBrackets,
+        position: expect.anything(),
         value,
     }
 }
@@ -52,6 +59,7 @@ export function makeSquareBracketsToken(value: string): SquareBracketsToken {
 export function makeCommaToken(value: string = ','): CommaToken {
     return {
         type: TokenType.Comma,
+        position: expect.anything(),
         value,
     };
 }

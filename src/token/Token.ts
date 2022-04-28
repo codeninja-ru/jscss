@@ -1,3 +1,5 @@
+import { Position } from "stream/position";
+
 export type Token = SpaceToken | CommentToken | CssCommentToken |
     MultilineCommentToken | BlockToken |
     LiteralToken | LazyBlockToken |
@@ -26,6 +28,7 @@ export enum TokenType {
 interface BaseToken {
     readonly type: TokenType;
     value: string;
+    position: Position;
 }
 
 export interface SpaceToken extends BaseToken {

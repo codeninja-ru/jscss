@@ -16,7 +16,7 @@ export function noLineTerminatorHere(stream : TokenStream) : void {
                 stream.next();
                 continue;
             } else {
-                throw new Error('no line terminator here');
+                throw stream.formatError('no line terminator here');
             }
         } else {
             break;
@@ -28,7 +28,7 @@ export function noSpacesHere(stream : TokenStream) : void {
     while(!stream.eof()) {
         const token = stream.takeNext();
         if (token.type == TokenType.Space) {
-            throw new Error('no spaces here');
+            throw stream.formatError('no spaces here');
         } else {
             break;
         }
@@ -41,7 +41,7 @@ export function keyword(keyword: Keyword, peekFn : TokenStreamReader = peekAndSk
         if (token.type == TokenType.Literal && keyword.equal(token)) {
             return token.value;
         } else {
-            throw new Error(`keyword ${keyword.name} is expected, but ${JSON.stringify(token)} was given`);
+            throw stream.formatError(`keyword "${keyword.name}" is expected`);
         }
     };
 }
@@ -52,7 +52,7 @@ export function comma(stream: TokenStream) : string {
         return token.value;
     }
 
-    throw new Error(`, is expected, but ${JSON.stringify(token)} was given`);
+    throw stream.formatError(`, is expected`);
 }
 
 export function commaList(parser: TokenParser) : TokenParser {
@@ -102,7 +102,7 @@ export function list(parser: TokenParser, separator: TokenParser, canListBeEmpty
         } while( optional(separator)(stream) );
 
         if (!canListBeEmpty && result.length == 0) {
-            throw new Error(`list of elements is exptected`);
+            throw stream.formatError(`list of elements is exptected`);
         }
 
         return result;
@@ -137,7 +137,7 @@ export function longestOf(...parsers: TokenParser[]) : TokenParser {
         }
 
         if (result.length == 0) {
-            throw new Error(`none of the parsers worked`)
+            throw stream.formatError(`none of the parsers worked`)
         } else {
             const [longestResult, longestStream] = result.reduce((prevValue, curValue) => {
                 if (curValue[1].currentPosition() > prevValue[1].currentPosition()) {
@@ -154,7 +154,6 @@ export function longestOf(...parsers: TokenParser[]) : TokenParser {
     };
 }
 
-// TODO reanme to or
 export function firstOf(...parsers: TokenParser[]) : TokenParser {
     return function(stream: TokenStream) : any[] {
         let errors = [];
@@ -169,7 +168,7 @@ export function firstOf(...parsers: TokenParser[]) : TokenParser {
             }
         }
 
-        throw new Error(`unknow statement at ${JSON.stringify(stream.takeNext())}`)
+        throw stream.formatError(`unknown statement "${stream.takeNext().value}"`)
     };
 }
 
@@ -203,7 +202,7 @@ export function oneOfSymbols(...chars: SyntaxSymbol[]) : TokenParser {
             return token.value;
         }
 
-        throw new Error(`one of ${chars} is expected, but ${JSON.stringify(token)} was given`);
+        throw stream.formatError(`one of ${chars} is expected`);
     };
 }
 
@@ -213,7 +212,7 @@ export function anyString(stream: TokenStream) : string {
         return token.value;
     }
 
-    throw new Error(`string literal is expected, byt ${JSON.stringify(token)} was given`);
+    throw stream.formatError(`string literal is expected`);
 }
 
 export function anyTempateStringLiteral(stream: TokenStream) : string {
@@ -222,7 +221,7 @@ export function anyTempateStringLiteral(stream: TokenStream) : string {
         return token.value;
     }
 
-    throw new Error(`template string literal is expected, byt ${JSON.stringify(token)} was given`);
+    throw stream.formatError(`template string literal is expected`);
 }
 
 export function anyLiteral(stream: TokenStream) : string {
@@ -231,7 +230,7 @@ export function anyLiteral(stream: TokenStream) : string {
         return token.value;
     }
 
-    throw new Error(`any literal is expteced, but ${JSON.stringify(token)} was given`);
+    throw stream.formatError(`any literal is expteced`);
 }
 
 export function symbol(ch: SyntaxSymbol, peekFn : TokenStreamReader = peekAndSkipSpaces) : TokenParser {
@@ -241,7 +240,7 @@ export function symbol(ch: SyntaxSymbol, peekFn : TokenStreamReader = peekAndSki
             return token.value;
         }
 
-        throw new Error(`${ch.name} is expected, but ${JSON.stringify(token)} was given`);
+        throw stream.formatError(`${ch.name} is expected`);
     };
 }
 
@@ -256,7 +255,7 @@ export function lazyBlock(stream: TokenStream) : LazyNode {
         };
     }
 
-    throw new Error(`block is expected, but ${JSON.stringify(token)} was given`);
+    throw stream.formatError(`block is expected`);
 }
 
 export function leftHandRecurciveRule(leftRule : TokenParser, rightRule : TokenParser) : TokenParser {
@@ -282,7 +281,7 @@ export function squareBracket(stream: TokenStream) : string {
         return token.value;
     }
 
-    throw new Error('squere brackets were expected, but ${JSON.stringify(token) was given}');
+    throw stream.formatError(`squere brackets were expected`);
 }
 
 export function roundBracket(stream: TokenStream) : LazyNode {
@@ -295,7 +294,7 @@ export function roundBracket(stream: TokenStream) : LazyNode {
         };
     }
 
-    throw new Error('round brackets were expected, but ${JSON.stringify(token) was given}');
+    throw stream.formatError(`round brackets were expected`);
 }
 
 export function regexpLiteral(reg : RegExp, peekFn : TokenStreamReader = peekAndSkipSpaces) : TokenParser {
@@ -304,7 +303,7 @@ export function regexpLiteral(reg : RegExp, peekFn : TokenStreamReader = peekAnd
         if (token.type == TokenType.Literal && reg.test(token.value)) {
             return token.value;
         } else {
-            throw new Error(`expected literal matched to regexp ${reg}, but token was given ${token}`);
+            throw stream.formatError(`expected literal matched to regexp ${reg}`);
         }
     };
 }
@@ -340,7 +339,7 @@ export function loop(parser : TokenParser) : TokenParser {
 
 type OneOfBlockToken = TokenType.Block | TokenType.LazyBlock | TokenType.RoundBrackets | TokenType.SquareBrackets | TokenType.SlashBrackets;
 export function block(expectedTokenType : OneOfBlockToken, parser : TokenParser) : TokenParser {
-    function getBlockType(token : Token) : BlockType {
+    function getBlockType(token : Token, stream : TokenStream) : BlockType {
        switch(token.value[0]) {
             case '(':
             return BlockType.RoundBracket;
@@ -349,7 +348,7 @@ export function block(expectedTokenType : OneOfBlockToken, parser : TokenParser)
             case '{':
             return BlockType.CurlyBracket;
             default:
-            throw new Error(`bracket type ${token.value[0]} is unsupported`);
+            throw stream.formatError(`bracket type ${token.value[0]} is unsupported`);
         }
     }
     return function(stream : TokenStream) : ReturnType<TokenParser> {
@@ -357,7 +356,7 @@ export function block(expectedTokenType : OneOfBlockToken, parser : TokenParser)
         if (token.type == expectedTokenType) {
             const tokens = lexer(new StringInputStream(token.value.slice(1, token.value.length - 1)));
             const tokenStream = new ArrayTokenStream(tokens);
-            const blockType = getBlockType(token);
+            const blockType = getBlockType(token, stream);
             return {
                 type: NodeType.Block,
                 blockType: blockType,
@@ -365,7 +364,7 @@ export function block(expectedTokenType : OneOfBlockToken, parser : TokenParser)
             } as BlockNode;
         }
 
-        throw new Error(`block is expected, but ${JSON.stringify(token)} was given`);
+        throw stream.formatError(`block is expected`);
     };
 }
 

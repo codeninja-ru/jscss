@@ -18,12 +18,14 @@ export function makeCommentAndRegexpReader(stream: InputStream): Reader {
                 // comment
                 return {
                     type: TokenType.Comment,
+                    position: stream.position(),
                     value: '/' + ch + readToEnd(new TillEndOfLineStream(stream))
                 } as Token;
             } else if (ch == '*') {
                 var comment = stream.readUntil('*/')
                 return {
                     type: TokenType.MultilineComment,
+                    position: stream.position(),
                     value: '/' + ch + comment
                 } as Token;
             } else {
@@ -53,6 +55,7 @@ export function makeCssCommentReader(stream: InputStream): Reader {
             if (stream.peek() != '!') {
                 return {
                     type: TokenType.Symbol,
+                    position: stream.position(),
                     value: '<' + readSymbol(stream),
                 }
             }
@@ -64,6 +67,7 @@ export function makeCssCommentReader(stream: InputStream): Reader {
             var comment = stream.readUntil('-->');
             return {
                 type: TokenType.CssComment,
+                position: stream.position(),
                 value: '<!--' + comment,
             } as Token;
         }

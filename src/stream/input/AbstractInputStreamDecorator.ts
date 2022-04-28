@@ -1,3 +1,4 @@
+import { Position } from 'stream/position';
 import { InputStream } from './InputStream';
 
 export abstract class AbstractInputStreamDecorator implements InputStream {
@@ -24,4 +25,8 @@ export abstract class AbstractInputStreamDecorator implements InputStream {
     }
 
     abstract isEof(): boolean;
+
+    position() : Position {
+        return this.stream.position();
+    }
 }

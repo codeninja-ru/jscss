@@ -1,3 +1,4 @@
+import { Position } from 'stream/position';
 import { InputStream } from './InputStream';
 
 export class StringInputStream implements InputStream {
@@ -50,5 +51,12 @@ export class StringInputStream implements InputStream {
         this.line += lineCount;
 
         return result;
+    }
+
+    position() : Position {
+        return {
+            line: this.line,
+            col: this.col,
+        }
     }
 }
