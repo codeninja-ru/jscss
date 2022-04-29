@@ -4,7 +4,7 @@ import { lexer } from "./lexer";
 import { NodeType } from "./syntaxTree";
 import { ArrayTokenStream, CommonChildTokenStream } from "./tokenStream";
 
-const SIMPLE = `import _ form 'lodash';
+const SIMPLE = `import _ from 'lodash';
 @import 'style.css';
 
 const color = '#fff';
@@ -15,7 +15,7 @@ const color = '#fff';
 }`;
 
 describe('parseJssScript()', () => {
-    test('simple script', () => {
+    it('simple script', () => {
         const tokens = lexer(new StringInputStream(SIMPLE));
         const stream = new CommonChildTokenStream(new ArrayTokenStream(tokens));
         const node = parseJssScript(stream);

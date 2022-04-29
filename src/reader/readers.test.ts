@@ -16,8 +16,8 @@ describe('makeStringReader()', () => {
         const readerNotOpened = makeStringReader(new StringInputStream("test string '"), "'");
         const readerLineBreaked = makeStringReader(new StringInputStream("'test \n string'"), "'");
 
-        expect(() => readerNotClosed()).toThrow('unexpected end of the string (1:13)');
-        expect(() => readerLineBreaked()).toThrow('unexpected end of the string (2:0)');
+        expect(() => readerNotClosed()).toThrow('unexpected end of the string (1:14)');
+        expect(() => readerLineBreaked()).toThrow('unexpected end of the string (2:1)');
         expect(readerNotOpened()).toBeNull();
     });
 });
@@ -67,7 +67,7 @@ describe('makeRegExpReader', () => {
         //thows error
         expect(() => {
             reader();
-        }).toThrowError('unexpected end of the regexp (1:13)');
+        }).toThrowError('unexpected end of the regexp (1:14)');
     });
 
 

@@ -5,7 +5,7 @@ export class StringInputStream implements InputStream {
     private input = '';
     private pos = 0;
     private line = 1;
-    private col = 0;
+    private col = 1;
 
     constructor(input: string) {
         this.input = input;
@@ -16,7 +16,7 @@ export class StringInputStream implements InputStream {
         if (ch == '') {
             throw this.formatError('reading beyond the end of the stream');
         }
-        if (ch == "\n") this.line++, this.col = 0; else this.col++;
+        if (ch == "\n") this.line++, this.col = 1; else this.col++;
         return ch;
     }
 

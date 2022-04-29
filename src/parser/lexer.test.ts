@@ -30,10 +30,10 @@ describe('parseStream()', () => {
     test('simple css', () => {
         const tokens = lexer(new StringInputStream(SIMPLE_CSS));
         expect(tokens).toEqual([
-            spn,
-            { type: TokenType.Comment, position: expect.anything(), value: '// this is a comment' },
+            {type: TokenType.Space, value: "\n", position: {line: 1, col: 1}},
+            { type: TokenType.Comment, position: {line: 2, col: 1}, value: '// this is a comment' },
             spnspn,
-            makeSymbolToken('.'),
+            {type: TokenType.Symbol, value: '.', position: {line: 4, col: 1}},
             makeLiteralToken('className'),
             sp,
             {
@@ -164,6 +164,4 @@ function process(css) {
             makeLiteralToken('var_name')
         ]);
     });
-
-
 });

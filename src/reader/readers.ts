@@ -1,4 +1,5 @@
 import { BlockInputStream, InputStream, KindOfSpaceInputStream, LiteralInputStream, readToEnd } from "stream/input";
+import { Position } from "stream/position";
 import { CommaToken, SpaceToken, SymbolToken, Token, TokenType } from "token";
 
 export type Reader = () => Token | null;
@@ -37,10 +38,11 @@ export function makeSemicolonReader(stream: InputStream): Reader {
     return function() {
         var ch = stream.peek();
         if (ch == ';') {
+            const pos = stream.position();
             stream.next();
             return {
                 type: TokenType.Symbol,
-                position: stream.position(),
+                position: pos,
                 value: ';'
             } as SymbolToken;
         }
@@ -140,17 +142,23 @@ export function makeRegExpReader(stream: InputStream): Reader {
     };
 }
 
-function takeWhile(stream: InputStream, fn: (ch: string) => boolean): string {
-    var result = '';
+function takeWhile(stream: InputStream, fn: (ch: string) => boolean): [string, Position?] {
+    if (fn(stream.peek())) {
+        const pos = stream.position();
+        let result = stream.next();
 
-    while (!stream.isEof() && fn(stream.peek())) {
-        result += stream.next();
+        while (!stream.isEof() && fn(stream.peek())) {
+            result += stream.next();
+        }
+
+        return [result, pos];
+    } else {
+        return ['', undefined];
     }
 
-    return result;
 }
 
-export function readSymbol(stream : InputStream) : string {
+export function readSymbol(stream : InputStream) : [string, Position?] {
     var symbolsFn = (ch: string) => {
         return ".=<>-*+&|^@?:#!".includes(ch);
     };
@@ -160,12 +168,12 @@ export function readSymbol(stream : InputStream) : string {
 
 export function makeSymbolReader(stream: InputStream): Reader {
     return function() {
-        var result = readSymbol(stream);
+        var [result, pos] = readSymbol(stream);
 
         if (result.length > 0) {
             return {
                 type: TokenType.Symbol,
-                position: stream.position(),
+                position: pos,
                 value: result
             } as Token;
         }

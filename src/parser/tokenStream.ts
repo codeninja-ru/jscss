@@ -2,7 +2,7 @@ import { Token } from "token";
 
 export interface TokenStream {
     take(idx: number): Token;
-    takeNext(): Token;
+    peek(): Token;
     next(): Token;
     movePosition(newPos: number): void;
     eof(): boolean;
@@ -11,12 +11,8 @@ export interface TokenStream {
     formatError(message : string) : Error;
 };
 
-function sprintPos(token : Token) : string {
-    return `(${token.position.line}:${token.position.col})`;
-}
-
-function formatError(stream : TokenStream, errorMessage : string) : Error {
-    return new Error (`${sprintPos(stream.takeNext())} : ` + errorMessage);
+function formatError(token : Token, errorMessage : string) : Error {
+    return new Error (`(${token.position.line}:${token.position.col}) : ` + errorMessage);
 }
 
 export interface ChildTokenStream extends TokenStream {
@@ -37,7 +33,7 @@ export class ArrayTokenStream implements TokenStream {
         return this.tokens[this.pos++];
     }
 
-    takeNext() : Token {
+    peek() : Token {
         return this.tokens[this.pos];
     }
 
@@ -58,7 +54,7 @@ export class ArrayTokenStream implements TokenStream {
     }
 
     formatError(message : string) : Error {
-        return formatError(this, message);
+        return formatError(this.peek(), message);
     }
 }
 
@@ -78,7 +74,7 @@ export class CommonChildTokenStream implements ChildTokenStream {
         return this.parent.take(idx);
     }
 
-    takeNext() : Token {
+    peek() : Token {
         return this.parent.take(this.pos);
     }
 
@@ -112,7 +108,6 @@ export class CommonChildTokenStream implements ChildTokenStream {
     }
 
     formatError(message : string) : Error {
-        return this.parent.formatError(message);
+        return formatError(this.peek(), message);
     }
-
 }

@@ -10,7 +10,7 @@ import { isSpaceOrComment, peekAndSkipSpaces, TokenStreamReader } from "./tokenS
 
 export function noLineTerminatorHere(stream : TokenStream) : void {
     while(!stream.eof()) {
-        const token = stream.takeNext();
+        const token = stream.peek();
         if (token.type == TokenType.Space) {
             if (token.value.indexOf('\n') === -1) {
                 stream.next();
@@ -26,7 +26,7 @@ export function noLineTerminatorHere(stream : TokenStream) : void {
 
 export function noSpacesHere(stream : TokenStream) : void {
     while(!stream.eof()) {
-        const token = stream.takeNext();
+        const token = stream.peek();
         if (token.type == TokenType.Space) {
             throw stream.formatError('no spaces here');
         } else {
@@ -168,7 +168,7 @@ export function firstOf(...parsers: TokenParser[]) : TokenParser {
             }
         }
 
-        throw stream.formatError(`unknown statement "${stream.takeNext().value}"`)
+        throw stream.formatError(`unknown statement "${stream.peek().value}"`)
     };
 }
 
@@ -371,7 +371,7 @@ export function block(expectedTokenType : OneOfBlockToken, parser : TokenParser)
 export function spacesAndComments(stream : TokenStream) : ReturnType<TokenParser> {
     const result = [];
     while(!stream.eof()) {
-        const token = stream.takeNext();
+        const token = stream.peek();
         if (isSpaceOrComment(token)) {
             result.push(stream.next().value);
         } else {

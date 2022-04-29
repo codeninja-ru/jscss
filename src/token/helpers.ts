@@ -1,10 +1,10 @@
 import { CommaToken, LazyBlockToken, LiteralToken, RoundBracketsToken, SpaceToken, SquareBracketsToken, StringToken, SymbolToken, TokenType } from "./Token";
 
-export function makeLiteralToken(value: string): LiteralToken  {
+export function makeLiteralToken(value: string, pos = expect.anything()): LiteralToken  {
     return {
         type: TokenType.Literal,
         value,
-        position: expect.anything(),
+        position: pos,
     };
 }
 

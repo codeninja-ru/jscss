@@ -5,11 +5,11 @@ import { ArrayTokenStream, CommonChildTokenStream } from "./tokenStream";
 describe('ArrayTokenStream', () => {
     test('all methods', () => {
         const tokens = [
-            makeLiteralToken("i1"),
-            makeLiteralToken("i2"),
-            makeLiteralToken("i3"),
-            makeLiteralToken("i4"),
-            makeLiteralToken("i5"),
+            makeLiteralToken("i1", {line: 1, col: 1}),
+            makeLiteralToken("i2", {line: 2, col: 1}),
+            makeLiteralToken("i3", {line: 3, col: 1}),
+            makeLiteralToken("i4", {line: 3, col: 1}),
+            makeLiteralToken("i5", {line: 4, col: 1}),
         ] as Token[];
 
         const stream = new ArrayTokenStream(tokens);
@@ -17,13 +17,16 @@ describe('ArrayTokenStream', () => {
         expect(stream.eof()).toBeFalsy();
         expect(stream.take(1).value).toEqual("i2");
         expect(stream.currentPosition()).toEqual(0);
-        expect(stream.takeNext().value).toEqual("i1");
+        expect(stream.peek().value).toEqual("i1");
+        expect(stream.formatError('error')).toEqual(new Error('(1:1) : error'));
         expect(stream.currentPosition()).toEqual(0);
         expect(stream.next().value).toEqual("i1");
         expect(stream.currentPosition()).toEqual(1);
-        expect(stream.takeNext().value).toEqual("i2");
+        expect(stream.peek().value).toEqual("i2");
         expect(stream.currentPosition()).toEqual(1);
+        expect(stream.formatError('error')).toEqual(new Error('(1:1) : error'));
         expect(stream.next().value).toEqual("i2");
+        expect(stream.formatError('error')).toEqual(new Error('(2:1) : error'));
         expect(stream.next().value).toEqual("i3");
         expect(stream.next().value).toEqual("i4");
         expect(stream.eof()).toBeFalsy();
@@ -36,25 +39,29 @@ describe('ArrayTokenStream', () => {
 describe('CommonChildTokenStream', () => {
     test('all methods', () => {
         const tokens = [
-            makeLiteralToken("i1"),
-            makeLiteralToken("i2"),
-            makeLiteralToken("i3"),
-            makeLiteralToken("i4"),
-            makeLiteralToken("i5"),
+            makeLiteralToken("i1", {line: 1, col: 1}),
+            makeLiteralToken("i2", {line: 2, col: 1}),
+            makeLiteralToken("i3", {line: 3, col: 1}),
+            makeLiteralToken("i4", {line: 3, col: 1}),
+            makeLiteralToken("i5", {line: 4, col: 1}),
         ] as Token[];
 
         const stream = new CommonChildTokenStream(new ArrayTokenStream(tokens));
 
         expect(stream.eof()).toBeFalsy();
         expect(stream.take(1).value).toEqual("i2");
+        expect(stream.formatError('error')).toEqual(new Error('(1:1) : error'));
         expect(stream.currentPosition()).toEqual(0);
-        expect(stream.takeNext().value).toEqual("i1");
+        expect(stream.peek().value).toEqual("i1");
+        expect(stream.formatError('error')).toEqual(new Error('(3:1) : error'));
         expect(stream.currentPosition()).toEqual(0);
         expect(stream.next().value).toEqual("i1");
+        expect(stream.formatError('error')).toEqual(new Error('(1:1) : error'));
         expect(stream.currentPosition()).toEqual(1);
-        expect(stream.takeNext().value).toEqual("i2");
+        expect(stream.peek().value).toEqual("i2");
         expect(stream.currentPosition()).toEqual(1);
         expect(stream.next().value).toEqual("i2");
+        expect(stream.formatError('error')).toEqual(new Error('(2:1) : error'));
         expect(stream.next().value).toEqual("i3");
         expect(stream.next().value).toEqual("i4");
         expect(stream.eof()).toBeFalsy();

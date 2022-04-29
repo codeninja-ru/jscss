@@ -1,7 +1,7 @@
 import { Keywords, ReservedWords } from "keywords";
 import { AssignmentOperator, Symbols } from "symbols";
 import { TokenType } from "token";
-import { lazyBlock, anyLiteral, anyString, anyTempateStringLiteral, comma, commaList, firstOf, keyword, leftHandRecurciveRule, longestOf, loop, noLineTerminatorHere, noSpacesHere, oneOfSymbols, optional, regexpLiteral, roundBracket, sequence, squareBracket, symbol } from "./parserUtils";
+import { lazyBlock, anyLiteral, anyString, anyTempateStringLiteral, comma, commaList, firstOf, keyword, leftHandRecurciveRule, longestOf, loop, noLineTerminatorHere, noSpacesHere, oneOfSymbols, optional, regexpLiteral, roundBracket, sequence, squareBracket, symbol, strictLoop } from "./parserUtils";
 import { CommentNode, CssBlockNode, CssImportNode, IfNode, JsModuleNode, JsScriptNode, MultiNode, Node, NodeType, SyntaxTree, VarDeclaraionNode } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { CommonChildTokenStream, TokenStream } from "./tokenStream";
@@ -177,7 +177,7 @@ function nonDecimalIntergerLiteral(stream : TokenStream) : void {
 function regularExpressionLiteral(stream: TokenStream) : string {
     const body = regularExpressionBody(stream);
     if (!stream.eof()) {
-        const nextToken = stream.takeNext();
+        const nextToken = stream.peek();
         if (nextToken.type == TokenType.Literal) {
             stream.next();
             return body + nextToken.value;
@@ -353,6 +353,7 @@ export function parseCssBlock(stream: TokenStream) : CssBlockNode {
 
 export function parseCssImport(stream: TokenStream) : CssImportNode {
     symbol(Symbols.at)(stream);
+    noSpacesHere(stream);
     keyword(Keywords._import)(stream);
     const path = anyString(stream);
 
@@ -931,7 +932,7 @@ function nameSpaceImport(stream : TokenStream) : void {
 function importDeclaration(stream : TokenStream) : Node {
     keyword(Keywords._import)(stream);
 
-    firstOf(
+    optional(
         // import ImportClause FromClause ;
         sequence(
             firstOf(
@@ -951,10 +952,11 @@ function importDeclaration(stream : TokenStream) : Node {
             keyword(Keywords._from),
         ),
         // import ModuleSpecifier ;
-        anyString,
     )(stream);
 
-    symbol(Symbols.semicolon);
+    anyString(stream);
+
+    optional(symbol(Symbols.semicolon))(stream);
 
     return {
         type: NodeType.ImportDeclaration,
@@ -1018,7 +1020,7 @@ export function moduleItem(stream : TokenStream) : void {
 export function parseJsModule(stream : TokenStream) : JsModuleNode {
     return {
         type: NodeType.JsModule,
-        items: loop(moduleItem)(stream),
+        items: strictLoop(moduleItem)(stream),
     };
 }
 

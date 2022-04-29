@@ -6,6 +6,7 @@ export function makeCommentAndRegexpReader(stream: InputStream): Reader {
     const regexpReader = makeRegExpReader(stream);
     return function() {
         if (stream.peek() == '/') {
+            const pos = stream.position();
             stream.next();
 
             if (stream.isEof()) {
@@ -18,14 +19,14 @@ export function makeCommentAndRegexpReader(stream: InputStream): Reader {
                 // comment
                 return {
                     type: TokenType.Comment,
-                    position: stream.position(),
+                    position: pos,
                     value: '/' + ch + readToEnd(new TillEndOfLineStream(stream))
                 } as Token;
             } else if (ch == '*') {
                 var comment = stream.readUntil('*/')
                 return {
                     type: TokenType.MultilineComment,
-                    position: stream.position(),
+                    position: pos,
                     value: '/' + ch + comment
                 } as Token;
             } else {
@@ -51,12 +52,14 @@ function expectNextSymbol(stream : InputStream, ch : string) {
 export function makeCssCommentReader(stream: InputStream): Reader {
     return function() {
         if (stream.peek() == '<') {
+            const pos = stream.position();
             stream.next();
             if (stream.peek() != '!') {
+                const [value,] = readSymbol(stream);
                 return {
                     type: TokenType.Symbol,
-                    position: stream.position(),
-                    value: '<' + readSymbol(stream),
+                    position: pos,
+                    value: '<' + value,
                 }
             }
 
@@ -67,7 +70,7 @@ export function makeCssCommentReader(stream: InputStream): Reader {
             var comment = stream.readUntil('-->');
             return {
                 type: TokenType.CssComment,
-                position: stream.position(),
+                position: pos,
                 value: '<!--' + comment,
             } as Token;
         }

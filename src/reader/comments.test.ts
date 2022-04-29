@@ -7,7 +7,7 @@ describe('makeCommentReader()', () => {
         const reader = makeCommentAndRegexpReader(new StringInputStream("// this is a comment \n\nnew line"));
         expect(reader()).toEqual({
             type: TokenType.Comment,
-            position: expect.anything(),
+            position: {line: 1, col: 1},
             value: '// this is a comment '
         });
     });
@@ -16,7 +16,7 @@ describe('makeCommentReader()', () => {
         const reader = makeCommentAndRegexpReader(new StringInputStream("/* this is a comment \n\nnew line :-* */"));
         expect(reader()).toEqual({
             type: TokenType.MultilineComment,
-            position: expect.anything(),
+            position: {line: 1, col: 1},
             value: "/* this is a comment \n\nnew line :-* */"
         });
     });
@@ -25,7 +25,7 @@ describe('makeCommentReader()', () => {
         const reader = makeCommentAndRegexpReader(new StringInputStream("/* this is a comment \n\nnew line :-* */do_not_read"));
         expect(reader()).toEqual({
             type: TokenType.MultilineComment,
-            position: expect.anything(),
+            position: {line: 1, col: 1},
             value: "/* this is a comment \n\nnew line :-* */"
         });
     });
@@ -34,7 +34,7 @@ describe('makeCommentReader()', () => {
         const reader = makeCommentAndRegexpReader(new StringInputStream("/* test */no!"));
         expect(reader()).toEqual({
             type: TokenType.MultilineComment,
-            position: expect.anything(),
+            position: {line: 1, col: 1},
             value: "/* test */"
         });
     });
@@ -43,7 +43,7 @@ describe('makeCommentReader()', () => {
         const reader = makeCommentAndRegexpReader(new StringInputStream("/* this is a comment"));
         expect(reader()).toEqual({
             type: TokenType.MultilineComment,
-            position: expect.anything(),
+            position: {line: 1, col: 1},
             value: "/* this is a comment"
         });
     });
@@ -60,7 +60,7 @@ describe('makeCssCommentReader()', () => {
         const reader = makeCssCommentReader(new StringInputStream("<!-- this is a comment -->"));
         expect(reader()).toEqual({
             type: TokenType.CssComment,
-            position: expect.anything(),
+            position: {line: 1, col: 1},
             value: '<!-- this is a comment -->'
         });
     });
@@ -69,7 +69,7 @@ describe('makeCssCommentReader()', () => {
         const reader = makeCssCommentReader(new StringInputStream("<!-- this is a comment \n\nnew line :-* -->"));
         expect(reader()).toEqual({
             type: TokenType.CssComment,
-            position: expect.anything(),
+            position: {line: 1, col: 1},
             value: "<!-- this is a comment \n\nnew line :-* -->"
         });
     });
@@ -78,14 +78,14 @@ describe('makeCssCommentReader()', () => {
         let reader = makeCssCommentReader(new StringInputStream("< 10"));
         expect(reader()).toEqual({
             type: TokenType.Symbol,
-            position: expect.anything(),
+            position: {line: 1, col: 1},
             value: "<"
         });
 
         reader = makeCssCommentReader(new StringInputStream("<< 10"));
         expect(reader()).toEqual({
             type: TokenType.Symbol,
-            position: expect.anything(),
+            position: {line: 1, col: 1},
             value: "<<"
         });
     });

@@ -45,7 +45,7 @@ describe('parserUtils', () => {
             const tokens = lexer(new StringInputStream(`xvar, var  var`))
             expect(() => {
                 commaList(keyword(Keywords._var))(new ArrayTokenStream(tokens));
-            }).toThrowError("(1:0) : list of elements is exptected");
+            }).toThrowError("(1:1) : list of elements is exptected");
         });
 
         it('interapted in the middle', () => {
@@ -79,7 +79,7 @@ describe('parserUtils', () => {
                     keyword(Keywords._async),
                     keyword(Keywords._var),
                 )(stream);
-            }).toThrowError('(1:0) : unknown statement "instanceof"');
+            }).toThrowError('(1:1) : unknown statement "instanceof"');
             expect(stream.currentPosition()).toEqual(0);
         });
 
@@ -150,7 +150,7 @@ describe('parserUtils', () => {
                     keyword(Keywords._async),
                     keyword(Keywords._var),
                 )(stream);
-            }).toThrowError('(1:0) : none of the parsers worked');
+            }).toThrowError('(1:1) : none of the parsers worked');
             expect(stream.currentPosition()).toEqual(0);
         });
     });
@@ -184,10 +184,11 @@ describe('parserUtils', () => {
 
         it('invalid sequence', () => {
             const tokens = lexer(new StringInputStream(`var no if const`))
+            console.log(tokens);
             const stream = new ArrayTokenStream(tokens);
             expect(() => {
                 sequence(keyword(Keywords._var), keyword(Keywords._if), keyword(Keywords._const))(stream);
-            }).toThrowError(`(1:0) : keyword "if" is expected`);
+            }).toThrowError(`(1:8) : keyword "if" is expected`);
             expect(stream.currentPosition()).toEqual(0);
         });
     });
