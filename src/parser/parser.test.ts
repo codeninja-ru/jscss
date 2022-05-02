@@ -3,11 +3,11 @@ import { lexer } from "./lexer";
 import { parseCssBlock, parseCssImport, parseJsModule, parseJsScript, parseJsStatement, parseJsVarStatement } from "./parser";
 import { Node, NodeType } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
-import { ArrayTokenStream, CommonChildTokenStream } from "./tokenStream";
+import { ArrayTokenStream, CommonGoAheadTokenStream } from "./tokenStream";
 
 function testParserFunction(fn : TokenParser , script : string) : Node {
     const tokens = lexer(new StringInputStream(script))
-    const stream = new CommonChildTokenStream(new ArrayTokenStream(tokens));
+    const stream = new CommonGoAheadTokenStream(new ArrayTokenStream(tokens));
     const node = fn(stream);
     expect(stream.rawValue()).toEqual(script);
 
@@ -54,7 +54,7 @@ describe('parsers', () => {
 
         it('function', () => {
             const tokens = lexer(new StringInputStream(`let fn = function(test) {};`))
-            const stream = new CommonChildTokenStream(new ArrayTokenStream(tokens));
+            const stream = new CommonGoAheadTokenStream(new ArrayTokenStream(tokens));
             const node = parseJsVarStatement(stream);
             expect(node).toEqual({"type": NodeType.VarStatement, items: [
                 {type: NodeType.VarDeclaration, name: "fn"}
@@ -65,7 +65,7 @@ describe('parsers', () => {
 
         it('destracting', () => {
             const tokens = lexer(new StringInputStream(`let {a, b} = fn(kek)[1].test`))
-            const stream = new CommonChildTokenStream(new ArrayTokenStream(tokens));
+            const stream = new CommonGoAheadTokenStream(new ArrayTokenStream(tokens));
             const node = parseJsVarStatement(stream);
             expect(node).toEqual({"type": NodeType.VarStatement, items: [
                 {name: {type: NodeType.Lazy, value: "{a, b}"}, type: NodeType.VarDeclaration}
@@ -76,7 +76,7 @@ describe('parsers', () => {
 
         it('multilple assignment', () => {
             const tokens = lexer(new StringInputStream(`var t1 = 1, t2 = .2, t3 = 3;`))
-            const stream = new CommonChildTokenStream(new ArrayTokenStream(tokens));
+            const stream = new CommonGoAheadTokenStream(new ArrayTokenStream(tokens));
             const node = parseJsVarStatement(stream);
             expect(node).toEqual({"type": NodeType.VarStatement, items: [
                 {type: NodeType.VarDeclaration, name: 't1'},
@@ -89,7 +89,7 @@ describe('parsers', () => {
 
         it('arrow function', () => {
             const tokens = lexer(new StringInputStream(`let fn = (test) => {};`))
-            const stream = new CommonChildTokenStream(new ArrayTokenStream(tokens));
+            const stream = new CommonGoAheadTokenStream(new ArrayTokenStream(tokens));
             const node = parseJsVarStatement(stream);
             expect(node.type).toEqual(NodeType.VarStatement);
             expect(stream.rawValue()).toEqual('let fn = (test) => {};');
@@ -105,7 +105,7 @@ for (var i = 0; i < 10; i++) {
    chopok(i);
 }`;
         const tokens = lexer(new StringInputStream(script))
-        const stream = new CommonChildTokenStream(new ArrayTokenStream(tokens));
+        const stream = new CommonGoAheadTokenStream(new ArrayTokenStream(tokens));
         const node = parseJsStatement(stream);
         expect(stream.rawValue()).toEqual(script);
         expect(node).toEqual({"type": NodeType.JsStatement});
@@ -140,7 +140,7 @@ console.log('hi');
     it('parse a simple expression', () => {
         const script = `alert(1);`;
         const tokens = lexer(new StringInputStream(script))
-        const stream = new CommonChildTokenStream(new ArrayTokenStream(tokens));
+        const stream = new CommonGoAheadTokenStream(new ArrayTokenStream(tokens));
         const node = parseJsScript(stream);
         expect(stream.rawValue()).toEqual(script);
         expect(node.type).toEqual(NodeType.JsScript);

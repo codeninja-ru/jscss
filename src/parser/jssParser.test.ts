@@ -2,7 +2,7 @@ import { StringInputStream } from "stream/input";
 import { parseJssScript } from "./jssParser";
 import { lexer } from "./lexer";
 import { NodeType } from "./syntaxTree";
-import { ArrayTokenStream, CommonChildTokenStream } from "./tokenStream";
+import { ArrayTokenStream, CommonGoAheadTokenStream } from "./tokenStream";
 
 const SIMPLE = `import _ from 'lodash';
 @import 'style.css';
@@ -10,14 +10,15 @@ const SIMPLE = `import _ from 'lodash';
 const color = '#fff';
 
 .clssName > a:hover {
-    color: \${color};
+    //color: \${color};
+    color: white;
     backgound: #fff;
 }`;
 
 describe('parseJssScript()', () => {
     it('simple script', () => {
         const tokens = lexer(new StringInputStream(SIMPLE));
-        const stream = new CommonChildTokenStream(new ArrayTokenStream(tokens));
+        const stream = new CommonGoAheadTokenStream(new ArrayTokenStream(tokens));
         const node = parseJssScript(stream);
 
         expect(node.type).toEqual(NodeType.JssScript);

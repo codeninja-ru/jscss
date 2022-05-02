@@ -184,11 +184,10 @@ describe('parserUtils', () => {
 
         it('invalid sequence', () => {
             const tokens = lexer(new StringInputStream(`var no if const`))
-            console.log(tokens);
             const stream = new ArrayTokenStream(tokens);
             expect(() => {
                 sequence(keyword(Keywords._var), keyword(Keywords._if), keyword(Keywords._const))(stream);
-            }).toThrowError(`(1:8) : keyword "if" is expected`);
+            }).toThrowError(`(1:5) : keyword "if" is expected`);
             expect(stream.currentPosition()).toEqual(0);
         });
     });

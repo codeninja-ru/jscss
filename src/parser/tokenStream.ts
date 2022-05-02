@@ -8,14 +8,9 @@ export interface TokenStream {
     eof(): boolean;
     currentPosition(): number;
     length(): number;
-    formatError(message : string) : Error;
 };
 
-function formatError(token : Token, errorMessage : string) : Error {
-    return new Error (`(${token.position.line}:${token.position.col}) : ` + errorMessage);
-}
-
-export interface ChildTokenStream extends TokenStream {
+export interface GoAheadTokenStream extends TokenStream {
     flush() : void;
     rawValue() : string;
 }
@@ -52,13 +47,9 @@ export class ArrayTokenStream implements TokenStream {
     length() : number {
         return this.tokens.length;
     }
-
-    formatError(message : string) : Error {
-        return formatError(this.peek(), message);
-    }
 }
 
-export class CommonChildTokenStream implements ChildTokenStream {
+export class CommonGoAheadTokenStream implements GoAheadTokenStream {
     private pos : number;
     private startPos : number;
     constructor(private parent: TokenStream) {
@@ -105,9 +96,5 @@ export class CommonChildTokenStream implements ChildTokenStream {
 
     length() : number {
         return this.parent.length();
-    }
-
-    formatError(message : string) : Error {
-        return formatError(this.peek(), message);
     }
 }

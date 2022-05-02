@@ -13,7 +13,7 @@ export function parseJssScript(stream : TokenStream) : JssScriptNode {
 
 /**
  * implements:
- *
+ * js + css
  *
  * */
 function jssStatement(stream : TokenStream) : void {

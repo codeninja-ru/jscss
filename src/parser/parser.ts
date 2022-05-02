@@ -4,7 +4,7 @@ import { TokenType } from "token";
 import { lazyBlock, anyLiteral, anyString, anyTempateStringLiteral, comma, commaList, firstOf, keyword, leftHandRecurciveRule, longestOf, loop, noLineTerminatorHere, noSpacesHere, oneOfSymbols, optional, regexpLiteral, roundBracket, sequence, squareBracket, symbol, strictLoop } from "./parserUtils";
 import { CommentNode, CssBlockNode, CssImportNode, IfNode, JsModuleNode, JsScriptNode, MultiNode, Node, NodeType, SyntaxTree, VarDeclaraionNode } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
-import { CommonChildTokenStream, TokenStream } from "./tokenStream";
+import { CommonGoAheadTokenStream, TokenStream } from "./tokenStream";
 import { peekAndSkipSpaces, peekNextToken, peekNoLineTerminatorHere } from "./tokenStreamReader";
 
 function functionExpression(stream: TokenStream) : Node {
@@ -678,7 +678,7 @@ export function parseJsVarStatement(stream: TokenStream) : MultiNode {
 function cannotStartWith(...parsers : TokenParser[]) : TokenParser {
     return function(stream : TokenStream) : ReturnType<TokenParser> {
         for (const parser of parsers) {
-            const stubStream = new CommonChildTokenStream(stream);
+            const stubStream = new CommonGoAheadTokenStream(stream);
             try {
                 const token = parser(stubStream);
                 throw new Error(`cannot start with ${token}`)
@@ -1037,7 +1037,7 @@ export function parse(stream: TokenStream) : SyntaxTree {
         let node = null;
         let lastError = null;
         for (const parser of TOP_LEVEL_PARSERS) {
-            const parserStream = new CommonChildTokenStream(stream);
+            const parserStream = new CommonGoAheadTokenStream(stream);
             try {
                 node = parser(parserStream);
                 node.rawValue = parserStream.rawValue();

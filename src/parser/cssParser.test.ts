@@ -2,7 +2,7 @@ import { StringInputStream } from "stream/input";
 import { parseCssStyleSheet, rulesetStatement, selector, simpleSelector } from "./cssParser";
 import { lexer } from "./lexer";
 import { TokenParser } from "./tokenParser";
-import { ArrayTokenStream, CommonChildTokenStream } from "./tokenStream";
+import { ArrayTokenStream, CommonGoAheadTokenStream } from "./tokenStream";
 
 const SAMPLE = `
 @charset 'utf-8';
@@ -32,7 +32,7 @@ div {
 
 function testParser(fn : TokenParser, str : string) {
     const tokens = lexer(new StringInputStream(str));
-    const stream = new CommonChildTokenStream(new ArrayTokenStream(tokens));
+    const stream = new CommonGoAheadTokenStream(new ArrayTokenStream(tokens));
 
     fn(stream);
     expect(stream.rawValue()).toEqual(str);
@@ -41,7 +41,7 @@ function testParser(fn : TokenParser, str : string) {
 describe('CSS Parser', () => {
     it('parse simple css', () => {
         const tokens = lexer(new StringInputStream(SAMPLE));
-        const stream = new CommonChildTokenStream(new ArrayTokenStream(tokens));
+        const stream = new CommonGoAheadTokenStream(new ArrayTokenStream(tokens));
 
         parseCssStyleSheet(stream);
         expect(stream.rawValue()).toEqual(SAMPLE);
