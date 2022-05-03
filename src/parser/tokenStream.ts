@@ -10,7 +10,7 @@ export interface TokenStream {
     length(): number;
 };
 
-export interface GoAheadTokenStream extends TokenStream {
+export interface FlushableTokenStream extends TokenStream {
     flush() : void;
     rawValue() : string;
 }
@@ -49,7 +49,7 @@ export class ArrayTokenStream implements TokenStream {
     }
 }
 
-export class CommonGoAheadTokenStream implements GoAheadTokenStream {
+export class GoAheadTokenStream implements FlushableTokenStream {
     private pos : number;
     private startPos : number;
     constructor(private parent: TokenStream) {

@@ -2,7 +2,7 @@ import { StringInputStream } from "stream/input";
 import { parseJssScript } from "./jssParser";
 import { lexer } from "./lexer";
 import { NodeType } from "./syntaxTree";
-import { ArrayTokenStream, CommonGoAheadTokenStream } from "./tokenStream";
+import { ArrayTokenStream, GoAheadTokenStream } from "./tokenStream";
 
 const SIMPLE = `import _ from 'lodash';
 @import 'style.css';
@@ -18,7 +18,7 @@ const color = '#fff';
 describe('parseJssScript()', () => {
     it('simple script', () => {
         const tokens = lexer(new StringInputStream(SIMPLE));
-        const stream = new CommonGoAheadTokenStream(new ArrayTokenStream(tokens));
+        const stream = new GoAheadTokenStream(new ArrayTokenStream(tokens));
         const node = parseJssScript(stream);
 
         expect(node.type).toEqual(NodeType.JssScript);

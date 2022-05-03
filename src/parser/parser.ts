@@ -1,10 +1,10 @@
 import { Keywords, ReservedWords } from "keywords";
 import { AssignmentOperator, Symbols } from "symbols";
 import { TokenType } from "token";
-import { lazyBlock, anyLiteral, anyString, anyTempateStringLiteral, comma, commaList, firstOf, keyword, leftHandRecurciveRule, longestOf, loop, noLineTerminatorHere, noSpacesHere, oneOfSymbols, optional, regexpLiteral, roundBracket, sequence, squareBracket, symbol, strictLoop } from "./parserUtils";
-import { CommentNode, CssBlockNode, CssImportNode, IfNode, JsModuleNode, JsScriptNode, MultiNode, Node, NodeType, SyntaxTree, VarDeclaraionNode } from "./syntaxTree";
+import { lazyBlock, anyLiteral, anyString, anyTempateStringLiteral, comma, commaList, firstOf, keyword, leftHandRecurciveRule, longestOf, loop, noLineTerminatorHere, noSpacesHere, oneOfSymbols, optional, regexpLiteral, roundBracket, sequence, squareBracket, symbol, strictLoop, rawValue } from "./parserUtils";
+import { CommentNode, CssBlockNode, CssImportNode, IfNode, JsModuleNode, JsRawNode, JsScriptNode, MultiNode, Node, NodeType, SyntaxTree, VarDeclaraionNode } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
-import { CommonGoAheadTokenStream, TokenStream } from "./tokenStream";
+import { GoAheadTokenStream, TokenStream } from "./tokenStream";
 import { peekAndSkipSpaces, peekNextToken, peekNoLineTerminatorHere } from "./tokenStreamReader";
 
 function functionExpression(stream: TokenStream) : Node {
@@ -678,7 +678,7 @@ export function parseJsVarStatement(stream: TokenStream) : MultiNode {
 function cannotStartWith(...parsers : TokenParser[]) : TokenParser {
     return function(stream : TokenStream) : ReturnType<TokenParser> {
         for (const parser of parsers) {
-            const stubStream = new CommonGoAheadTokenStream(stream);
+            const stubStream = new GoAheadTokenStream(stream);
             try {
                 const token = parser(stubStream);
                 throw new Error(`cannot start with ${token}`)
@@ -929,7 +929,7 @@ function nameSpaceImport(stream : TokenStream) : void {
     bindingIdentifier(stream);
 }
 
-function importDeclaration(stream : TokenStream) : Node {
+function importDeclaration(stream : TokenStream) : JsRawNode {
     keyword(Keywords._import)(stream);
 
     optional(
@@ -960,6 +960,7 @@ function importDeclaration(stream : TokenStream) : Node {
 
     return {
         type: NodeType.ImportDeclaration,
+        value: rawValue(stream),
     };
 }
 
@@ -1037,7 +1038,7 @@ export function parse(stream: TokenStream) : SyntaxTree {
         let node = null;
         let lastError = null;
         for (const parser of TOP_LEVEL_PARSERS) {
-            const parserStream = new CommonGoAheadTokenStream(stream);
+            const parserStream = new GoAheadTokenStream(stream);
             try {
                 node = parser(parserStream);
                 node.rawValue = parserStream.rawValue();

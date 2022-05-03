@@ -6,7 +6,7 @@ import { lexer } from "./lexer";
 import { ParserError } from "./parserError";
 import { BlockNode, BlockType, LazyNode, NodeType } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
-import { ArrayTokenStream, GoAheadTokenStream, CommonGoAheadTokenStream, TokenStream } from "./tokenStream";
+import { ArrayTokenStream, FlushableTokenStream, GoAheadTokenStream, TokenStream } from "./tokenStream";
 import { isSpaceOrComment, peekAndSkipSpaces, TokenStreamReader } from "./tokenStreamReader";
 
 export function noLineTerminatorHere(stream : TokenStream) : void {
@@ -62,7 +62,7 @@ export function commaList(parser: TokenParser) : TokenParser {
 
 export function flushed(parser : TokenParser) : TokenParser {
     return function(stream: TokenStream) : ReturnType<TokenParser> {
-        const childStream = new CommonGoAheadTokenStream(stream);
+        const childStream = new GoAheadTokenStream(stream);
         let result;
         try {
             result = parser(childStream);
@@ -75,9 +75,22 @@ export function flushed(parser : TokenParser) : TokenParser {
     };
 }
 
-export function rawValue(parser : TokenParser) : TokenParser {
+function isFlushableTokenStream(stream : TokenStream | FlushableTokenStream) : stream is FlushableTokenStream {
+    return (stream as FlushableTokenStream).rawValue !== undefined;
+}
+
+export function rawValue(stream : TokenStream | FlushableTokenStream) : string {
+    if (isFlushableTokenStream(stream)) {
+        return stream.rawValue();
+    } else {
+        console.log('could not obtain the rawValue');
+        return '';
+    }
+}
+
+export function returnRawValue(parser : TokenParser) : TokenParser {
     return function(stream: TokenStream) : ReturnType<TokenParser> {
-        const childStream = new CommonGoAheadTokenStream(stream);
+        const childStream = new GoAheadTokenStream(stream);
         let result;
         try {
             parser(childStream);
@@ -112,7 +125,7 @@ export function list(parser: TokenParser, separator: TokenParser, canListBeEmpty
 
 export function sequence(...parsers: TokenParser[]) : TokenParser {
     return function(stream: TokenStream) : ReturnType<TokenParser> {
-        const parserStream = new CommonGoAheadTokenStream(stream);
+        const parserStream = new GoAheadTokenStream(stream);
         const result = [];
         for (const parser of parsers) {
             result.push(parser(parserStream));
@@ -127,10 +140,10 @@ export function sequence(...parsers: TokenParser[]) : TokenParser {
 export function longestOf(...parsers: TokenParser[]) : TokenParser {
     return function(stream: TokenStream) : ReturnType<TokenParser> {
         let errors = [];
-        let result = [] as Array<[ReturnType<TokenParser>, GoAheadTokenStream]>;
+        let result = [] as Array<[ReturnType<TokenParser>, FlushableTokenStream]>;
         for (let i = 0; i < parsers.length; i++) {
             try {
-                let parserStream = new CommonGoAheadTokenStream(stream);
+                let parserStream = new GoAheadTokenStream(stream);
                 result.push([parsers[i](parserStream), parserStream]);
             } catch( e ) {
                 errors.push(e);
@@ -160,7 +173,7 @@ export function firstOf(...parsers: TokenParser[]) : TokenParser {
         let errors = [];
         for (let i = 0; i < parsers.length; i++) {
             try {
-                let parserStream = new CommonGoAheadTokenStream(stream);
+                let parserStream = new GoAheadTokenStream(stream);
                 const result = parsers[i](parserStream);
                 parserStream.flush();
                 return result;
@@ -176,7 +189,7 @@ export function firstOf(...parsers: TokenParser[]) : TokenParser {
 
 export function optional(parser: TokenParser) : TokenParser {
     return function(stream: TokenStream) : any {
-        const parserStream = new CommonGoAheadTokenStream(stream);
+        const parserStream = new GoAheadTokenStream(stream);
 
         try {
             let result = parser(parserStream);

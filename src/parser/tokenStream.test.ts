@@ -1,6 +1,6 @@
 import { Token } from "token";
 import { makeLiteralToken } from "token/helpers";
-import { ArrayTokenStream, CommonGoAheadTokenStream } from "./tokenStream";
+import { ArrayTokenStream, GoAheadTokenStream } from "./tokenStream";
 
 describe('ArrayTokenStream', () => {
     test('all methods', () => {
@@ -43,7 +43,7 @@ describe('CommonChildTokenStream', () => {
             makeLiteralToken("i5", {line: 4, col: 1}),
         ] as Token[];
 
-        const stream = new CommonGoAheadTokenStream(new ArrayTokenStream(tokens));
+        const stream = new GoAheadTokenStream(new ArrayTokenStream(tokens));
 
         expect(stream.eof()).toBeFalsy();
         expect(stream.take(1).value).toEqual("i2");

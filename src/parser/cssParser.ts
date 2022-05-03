@@ -3,7 +3,7 @@
 import { Keywords } from "keywords";
 import { Symbols } from "symbols";
 import { TokenType } from "token";
-import { anyLiteral, anyString, block, commaList, firstOf, keyword, list, loop, noSpacesHere, oneOfSymbols, optional, rawValue, regexpLiteral, roundBracket, semicolon, sequence, squareBracket, symbol } from "./parserUtils";
+import { anyLiteral, anyString, block, commaList, firstOf, keyword, list, loop, noSpacesHere, oneOfSymbols, optional, regexpLiteral, returnRawValue, roundBracket, semicolon, sequence, squareBracket, symbol } from "./parserUtils";
 import { CssBlockNode, CssSelectorNode, NodeType } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
@@ -258,7 +258,7 @@ export function simpleSelector(stream : TokenStream) : string {
  *
  * */
 function hash(stream : TokenStream) : string {
-    return rawValue(sequence(
+    return returnRawValue(sequence(
         symbol(Symbols.numero),
         noSpacesHere,
         // nmchar		[_a-z0-9-]|{nonascii}|{escape} //TODO test out

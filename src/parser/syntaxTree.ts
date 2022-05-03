@@ -116,3 +116,8 @@ export interface CssSelectorNode extends Node {
     type: NodeType.CssSelector,
     items: string[];
 }
+
+export interface JsRawNode extends Node {
+    readonly type: NodeType,
+    readonly value: string;
+}
