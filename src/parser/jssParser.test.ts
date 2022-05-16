@@ -1,7 +1,7 @@
 import { StringInputStream } from "stream/input";
 import { parseJssScript } from "./jssParser";
 import { lexer } from "./lexer";
-import { NodeType } from "./syntaxTree";
+import { BlockType, NodeType } from "./syntaxTree";
 import { ArrayTokenStream, GoAheadTokenStream } from "./tokenStream";
 
 const SIMPLE = `import _ from 'lodash';
@@ -9,7 +9,7 @@ const SIMPLE = `import _ from 'lodash';
 
 const color = '#fff';
 
-.clssName > a:hover {
+.className > a:hover {
     //color: \${color};
     color: white;
     backgound: #fff;
@@ -24,6 +24,22 @@ describe('parseJssScript()', () => {
         expect(node.type).toEqual(NodeType.JssScript);
         expect(stream.rawValue()).toEqual(SIMPLE);
         expect(stream.eof()).toBeTruthy();
-        expect(node.items).toEqual([]);
+        expect(node.items).toEqual([
+            {type: NodeType.Raw, value: "import _ from 'lodash';"},
+            {type: NodeType.CssImport, path: "'style.css'", rawValue: "\n@import 'style.css';"},
+            {type: NodeType.Raw, value: "\n\nconst color = '#fff';"},
+            {type: NodeType.CssBlock, selectors: [
+                {
+                    type: NodeType.CssSelector,
+                    //TODO remove leading spaces
+                    items: ["\n\n.className", " >", " a:hover"]
+                },
+            ], block: {
+                type: NodeType.Block,
+                blockType: BlockType.CurlyBracket,
+                items: []
+
+            }}
+        ]);
     });
 });

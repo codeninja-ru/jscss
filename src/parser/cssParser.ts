@@ -3,10 +3,25 @@
 import { Keywords } from "keywords";
 import { Symbols } from "symbols";
 import { TokenType } from "token";
-import { anyLiteral, anyString, block, commaList, firstOf, keyword, list, loop, noSpacesHere, oneOfSymbols, optional, regexpLiteral, returnRawValue, roundBracket, semicolon, sequence, squareBracket, symbol } from "./parserUtils";
-import { CssBlockNode, CssSelectorNode, NodeType } from "./syntaxTree";
+import { anyLiteral, anyString, block, commaList, firstOf, keyword, list, loop, noSpacesHere, oneOfSymbols, optional, rawValue, regexpLiteral, returnRawValue, roundBracket, semicolon, sequence, squareBracket, symbol } from "./parserUtils";
+import { CssBlockNode, CssImportNode, CssSelectorNode, Node, NodeType } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
+
+/**
+ * implements:
+ * [ CHARSET_SYM STRING ';' ]?
+ *
+ * */
+function cssCharset(stream : TokenStream) : Node {
+    sequence(symbol(Symbols.at), noSpacesHere, keyword(Keywords.cssCharset), anyString, semicolon)(stream);
+
+    return {
+        type: NodeType.CssCharset,
+        rawValue: rawValue(stream),
+    };
+}
+
 
 /**
  * implements:
@@ -17,11 +32,10 @@ import { TokenStream } from "./tokenStream";
   ;
  *
  * */
-export function stylesheetItem(stream : TokenStream) : void {
+export function stylesheetItem(stream : TokenStream) : ReturnType<TokenParser> {
     //TODO everything that starts with @ can be optimized by combining together
-    firstOf(
-        // [ CHARSET_SYM STRING ';' ]?
-        sequence(symbol(Symbols.at), noSpacesHere, keyword(Keywords.cssCharset), anyString, symbol(Symbols.semicolon)),
+    return firstOf(
+        cssCharset,
         importStatement,
         rulesetStatement,
         mediaStatement,
@@ -29,8 +43,8 @@ export function stylesheetItem(stream : TokenStream) : void {
     )(stream);
 }
 
-export function parseCssStyleSheet(stream : TokenStream) : void {
-    loop(stylesheetItem)(stream);
+export function parseCssStyleSheet(stream : TokenStream) : ReturnType<TokenParser> {
+    return loop(stylesheetItem)(stream);
 }
 
 /**
@@ -40,18 +54,22 @@ export function parseCssStyleSheet(stream : TokenStream) : void {
     [STRING|URI] S* media_list? ';' S*
   ;
  * */
-function importStatement(stream : TokenStream) : void {
-    sequence(
-        symbol(Symbols.at),
-        noSpacesHere,
-        keyword(Keywords._import),
-        firstOf(
-            anyString,
-            uri,
-        ),
-        optional(mediaList),
-        semicolon,
+function importStatement(stream : TokenStream) : CssImportNode {
+    symbol(Symbols.at)(stream);
+    noSpacesHere(stream);
+    keyword(Keywords._import)(stream);
+    const path = firstOf(
+        anyString,
+        uri,
     )(stream);
+    optional(mediaList)(stream);
+    semicolon(stream);
+
+    return {
+        type: NodeType.CssImport,
+        path,
+        rawValue: rawValue(stream),
+    };
 }
 
 /**
@@ -181,16 +199,16 @@ function unaryOperator(stream : TokenStream) : void {
  * selector
   : simple_selector [ combinator selector | S+ [ combinator? selector ]? ]?
   ;
- * */ //TODO remove export
+ * */
 export function selector(stream : TokenStream) : CssSelectorNode {
     let result = [simpleSelector(stream)];
     while(!stream.eof()) {
         const comb = optional(combinator)(stream);
-        if (comb) {
-            result.push(comb);
-        }
         const sel = optional(simpleSelector)(stream);
-        if (sel) {
+
+        if (comb && sel) {
+            result.push(comb, sel);
+        } else if (sel) {
             result.push(sel);
         } else {
             break;
@@ -229,11 +247,10 @@ function combinator(stream : TokenStream) : void {
   element_name
   : IDENT | '*'
   ;
- * */ //TODO remove export
+ * */
 export function simpleSelector(stream : TokenStream) : string {
-    const elementName = firstOf(ident, symbol(Symbols.astersik));
+    const elementName = returnRawValue(firstOf(ident, symbol(Symbols.astersik)));
     const cssClass = sequence(symbol(Symbols.dot), noSpacesHere, ident);
-    const name = optional(elementName)(stream);
     const rest = firstOf(
         hash,
         cssClass,
@@ -241,15 +258,12 @@ export function simpleSelector(stream : TokenStream) : string {
         pseudo,
     );
 
-    let restResult;
-
+    const name = optional(elementName)(stream);
     if (name) {
-        restResult = loop(sequence(noSpacesHere, rest))(stream);
+        return name + returnRawValue(loop(sequence(noSpacesHere, rest)))(stream);
     } else {
-        restResult = optional(rest)(stream);
+        return returnRawValue(rest)(stream) + returnRawValue(loop(sequence(noSpacesHere, rest)))(stream);
     }
-
-    return [name, restResult].join('');
 }
 
 /**
@@ -275,7 +289,7 @@ function hash(stream : TokenStream) : string {
  *
  * */
 function attrib(stream : TokenStream) : string {
-    return squareBracket(stream); //TODO parse the content
+    return returnRawValue(squareBracket)(stream); //TODO parse the content
 }
 
 /**
@@ -285,14 +299,14 @@ function attrib(stream : TokenStream) : string {
   ;
  *
  * */
-function pseudo(stream : TokenStream) : void {
-    sequence(
+function pseudo(stream : TokenStream) : string {
+    return returnRawValue(sequence(
         symbol(Symbols.colon),
         firstOf(
             ident,
             functionCallDoNothing,
         )
-    )(stream);
+    ))(stream);
 }
 
 function functionCallDoNothing(stream : TokenStream) : ReturnType<TokenParser> {

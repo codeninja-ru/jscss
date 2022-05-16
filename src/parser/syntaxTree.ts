@@ -23,6 +23,7 @@ export enum NodeType {
     Ignore,
 
     CssSelector,
+    CssCharset,
 
     JssScript,
 }
@@ -93,7 +94,7 @@ export interface JsModuleNode extends MultiNode {
 export interface CssBlockNode extends Node {
     type: NodeType.CssBlock,
     readonly selectors: any,
-    readonly block: any,
+    readonly block: BlockNode,
 }
 
 export interface BlockNode extends Node {
@@ -114,7 +115,7 @@ export interface LazyNode extends Node {
 
 export interface CssSelectorNode extends Node {
     type: NodeType.CssSelector,
-    items: string[];
+    readonly items: string[];
 }
 
 export interface JsRawNode extends Node {

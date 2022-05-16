@@ -2,6 +2,7 @@ import { stylesheetItem } from "./cssParser";
 import { moduleItem } from "./parser";
 import { firstOf, strictLoop } from "./parserUtils";
 import { JssScriptNode, NodeType } from "./syntaxTree";
+import { TokenParser } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
 
 export function parseJssScript(stream : TokenStream) : JssScriptNode {
@@ -16,7 +17,7 @@ export function parseJssScript(stream : TokenStream) : JssScriptNode {
  * js + css
  *
  * */
-function jssStatement(stream : TokenStream) : void {
+function jssStatement(stream : TokenStream) : ReturnType<TokenParser> {
     return firstOf(
         //TODO
         moduleItem,

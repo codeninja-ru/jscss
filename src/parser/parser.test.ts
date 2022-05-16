@@ -1,6 +1,6 @@
 import { StringInputStream } from "stream/input";
 import { lexer } from "./lexer";
-import { parseCssBlock, parseCssImport, parseJsModule, parseJsScript, parseJsStatement, parseJsVarStatement } from "./parser";
+import { parseJsModule, parseJsScript, parseJsStatement, parseJsVarStatement } from "./parser";
 import { Node, NodeType } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { ArrayTokenStream, GoAheadTokenStream } from "./tokenStream";
@@ -22,23 +22,6 @@ describe('parsers', () => {
 
     it('parseJsImport()', () => {
         testParserFunction(parseJsModule, `import * as test from 'somelib';`);
-    });
-
-    xit('parseCssBlock()', () => {
-        const tokens = lexer(new StringInputStream(`a:hover, #id.class div, .class1 > .class2, input[type=button] { color: #555; }`));
-
-        const node = parseCssBlock(new ArrayTokenStream(tokens));
-        expect(node).toEqual({"block": {
-            type: NodeType.Lazy,
-            value: "{ color: #555; }",
-        }, "selectors": ["a:hover", "#id.class div", ".class1 > .class2", "input[type=button]"], "type": NodeType.CssBlock});
-    });
-
-    it('parseCssImport()', () => {
-        const tokens = lexer(new StringInputStream(`@import 'style.css';`));
-
-        const node = parseCssImport(new ArrayTokenStream(tokens));
-        expect(node).toEqual({"path": "'style.css'", "type": NodeType.CssImport});
     });
 
     describe('parseJsVarStatement()', () => {
@@ -108,13 +91,13 @@ for (var i = 0; i < 10; i++) {
         const stream = new GoAheadTokenStream(new ArrayTokenStream(tokens));
         const node = parseJsStatement(stream);
         expect(stream.rawValue()).toEqual(script);
-        expect(node).toEqual({"type": NodeType.JsStatement});
+        expect(node).toEqual({"type": NodeType.Raw, value: script});
     });
 
     it('console.log()', () => {
         const script = `console.log(1)`;
         const node = testParserFunction(parseJsStatement, script);
-        expect(node.type).toEqual(NodeType.JsStatement);
+        expect(node).toEqual({type: NodeType.Raw, value: script});
     });
 });
 

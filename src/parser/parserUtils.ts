@@ -124,7 +124,7 @@ export function list(parser: TokenParser, separator: TokenParser, canListBeEmpty
 }
 
 export function sequence(...parsers: TokenParser[]) : TokenParser {
-    return function(stream: TokenStream) : ReturnType<TokenParser> {
+    return function(stream: TokenStream) : ReturnType<TokenParser>[] {
         const parserStream = new GoAheadTokenStream(stream);
         const result = [];
         for (const parser of parsers) {
@@ -169,7 +169,7 @@ export function longestOf(...parsers: TokenParser[]) : TokenParser {
 }
 
 export function firstOf(...parsers: TokenParser[]) : TokenParser {
-    return function(stream: TokenStream) : any[] {
+    return function(stream: TokenStream) : ReturnType<TokenParser> {
         let errors = [];
         for (let i = 0; i < parsers.length; i++) {
             try {
@@ -188,7 +188,7 @@ export function firstOf(...parsers: TokenParser[]) : TokenParser {
 }
 
 export function optional(parser: TokenParser) : TokenParser {
-    return function(stream: TokenStream) : any {
+    return function(stream: TokenStream) : ReturnType<TokenParser> {
         const parserStream = new GoAheadTokenStream(stream);
 
         try {
@@ -337,7 +337,7 @@ export function strictLoop(parser : TokenParser) : TokenParser {
 }
 
 export function loop(parser : TokenParser) : TokenParser {
-    return function(stream : TokenStream) : ReturnType<TokenParser> {
+    return function(stream : TokenStream) : ReturnType<TokenParser>[] {
         let results = [] as ReturnType<TokenParser>[];
         while(!stream.eof()) {
             const result = optional(parser)(stream);

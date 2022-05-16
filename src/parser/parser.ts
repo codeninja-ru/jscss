@@ -1,11 +1,18 @@
 import { Keywords, ReservedWords } from "keywords";
 import { AssignmentOperator, Symbols } from "symbols";
 import { TokenType } from "token";
-import { lazyBlock, anyLiteral, anyString, anyTempateStringLiteral, comma, commaList, firstOf, keyword, leftHandRecurciveRule, longestOf, loop, noLineTerminatorHere, noSpacesHere, oneOfSymbols, optional, regexpLiteral, roundBracket, sequence, squareBracket, symbol, strictLoop, rawValue } from "./parserUtils";
-import { CommentNode, CssBlockNode, CssImportNode, IfNode, JsModuleNode, JsRawNode, JsScriptNode, MultiNode, Node, NodeType, SyntaxTree, VarDeclaraionNode } from "./syntaxTree";
+import { anyLiteral, anyString, anyTempateStringLiteral, comma, commaList, firstOf, keyword, lazyBlock, leftHandRecurciveRule, longestOf, loop, noLineTerminatorHere, oneOfSymbols, optional, rawValue, regexpLiteral, roundBracket, sequence, squareBracket, strictLoop, symbol } from "./parserUtils";
+import { CommentNode, IfNode, JsModuleNode, JsRawNode, JsScriptNode, MultiNode, Node, NodeType, SyntaxTree, VarDeclaraionNode } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { GoAheadTokenStream, TokenStream } from "./tokenStream";
 import { peekAndSkipSpaces, peekNextToken, peekNoLineTerminatorHere } from "./tokenStreamReader";
+
+function returnRawNode(stream : TokenStream) : JsRawNode {
+    return {
+        type: NodeType.Raw,
+        value: rawValue(stream),
+    };
+}
 
 function functionExpression(stream: TokenStream) : Node {
     keyword(Keywords._function)(stream);
@@ -298,68 +305,6 @@ function parseComment(stream: TokenStream) : CommentNode {
             };
         default:
             throw new Error('comment is expected');
-    }
-}
-
-function parseCssSelector(stream: TokenStream) : string {
-    //TODO broken
-    const selector =
-        sequence(
-        optional(oneOfSymbols(Symbols.dot, Symbols.numero)),
-        noSpacesHere,
-        anyLiteral,
-        optional(
-            sequence(
-                noSpacesHere,
-                symbol(Symbols.colon),
-                noSpacesHere,
-                anyLiteral
-            ),
-        ),
-        optional(sequence(noSpacesHere, squareBracket)),
-    )(stream).join(''); //TODO it also maybe an *
-    // TODO rewrite with leftHand
-
-    if (selector) {
-
-        const combinator = optional(
-            oneOfSymbols(
-            Symbols.astersik,
-            Symbols.lt,
-            Symbols.tilde,
-            Symbols.plus,
-        ))(stream);
-
-        const nextSelector = optional(parseCssSelector)(stream);
-
-        return (selector ? selector : "")
-            + (combinator ? " " + combinator : "")
-            + (nextSelector ? " " + nextSelector : "");
-    }
-
-    throw new Error(`invalid css selector, neither selector nor attribure is present`);
-}
-
-export function parseCssBlock(stream: TokenStream) : CssBlockNode {
-    const selectors = commaList(parseCssSelector)(stream);
-    const block = lazyBlock(stream);
-
-    return {
-        type: NodeType.CssBlock,
-        selectors,
-        block,
-    };
-}
-
-export function parseCssImport(stream: TokenStream) : CssImportNode {
-    symbol(Symbols.at)(stream);
-    noSpacesHere(stream);
-    keyword(Keywords._import)(stream);
-    const path = anyString(stream);
-
-    return {
-        type: NodeType.CssImport,
-        path,
     }
 }
 
@@ -844,7 +789,7 @@ function tryStatement(stream : TokenStream) : void {
     ))(stream);
 }
 
-export function parseJsStatement(stream : TokenStream) : Node {
+export function parseJsStatement(stream : TokenStream) : JsRawNode {
     longestOf(
         // BlockStatement[?Yield, ?Await, ?Return]
         lazyBlock,
@@ -876,9 +821,7 @@ export function parseJsStatement(stream : TokenStream) : Node {
         sequence(keyword(Keywords._debugger), symbol(Symbols.semicolon)),
     )(stream);
 
-    return {
-        type: NodeType.JsStatement,
-    }
+    return returnRawNode(stream);
 }
 
 function hoistableDeclaration(stream : TokenStream) : void {
@@ -895,7 +838,7 @@ function hoistableDeclaration(stream : TokenStream) : void {
     )(stream);
 }
 
-function declaration(stream : TokenStream) : void {
+function declaration(stream : TokenStream) : JsRawNode {
     firstOf(
         // HoistableDeclaration[?Yield, ?Await, ~Default]
         hoistableDeclaration,
@@ -904,6 +847,8 @@ function declaration(stream : TokenStream) : void {
         // LexicalDeclaration[+In, ?Yield, ?Await]
         variableDeclaration,
     )(stream);
+
+    return returnRawNode(stream);
 }
 
 export function statementListItem(stream : TokenStream) : void {
@@ -958,10 +903,7 @@ function importDeclaration(stream : TokenStream) : JsRawNode {
 
     optional(symbol(Symbols.semicolon))(stream);
 
-    return {
-        type: NodeType.ImportDeclaration,
-        value: rawValue(stream),
-    };
+    return returnRawNode(stream);
 }
 
 function exportFromClause(stream : TokenStream) : void {
@@ -978,7 +920,7 @@ function exportFromClause(stream : TokenStream) : void {
     )(stream);
 }
 
-function exportDeclaration(stream : TokenStream) : void {
+function exportDeclaration(stream : TokenStream) : JsRawNode {
     keyword(Keywords._export)(stream);
     firstOf(
         // export ExportFromClause FromClause ;
@@ -1005,9 +947,11 @@ function exportDeclaration(stream : TokenStream) : void {
             symbol(Symbols.semicolon)
         )
     )(stream);
+
+    return returnRawNode(stream);
 }
 
-export function moduleItem(stream : TokenStream) : void {
+export function moduleItem(stream : TokenStream) : ReturnType<TokenParser> {
     return firstOf(
         // ImportDeclaration
         importDeclaration,
@@ -1027,9 +971,6 @@ export function parseJsModule(stream : TokenStream) : JsModuleNode {
 
 const TOP_LEVEL_PARSERS = [
     parseComment,
-
-    parseCssBlock,
-    parseCssImport,
 ];
 
 export function parse(stream: TokenStream) : SyntaxTree {

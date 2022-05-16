@@ -1,6 +1,7 @@
 import { StringInputStream } from "stream/input";
 import { parseCssStyleSheet, rulesetStatement, selector, simpleSelector } from "./cssParser";
 import { lexer } from "./lexer";
+import { BlockType, NodeType } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { ArrayTokenStream, GoAheadTokenStream } from "./tokenStream";
 
@@ -30,12 +31,14 @@ div {
     }
 }`;
 
-function testParser(fn : TokenParser, str : string) {
+function testParser(fn : TokenParser, str : string) : any {
     const tokens = lexer(new StringInputStream(str));
     const stream = new GoAheadTokenStream(new ArrayTokenStream(tokens));
 
-    fn(stream);
+    const result = fn(stream);
     expect(stream.rawValue()).toEqual(str);
+
+    return result;
 }
 
 describe('CSS Parser', () => {
@@ -43,26 +46,45 @@ describe('CSS Parser', () => {
         const tokens = lexer(new StringInputStream(SAMPLE));
         const stream = new GoAheadTokenStream(new ArrayTokenStream(tokens));
 
-        parseCssStyleSheet(stream);
+        const result = parseCssStyleSheet(stream);
         expect(stream.rawValue()).toEqual(SAMPLE);
+        expect(result).toEqual([
+            {type: NodeType.CssCharset, rawValue: "\n@charset 'utf-8';"},
+            {type: NodeType.CssImport, path: "'styles.css'", rawValue: "\n@import 'styles.css';"},
+            {type: NodeType.CssBlock, selectors: [
+                {
+                    type: NodeType.CssSelector,
+                    items: ["\ndiv"],
+
+                }
+            ], block: {
+                type: NodeType.Block,
+                blockType: BlockType.CurlyBracket,
+                items: []
+            }}
+        ]);
     });
 
     it('simpleSelector', () => {
-        testParser(simpleSelector, '*');
-        testParser(simpleSelector, 'div');
-        testParser(simpleSelector, 'div.className');
-        testParser(simpleSelector, '.className');
-        testParser(simpleSelector, 'a:href');
-        testParser(simpleSelector, '*');
-        testParser(simpleSelector, 'input[type=edit]');
+        expect(testParser(simpleSelector, '*')).toEqual("*");
+        expect(testParser(simpleSelector, 'div')).toEqual('div');
+        expect(testParser(simpleSelector, '.className')).toEqual('.className');
+        expect(testParser(simpleSelector, ' .className')).toEqual(' .className');
+        expect(testParser(simpleSelector, '.className#id')).toEqual('.className#id');
+        expect(testParser(simpleSelector, 'div.className')).toEqual('div.className');
+        expect(testParser(simpleSelector, '.className')).toEqual('.className');
+        expect(testParser(simpleSelector, 'a:hover')).toEqual('a:hover');
+        expect(testParser(simpleSelector, '*')).toEqual('*');
+        expect(testParser(simpleSelector, 'input[type=edit]')).toEqual('input[type=edit]');
+        expect(testParser(simpleSelector, 'input[type=edit].className')).toEqual('input[type=edit].className');
     });
 
     it('selector', () => {
-        testParser(selector, 'div');
-        testParser(selector, 'div > .className');
-        testParser(selector, 'div + .className');
-        testParser(selector, 'div .className');
-        testParser(selector, '.className > div#id#name[attr=value]:href');
+        expect(testParser(selector, 'div')).toEqual({type: NodeType.CssSelector, items: ["div"]});
+        expect(testParser(selector, 'div > .className')).toEqual({type: NodeType.CssSelector, items: ["div", " >", " .className"]});
+        expect(testParser(selector, 'div + .className')).toEqual({type: NodeType.CssSelector, items: ["div", " +", " .className"]});
+        expect(testParser(selector, 'div .className')).toEqual({type: NodeType.CssSelector, items: ["div", " .className"]});
+        expect(testParser(selector, '.className > div#id#name[attr=items]:href')).toEqual({type: NodeType.CssSelector, items: [".className", " >", " div#id#name[attr=items]:href"]});
     });
 
     test('rulesetStatement', () => {
