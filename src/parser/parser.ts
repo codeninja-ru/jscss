@@ -292,7 +292,7 @@ function regularExpressionBody(stream: TokenStream) : string {
     throw new Error(`regular expression is expteced, but ${JSON.stringify(token)} was given`);
 }
 
-function parseComment(stream: TokenStream) : CommentNode {
+export function parseComment(stream: TokenStream) : CommentNode {
     const token = stream.next();
 
     switch (token.type) {

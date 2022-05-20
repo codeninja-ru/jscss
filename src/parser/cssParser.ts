@@ -3,8 +3,8 @@
 import { Keywords } from "keywords";
 import { Symbols } from "symbols";
 import { TokenType } from "token";
-import { anyLiteral, anyString, block, commaList, firstOf, keyword, list, loop, noSpacesHere, oneOfSymbols, optional, rawValue, regexpLiteral, returnRawValue, roundBracket, semicolon, sequence, squareBracket, symbol } from "./parserUtils";
-import { CssBlockNode, CssImportNode, CssSelectorNode, Node, NodeType } from "./syntaxTree";
+import { anyLiteral, anyString, block, commaList, firstOf, keyword, list, loop, noSpacesHere, oneOfSymbols, optional, rawValue, regexpLiteral, returnRawValue, roundBracket, semicolon, sequence, ignoreSpacesAndComments, squareBracket, symbol } from "./parserUtils";
+import { CssBlockNode, CssImportNode, CssMediaNode, CssSelectorNode, Node, NodeType } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
 
@@ -35,6 +35,7 @@ function cssCharset(stream : TokenStream) : Node {
 export function stylesheetItem(stream : TokenStream) : ReturnType<TokenParser> {
     //TODO everything that starts with @ can be optimized by combining together
     return firstOf(
+        ignoreSpacesAndComments,
         cssCharset,
         importStatement,
         rulesetStatement,
@@ -88,7 +89,7 @@ function uri(stream : TokenStream) : void {
   : medium [ COMMA S* medium]*
   ;
  * */
-function mediaList(stream : TokenStream) : void {
+function mediaList(stream : TokenStream) : string[] {
     return commaList(ident)(stream);
 }
 
@@ -324,14 +325,23 @@ function functionCallDoNothing(stream : TokenStream) : ReturnType<TokenParser> {
   ;
  *
  * */
-function mediaStatement(stream : TokenStream) : void {
+function mediaStatement(stream : TokenStream) : CssMediaNode {
     sequence(
         symbol(Symbols.at),
         noSpacesHere,
         keyword(Keywords.cssMedia),
-        mediaList,
-        block(TokenType.LazyBlock, rulesetStatement)
     )(stream);
+
+    const mediaListItems = mediaList(stream);
+    const rules = block(TokenType.LazyBlock, loop(
+        firstOf(ignoreSpacesAndComments, rulesetStatement)
+    ))(stream);
+
+    return {
+        type: NodeType.CssMedia,
+        mediaList: mediaListItems,
+        items: rules,
+    };
 }
 
 /**

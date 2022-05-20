@@ -3,7 +3,7 @@ import { StringInputStream } from "stream/input";
 import { Symbols } from "symbols";
 import { TokenType } from "token";
 import { lexer } from "./lexer";
-import { anyLiteral, block, commaList, firstOf, keyword, longestOf, noLineTerminatorHere, oneOfSymbols, optional, sequence, spacesAndComments, symbol } from "./parserUtils";
+import { anyLiteral, block, commaList, firstOf, keyword, longestOf, noLineTerminatorHere, oneOfSymbols, optional, sequence, ignoreSpacesAndComments, symbol } from "./parserUtils";
 import { BlockType, NodeType } from "./syntaxTree";
 import { ArrayTokenStream, TokenStream } from "./tokenStream";
 
@@ -292,7 +292,7 @@ describe('parserUtils', () => {
         });
 
         it('wrong block type', () => {
-            const tokens = lexer(new StringInputStream(`[]`))
+            const tokens = lexer(new StringInputStream(`[]`));
             const stream = new ArrayTokenStream(tokens);
 
             expect(() => {
@@ -305,17 +305,50 @@ describe('parserUtils', () => {
 
     });
 
-    describe('spacesAndComments()', () => {
+    describe('ignoreSpacesAndComments()', () => {
         it('spaces and comments', () => {
-            const tokens = lexer(new StringInputStream(`  \n /* test */no!`))
+            const tokens = lexer(new StringInputStream(`  \n /* test */no!`));
             const stream = new ArrayTokenStream(tokens);
+            const node = ignoreSpacesAndComments(stream);
 
-            const node = spacesAndComments(stream);
             expect(node.type).toEqual(NodeType.Ignore);
-            expect(node.value).toEqual([
+            expect(node.items).toEqual([
                 "  \n ",
                 "/* test */"
             ]);
+        });
+
+        it('html comment', () => {
+            const tokens = lexer(new StringInputStream(`  \n <!-- test -->no`));
+            const stream = new ArrayTokenStream(tokens);
+            const node = ignoreSpacesAndComments(stream);
+
+            expect(node.type).toEqual(NodeType.Ignore);
+            expect(stream.currentPosition()).toEqual(2);
+            expect(stream.peek()).toEqual({
+                position: expect.anything(),
+                type: TokenType.Literal,
+                value: "no"
+            });
+            expect(node.items).toEqual([
+                "  \n ",
+                "<!-- test -->"
+            ]);
+        });
+
+        it('nor space, neither a comment', () => {
+            const tokens = lexer(new StringInputStream(`no`));
+            const stream = new ArrayTokenStream(tokens);
+            expect(() => {
+                ignoreSpacesAndComments(stream);
+            }).toThrowError('(1:1) : Comment or space symbols are expected');
+        });
+
+        it('empty stream', () => {
+            const stream = new ArrayTokenStream([]);
+            expect(() => {
+                ignoreSpacesAndComments(stream);
+            }).toThrowError('(0:0) : Unexpected end of the stream');
         });
 
     });

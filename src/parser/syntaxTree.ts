@@ -24,6 +24,7 @@ export enum NodeType {
 
     CssSelector,
     CssCharset,
+    CssMedia,
 
     JssScript,
 }
@@ -42,6 +43,11 @@ export interface Node {
 export interface RawNode extends Node {
     type: NodeType.Raw;
     value: string;
+}
+
+export interface IgnoreNode extends Node {
+    readonly type: NodeType.Ignore;
+    readonly items: string[];
 }
 
 // import namespace from ...
@@ -121,4 +127,10 @@ export interface CssSelectorNode extends Node {
 export interface JsRawNode extends Node {
     readonly type: NodeType,
     readonly value: string;
+}
+
+export interface CssMediaNode extends Node {
+    readonly type: NodeType.CssMedia,
+    readonly mediaList: string[],
+    readonly items: CssBlockNode[],
 }

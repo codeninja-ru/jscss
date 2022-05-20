@@ -1,7 +1,7 @@
 import { StringInputStream } from "stream/input";
 import { parseCssStyleSheet, rulesetStatement, selector, simpleSelector } from "./cssParser";
 import { lexer } from "./lexer";
-import { BlockType, NodeType } from "./syntaxTree";
+import { BlockType, CssBlockNode, CssSelectorNode, NodeType } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { ArrayTokenStream, GoAheadTokenStream } from "./tokenStream";
 
@@ -41,6 +41,23 @@ function testParser(fn : TokenParser, str : string) : any {
     return result;
 }
 
+function cssSelector(...selectorItems : string[][]) : CssSelectorNode[] {
+    return selectorItems.map(item => {
+        return {
+            type: NodeType.CssSelector,
+            items: item,
+        };
+    });
+}
+
+function cssBlock(selectors : CssSelectorNode[], blockItems : any) : CssBlockNode {
+    return {type: NodeType.CssBlock, selectors: selectors, block: {
+        type: NodeType.Block,
+        blockType: BlockType.CurlyBracket,
+        items: blockItems
+    }};
+}
+
 describe('CSS Parser', () => {
     it('parse simple css', () => {
         const tokens = lexer(new StringInputStream(SAMPLE));
@@ -48,20 +65,35 @@ describe('CSS Parser', () => {
 
         const result = parseCssStyleSheet(stream);
         expect(stream.rawValue()).toEqual(SAMPLE);
+        console.log(result);
         expect(result).toEqual([
-            {type: NodeType.CssCharset, rawValue: "\n@charset 'utf-8';"},
-            {type: NodeType.CssImport, path: "'styles.css'", rawValue: "\n@import 'styles.css';"},
-            {type: NodeType.CssBlock, selectors: [
-                {
-                    type: NodeType.CssSelector,
-                    items: ["\ndiv"],
-
+            {type: NodeType.Ignore, items: expect.anything()},
+            {type: NodeType.CssCharset, rawValue: "@charset 'utf-8';"},
+            {type: NodeType.Ignore, items: expect.anything()},
+            {type: NodeType.CssImport, path: "'styles.css'", rawValue: "@import 'styles.css';"},
+            {type: NodeType.Ignore, items: expect.anything()},
+            cssBlock(cssSelector(["div"]), []),
+            {type: NodeType.Ignore, items: expect.anything()},
+            cssBlock(cssSelector([".className", " >", " div#id#name[attr=value]:href"], [" a:href"]), []),
+            {type: NodeType.Ignore, items: expect.anything()},
+            cssBlock(cssSelector([".className", " +", " div#id#name[attr=value]:href"], [" a:href"]), []),
+            {type: NodeType.Ignore, items: [
+                '\n\n',
+                '<!-- comment -->',
+                '\n\n'
+            ]},
+            {
+                type: NodeType.CssMedia,
+                mediaList: ["screen", "print"],
+                items: {
+                    type: NodeType.Block,
+                    blockType: BlockType.CurlyBracket,
+                    items: [
+                        {type: NodeType.Ignore, items: expect.anything()},
+                        cssBlock(cssSelector(["div"]), [])
+                    ]
                 }
-            ], block: {
-                type: NodeType.Block,
-                blockType: BlockType.CurlyBracket,
-                items: []
-            }}
+            }
         ]);
     });
 

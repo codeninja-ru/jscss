@@ -1,5 +1,5 @@
 import { stylesheetItem } from "./cssParser";
-import { moduleItem } from "./parser";
+import { moduleItem, parseComment } from "./parser";
 import { firstOf, strictLoop } from "./parserUtils";
 import { JssScriptNode, NodeType } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
@@ -22,5 +22,6 @@ function jssStatement(stream : TokenStream) : ReturnType<TokenParser> {
         //TODO
         moduleItem,
         stylesheetItem,
+        parseComment,
     )(stream);
 }

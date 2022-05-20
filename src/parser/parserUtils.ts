@@ -3,8 +3,8 @@ import { StringInputStream } from "stream/input";
 import { Symbols, SyntaxSymbol } from "symbols";
 import { Token, TokenType } from "token";
 import { lexer } from "./lexer";
-import { ParserError } from "./parserError";
-import { BlockNode, BlockType, LazyNode, NodeType } from "./syntaxTree";
+import { ParserError, UnexpectedEndError } from "./parserError";
+import { BlockNode, BlockType, IgnoreNode, LazyNode, NodeType } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { ArrayTokenStream, FlushableTokenStream, GoAheadTokenStream, TokenStream } from "./tokenStream";
 import { isSpaceOrComment, peekAndSkipSpaces, TokenStreamReader } from "./tokenStreamReader";
@@ -354,7 +354,7 @@ export function loop(parser : TokenParser) : TokenParser {
 
 type OneOfBlockToken = TokenType.Block | TokenType.LazyBlock | TokenType.RoundBrackets | TokenType.SquareBrackets | TokenType.SlashBrackets;
 export function block(expectedTokenType : OneOfBlockToken, parser : TokenParser) : TokenParser {
-    function getBlockType(token : Token, stream : TokenStream) : BlockType {
+    function getBlockType(token : Token) : BlockType {
        switch(token.value[0]) {
             case '(':
             return BlockType.RoundBracket;
@@ -371,7 +371,7 @@ export function block(expectedTokenType : OneOfBlockToken, parser : TokenParser)
         if (token.type == expectedTokenType) {
             const tokens = lexer(new StringInputStream(token.value.slice(1, token.value.length - 1)));
             const tokenStream = new ArrayTokenStream(tokens);
-            const blockType = getBlockType(token, stream);
+            const blockType = getBlockType(token);
             return {
                 type: NodeType.Block,
                 blockType: blockType,
@@ -383,10 +383,11 @@ export function block(expectedTokenType : OneOfBlockToken, parser : TokenParser)
     };
 }
 
-export function spacesAndComments(stream : TokenStream) : ReturnType<TokenParser> {
+export function ignoreSpacesAndComments(stream : TokenStream) : IgnoreNode {
     const result = [];
+    var token;
     while(!stream.eof()) {
-        const token = stream.peek();
+        token = stream.peek();
         if (isSpaceOrComment(token)) {
             result.push(stream.next().value);
         } else {
@@ -394,8 +395,16 @@ export function spacesAndComments(stream : TokenStream) : ReturnType<TokenParser
         }
     }
 
+    if (token === undefined) {
+        throw new UnexpectedEndError(stream);
+    }
+
+    if (token && result.length == 0) {
+        throw new ParserError('Comment or space symbols are expected', token);
+    }
+
     return {
         type: NodeType.Ignore,
-        value: result
-    }
+        items: result
+    };
 }
