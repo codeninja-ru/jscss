@@ -90,7 +90,8 @@ describe('CSS Parser', () => {
                     blockType: BlockType.CurlyBracket,
                     items: [
                         {type: NodeType.Ignore, items: expect.anything()},
-                        cssBlock(cssSelector(["div"]), [])
+                        cssBlock(cssSelector(["div"]), []),
+                        {type: NodeType.Ignore, items: expect.anything()},
                     ]
                 }
             }
