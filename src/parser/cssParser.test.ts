@@ -65,7 +65,6 @@ describe('CSS Parser', () => {
 
         const result = parseCssStyleSheet(stream);
         expect(stream.rawValue()).toEqual(SAMPLE);
-        console.log(result);
         expect(result).toEqual([
             {type: NodeType.Ignore, items: expect.anything()},
             {type: NodeType.CssCharset, rawValue: "@charset 'utf-8';"},

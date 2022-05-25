@@ -11,7 +11,7 @@ const color = '#fff';
 
 .className > a:hover {
     //color: \${color};
-    color: white;
+    font-family: 'Arail';
     backgound: #fff;
 }`;
 
@@ -26,13 +26,15 @@ describe('parseJssScript()', () => {
         expect(stream.eof()).toBeTruthy();
         expect(node.items).toEqual([
             {type: NodeType.Raw, value: "import _ from 'lodash';"},
-            {type: NodeType.CssImport, path: "'style.css'", rawValue: "\n@import 'style.css';"},
-            {type: NodeType.Raw, value: "\n\nconst color = '#fff';"},
+            {type: NodeType.Ignore, items: ["\n"]},
+            {type: NodeType.CssImport, path: "'style.css'", rawValue: "@import 'style.css';"},
+            {type: NodeType.Ignore, items: expect.anything()},
+            {type: NodeType.Raw, value: "const color = '#fff';"},
+            {type: NodeType.Ignore, items: expect.anything()},
             {type: NodeType.CssBlock, selectors: [
                 {
                     type: NodeType.CssSelector,
-                    //TODO remove leading spaces
-                    items: ["\n\n.className", " >", " a:hover"]
+                    items: [".className", " >", " a:hover"]
                 },
             ], block: {
                 type: NodeType.Block,
