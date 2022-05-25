@@ -137,6 +137,15 @@ console.log('hi');
         testParserFunction(parseJsScript, "x = a == b ? 1 : 2");
     });
 
+    it('string', () => {
+        testParserFunction(parseJsScript, "var a = 'test';");
+        testParserFunction(parseJsScript, "var a = 'test \\n test';");
+        testParserFunction(parseJsScript, 'var a = "test";');
+        testParserFunction(parseJsScript, 'var a = "test \\n test";');
+        testParserFunction(parseJsScript, 'a = `test \n test`;');
+        testParserFunction(parseJsScript, 'a = `test \n test ${a + b}`;');
+    });
+
     it('expressions', () => {
         testParserFunction(parseJsScript, "var i = 2 + 1 * 10 ^ 2;");
         testParserFunction(parseJsScript, "var fn = (i) => { alert(i) }");

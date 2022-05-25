@@ -10,7 +10,7 @@ const SIMPLE = `import _ from 'lodash';
 const color = '#fff';
 
 .className > a:hover {
-    //color: \${color};
+    color: \${color};
     font-family: 'Arail';
     backgound: #fff;
 }`;

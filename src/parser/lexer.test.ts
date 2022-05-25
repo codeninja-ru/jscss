@@ -26,6 +26,20 @@ const SIMPLE_CSS = `
 }
 `;
 
+const CSS_BLOCK_CONTENT = `
+    // all this should be valid jscss
+    ...classNameBase.prop;
+    ...classNameBase(x);
+    [generateProp]: bold;
+    font-weight: \${test ? 'bold' : 'normal'\};
+    font-size: \${getSize()}px;
+    color: white;
+    background: #fff;
+    .childClassName {
+        color: red;
+    }
+`;
+
 describe('parseStream()', () => {
     test('simple css', () => {
         const tokens = lexer(new StringInputStream(SIMPLE_CSS));
@@ -49,6 +63,36 @@ describe('parseStream()', () => {
             spn,
         ]);
     });
+
+    test('content of the css block', () => {
+        const tokens = lexer(new StringInputStream(CSS_BLOCK_CONTENT));
+        const anySpace = () => { return {type: TokenType.Space, value: expect.anything(), position: expect.anything()} };
+        const semcol = () => makeSymbolToken(';');
+        const col = () => makeSymbolToken(':');
+        const space = () => makeSpaceToken(' ');
+        expect(tokens).toEqual([
+            {type: TokenType.Space, value: "\n    ", position: {line: 1, col: 1}},
+            { type: TokenType.Comment, position: {line: 2, col: 5}, value: '// all this should be valid jscss' },
+            anySpace(),
+            makeSymbolToken('...'), makeLiteralToken('classNameBase'), makeSymbolToken('.'), makeLiteralToken('prop'), semcol(),
+            anySpace(),
+            makeSymbolToken('...'), makeLiteralToken('classNameBase'), makeRoundBracketsToken('(x)'), semcol(),
+            anySpace(),
+            makeSquareBracketsToken('[generateProp]'), col(), space(), makeLiteralToken('bold'), semcol(),
+            anySpace(),
+            makeLiteralToken('font-weight'), col(), space(), makeLiteralToken('$'), makeLazyBlockToken("{test ? 'bold' : 'normal'\}"), semcol(),
+            anySpace(),
+            makeLiteralToken('font-size'), col(), space(), makeLiteralToken('$'), makeLazyBlockToken('{getSize()}'), makeLiteralToken('px'), semcol(),
+            anySpace(),
+            makeLiteralToken('color'), col(), space(), makeLiteralToken('white'), semcol(),
+            anySpace(),
+            makeLiteralToken('background'), col(), space(), makeSymbolToken('#'), makeLiteralToken('fff'), semcol(),
+            anySpace(),
+            makeSymbolToken('.'), makeLiteralToken('childClassName'), space(), makeLazyBlockToken(expect.anything()),
+            anySpace(),
+        ]);
+    });
+
 
     test('javascript', () => {
         const tokens = lexer(new StringInputStream("import _ from 'lodash';\n"));
@@ -113,7 +157,6 @@ function process(css) {
             makeLiteralToken('no')
         ]);
     });
-
 
     test('simple javascript var', () => {
         const tokens = lexer(new StringInputStream(`var name = fn(1,2)[1,2].test`));

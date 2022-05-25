@@ -40,10 +40,10 @@ export function makeSymbolToken(value: string): SymbolToken {
     }
 }
 
-export function makeRoundBracketsToken(value: string): RoundBracketsToken {
+export function makeRoundBracketsToken(value: string, pos = expect.anything()): RoundBracketsToken {
     return {
         type: TokenType.RoundBrackets,
-        position: expect.anything(),
+        position: pos,
         value,
     }
 }
