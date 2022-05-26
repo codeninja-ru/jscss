@@ -1,4 +1,4 @@
 export interface Position {
-    line: number;
-    col: number;
+    readonly line: number;
+    readonly col: number;
 }

@@ -3,6 +3,12 @@ import { makeLiteralToken } from "token/helpers";
 import { ArrayTokenStream, GoAheadTokenStream } from "./tokenStream";
 
 describe('ArrayTokenStream', () => {
+    test('can be empty', () => {
+        const stream = new ArrayTokenStream([]);
+        expect(stream.eof()).toBeTruthy();
+        expect(stream.currentPosition()).toEqual(0);
+    });
+
     test('all methods', () => {
         const tokens = [
             makeLiteralToken("i1", {line: 1, col: 1}),
@@ -31,6 +37,7 @@ describe('ArrayTokenStream', () => {
         expect(stream.eof()).toBeTruthy();
 
     });
+
 });
 
 describe('CommonChildTokenStream', () => {

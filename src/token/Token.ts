@@ -100,3 +100,5 @@ export interface SlashBracketsToken extends BaseToken {
     type: TokenType.SlashBrackets,
     readonly value: string;
 }
+
+export type OneOfBlockToken = BlockToken | LazyBlockToken | RoundBracketsToken | SquareBracketsToken | SlashBracketsToken;

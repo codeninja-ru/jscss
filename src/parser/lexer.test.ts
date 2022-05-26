@@ -58,7 +58,7 @@ describe('parseStream()', () => {
     font-size: 12px;
     color: \$\{color(\"#eee\")\};
     background: \$\{func()\};
-}`, position: expect.anything(),
+}`, position: {line: 4, col: 12},
             },
             spn,
         ]);
@@ -207,4 +207,12 @@ function process(css) {
             makeLiteralToken('var_name')
         ]);
     });
+
+    test('correct position', () => {
+        const tokens = lexer(new StringInputStream(`[hi]`));
+        expect(tokens).toEqual([
+            { type: TokenType.SquareBrackets, value: '[hi]', position: {line: 1, col: 1} },
+        ]);
+    });
+
 });

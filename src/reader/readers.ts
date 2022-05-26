@@ -187,6 +187,7 @@ export function makeBracketsReader(stream: InputStream, startBracket: '(' | '[',
         if (stream.peek() == startBracket) {
             let result = '';
             let level = 0;
+            const pos = stream.position();
             while (!stream.isEof()) {
                 var ch = stream.next();
                 if (ch == startBracket) {
@@ -198,7 +199,7 @@ export function makeBracketsReader(stream: InputStream, startBracket: '(' | '[',
                 if (level == 0) {
                     return {
                         type: startBracket == '(' ? TokenType.RoundBrackets : TokenType.SquareBrackets,
-                        position: stream.position(),
+                        position: pos,
                         value: result
                     } as Token;
                 }

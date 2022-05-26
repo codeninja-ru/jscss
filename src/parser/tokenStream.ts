@@ -1,3 +1,4 @@
+import { Position } from "stream/position";
 import { Token } from "token";
 
 export interface TokenStream {
@@ -8,6 +9,7 @@ export interface TokenStream {
     eof(): boolean;
     currentPosition(): number;
     length(): number;
+    readonly startStreamPosition: Position;
 };
 
 export interface FlushableTokenStream extends TokenStream {
@@ -15,9 +17,17 @@ export interface FlushableTokenStream extends TokenStream {
     rawValue() : string;
 }
 
+const ZERO_POSITION = {
+    line: 1,
+    col: 1,
+} as Position;
+
 export class ArrayTokenStream implements TokenStream {
     private pos : number = 0;
-    constructor(private tokens : Token[]) {
+    readonly startStreamPosition: Position;
+
+    constructor(private tokens : Token[], startStreamPosition = ZERO_POSITION) {
+        this.startStreamPosition = startStreamPosition;
     }
 
     take(idx: number): Token {
@@ -52,9 +62,12 @@ export class ArrayTokenStream implements TokenStream {
 export class GoAheadTokenStream implements FlushableTokenStream {
     private pos : number;
     private startPos : number;
+    readonly startStreamPosition: Position;
+
     constructor(private parent: TokenStream) {
         this.pos = parent.currentPosition();
         this.startPos = parent.currentPosition();
+        this.startStreamPosition = parent.startStreamPosition;
     }
 
     next() : Token {

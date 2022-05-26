@@ -1,9 +1,9 @@
 import { Keyword } from "keywords";
-import { StringInputStream } from "stream/input";
+import { SubStringInputStream } from "stream/input/SubStringInputStream";
 import { Symbols, SyntaxSymbol } from "symbols";
 import { Token, TokenType } from "token";
 import { lexer } from "./lexer";
-import { ParserError, UnexpectedEndError } from "./parserError";
+import { EmptyStreamError, ParserError, UnexpectedEndError } from "./parserError";
 import { BlockNode, BlockType, IgnoreNode, LazyNode, NodeType } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { ArrayTokenStream, FlushableTokenStream, GoAheadTokenStream, TokenStream } from "./tokenStream";
@@ -56,8 +56,8 @@ export function comma(stream: TokenStream) : string {
     throw new ParserError(`, is expected`, token);
 }
 
-export function commaList(parser: TokenParser) : TokenParser {
-    return list(parser, comma);
+export function commaList(parser: TokenParser, canListBeEmpty : boolean = false) : TokenParser {
+    return list(parser, comma, canListBeEmpty);
 }
 
 export function flushed(parser : TokenParser) : TokenParser {
@@ -104,19 +104,23 @@ export function returnRawValue(parser : TokenParser) : TokenParser {
     };
 }
 
-export function list(parser: TokenParser, separator: TokenParser, canListBeEmpty = false) : TokenParser {
+export function list(parser: TokenParser, separator: TokenParser, canListBeEmpty : boolean = false) : TokenParser {
     return function(stream: TokenStream) : ReturnType<TokenParser> {
         let result = [];
-        do {
+        while (!stream.eof()) {
             try {
                 result.push(flushed(parser)(stream));
             } catch(e) {
                 break;
             }
-        } while( optional(separator)(stream) );
+
+            if (!optional(separator)(stream)) {
+                break;
+            }
+        }
 
         if (!canListBeEmpty && result.length == 0) {
-            throw new ParserError(`list of elements is exptected`, stream.peek());
+            throw new EmptyStreamError(`list of elements is expected`, stream);
         }
 
         return result;
@@ -352,8 +356,8 @@ export function loop(parser : TokenParser) : TokenParser {
     };
 }
 
-type OneOfBlockToken = TokenType.Block | TokenType.LazyBlock | TokenType.RoundBrackets | TokenType.SquareBrackets | TokenType.SlashBrackets;
-export function block(expectedTokenType : OneOfBlockToken, parser : TokenParser) : TokenParser {
+type OneOfBlockTokenType = TokenType.Block | TokenType.LazyBlock | TokenType.RoundBrackets | TokenType.SquareBrackets | TokenType.SlashBrackets;
+export function block(expectedTokenType : OneOfBlockTokenType, parser : TokenParser) : TokenParser {
     function getBlockType(token : Token) : BlockType {
        switch(token.value[0]) {
             case '(':
@@ -369,13 +373,17 @@ export function block(expectedTokenType : OneOfBlockToken, parser : TokenParser)
     return function(stream : TokenStream) : ReturnType<TokenParser> {
         const token = peekAndSkipSpaces(stream);
         if (token.type == expectedTokenType) {
-            const tokens = lexer(new StringInputStream(token.value.slice(1, token.value.length - 1)));
-            const tokenStream = new ArrayTokenStream(tokens);
+            const tokens = lexer(SubStringInputStream.fromBlockToken(token));
+            const tokenStream = new ArrayTokenStream(tokens, token.position);
             const blockType = getBlockType(token);
+            const result = parser(tokenStream);
+            if (!tokenStream.eof()) {
+                throw new ParserError(`unexpected token " ${tokenStream.peek().value} "`, tokenStream.peek());
+            }
             return {
                 type: NodeType.Block,
                 blockType: blockType,
-                items: parser(tokenStream),
+                items: result,
             } as BlockNode;
         }
 

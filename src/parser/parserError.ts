@@ -1,13 +1,20 @@
+import { Position } from "stream/position";
 import { Token, TokenType } from "token";
 import { TokenStream } from "./tokenStream";
 
-function formatError(token : Token, errorMessage : string) : string {
-    return `(${token.position.line}:${token.position.col}) : ` + errorMessage;
+function formatError(position : Position, errorMessage : string) : string {
+    return `(${position.line}:${position.col}) : ` + errorMessage;
 }
 
 export class ParserError extends Error {
     constructor(message : string, token : Token) {
-        super(formatError(token, message));
+        super(formatError(token.position, message));
+    }
+}
+
+export class EmptyStreamError extends Error {
+    constructor(message : string, stream : TokenStream) {
+        super(formatError(stream.startStreamPosition, message));
     }
 }
 
@@ -27,7 +34,7 @@ function lastToken(stream : TokenStream) : Token {
 }
 
 export class UnexpectedEndError extends Error {
-    constructor(stream : TokenStream) {
-        super(formatError(lastToken(stream), 'Unexpected end of the stream'));
+    constructor(stream : TokenStream, message = 'Unexpected end of the stream') {
+        super(formatError(lastToken(stream).position, message));
     }
 }

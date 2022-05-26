@@ -25,6 +25,7 @@ export enum NodeType {
     CssSelector,
     CssCharset,
     CssMedia,
+    CssDeclaration,
 
     JssScript,
 }
@@ -133,4 +134,11 @@ export interface CssMediaNode extends Node {
     readonly type: NodeType.CssMedia,
     readonly mediaList: string[],
     readonly items: CssBlockNode[],
+}
+
+export interface CssDeclarationNode extends Node {
+    readonly type: NodeType.CssDeclaration,
+    readonly prop: string,
+    readonly value: any,
+    readonly prio?: string,
 }

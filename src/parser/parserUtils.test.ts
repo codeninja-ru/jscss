@@ -45,7 +45,7 @@ describe('parserUtils', () => {
             const tokens = lexer(new StringInputStream(`xvar, var  var`))
             expect(() => {
                 commaList(keyword(Keywords._var))(new ArrayTokenStream(tokens));
-            }).toThrowError("(1:1) : list of elements is exptected");
+            }).toThrowError("(1:1) : list of elements is expected");
         });
 
         it('interapted in the middle', () => {
@@ -55,6 +55,21 @@ describe('parserUtils', () => {
             expect(node).toEqual(['var']);
             expect(stream.currentPosition()).toEqual(2)
         });
+
+        it('can be empty', () => {
+            const stream = new ArrayTokenStream([]);
+            const node = commaList(anyLiteral, true)(stream);
+            expect(node).toEqual([]);
+            expect(stream.currentPosition()).toEqual(0)
+        });
+
+        it('cannot be empty', () => {
+            const stream = new ArrayTokenStream([], {line: 10, col: 10});
+            expect(() => {
+               commaList(anyLiteral, false)(stream);
+            }).toThrowError('(10:10) : list of elements is expected')
+        });
+
     });
 
     describe('firstOf()', () => {
@@ -283,24 +298,36 @@ describe('parserUtils', () => {
 
             const node = block(
                 TokenType.SquareBrackets,
-                optional(commaList(anyLiteral))
+                commaList(anyLiteral, true)
             )(stream);
 
             expect(node.type).toEqual(NodeType.Block);
             expect(node.blockType).toEqual(BlockType.SquareBracket);
-            expect(node.items).toEqual(undefined);
+            expect(node.items).toEqual([]);
         });
 
         it('wrong block type', () => {
-            const tokens = lexer(new StringInputStream(`[]`));
+            const tokens = lexer(new StringInputStream(`[hi]`));
             const stream = new ArrayTokenStream(tokens);
 
             expect(() => {
                 block(
                     TokenType.RoundBrackets,
-                    optional(commaList(anyLiteral))
+                    commaList(anyLiteral, true)
                 )(stream);
-            }).toThrowError();
+            }).toThrowError('(1:1) : block is expected');
+        });
+
+        it('wrong block content', () => {
+            const tokens = lexer(new StringInputStream(`[###]`));
+            const stream = new ArrayTokenStream(tokens);
+
+            expect(() => {
+                block(
+                    TokenType.SquareBrackets,
+                    commaList(anyLiteral, true)
+                )(stream);
+            }).toThrowError('(1:2) : unexpected token " ### "');
         });
 
     });

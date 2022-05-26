@@ -1,5 +1,5 @@
 import { StringInputStream } from "stream/input";
-import { parseCssStyleSheet, rulesetStatement, selector, simpleSelector } from "./cssParser";
+import { declaration, parseCssStyleSheet, rulesetStatement, selector, simpleSelector } from "./cssParser";
 import { lexer } from "./lexer";
 import { BlockType, CssBlockNode, CssSelectorNode, NodeType } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
@@ -119,9 +119,20 @@ describe('CSS Parser', () => {
         expect(testParser(selector, '.className > div#id#name[attr=items]:href')).toEqual({type: NodeType.CssSelector, items: [".className", " >", " div#id#name[attr=items]:href"]});
     });
 
-    test('rulesetStatement', () => {
+    it('rulesetStatement', () => {
         testParser(rulesetStatement, 'div {}');
+        testParser(rulesetStatement, 'div { }');
         testParser(rulesetStatement, 'div { color: white; }');
+    });
+
+    it('delcaration()', () => {
+        testParser(declaration, ' color: white;');
+        testParser(declaration, 'color: white;');
+        testParser(declaration, 'color: white');
+        testParser(declaration, 'background-image: url(/bg.jpg)');
+        testParser(declaration, 'font-color: white');
+        testParser(declaration, 'font-color: #fff');
+        testParser(declaration, 'color: white !important;');
     });
 
 });

@@ -4,11 +4,13 @@ import { InputStream } from './InputStream';
 export class StringInputStream implements InputStream {
     private input = '';
     private pos = 0;
-    private line = 1;
-    private col = 1;
+    protected line : number;
+    protected col : number;
 
-    constructor(input: string) {
+    constructor(input: string, line = 1, col = 1) {
         this.input = input;
+        this.line = line;
+        this.col = col;
     }
 
     next(): string {

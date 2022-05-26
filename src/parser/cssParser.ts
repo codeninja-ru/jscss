@@ -4,7 +4,7 @@ import { Keywords } from "keywords";
 import { Symbols } from "symbols";
 import { TokenType } from "token";
 import { anyLiteral, anyString, block, commaList, firstOf, keyword, list, loop, noSpacesHere, oneOfSymbols, optional, rawValue, regexpLiteral, returnRawValue, roundBracket, semicolon, sequence, ignoreSpacesAndComments, squareBracket, symbol } from "./parserUtils";
-import { CssBlockNode, CssImportNode, CssMediaNode, CssSelectorNode, Node, NodeType } from "./syntaxTree";
+import { CssBlockNode, CssDeclarationNode, CssImportNode, CssMediaNode, CssSelectorNode, Node, NodeType } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
 
@@ -107,10 +107,11 @@ function ident(stream : TokenStream) : string {
  * */
 export function rulesetStatement(stream : TokenStream) : CssBlockNode {
     const selectors = commaList(selector)(stream);
-    const cssBlock = block(TokenType.LazyBlock, list(
-        declaration,
-        symbol(Symbols.semicolon),
-        true,
+    const cssBlock = block(TokenType.LazyBlock, loop(
+        firstOf(
+            ignoreSpacesAndComments,
+            declaration,
+        )
     ))(stream);
 
     return {
@@ -127,18 +128,25 @@ export function rulesetStatement(stream : TokenStream) : CssBlockNode {
   ;
  *
  * */
-function declaration(stream : TokenStream) : void {
-    sequence(
-        ident,
-        symbol(Symbols.semicolon),
-        expr,
-        optional(sequence(
+export function declaration(stream : TokenStream) : CssDeclarationNode {
+    const property = ident(stream);
+    symbol(Symbols.colon)(stream);
+    const expression = expr(stream);
+    const prio = optional(sequence(
             // prio
             // : IMPORTANT_SYM S*
             symbol(Symbols.not),
             keyword(Keywords.cssImportant),
-        )),
-    )(stream);
+    ))(stream);
+
+    optional(semicolon)(stream);
+
+    return {
+        type: NodeType.CssDeclaration,
+        prop: property,
+        value: expression,
+        prio,
+    };
 }
 
 /**
