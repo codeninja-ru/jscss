@@ -1,9 +1,10 @@
-import { Keywords } from "keywords";
+import { Keyword, Keywords } from "keywords";
 import { StringInputStream } from "stream/input";
 import { Symbols } from "symbols";
 import { TokenType } from "token";
 import { lexer } from "./lexer";
-import { anyLiteral, block, commaList, firstOf, keyword, longestOf, noLineTerminatorHere, oneOfSymbols, optional, sequence, ignoreSpacesAndComments, symbol } from "./parserUtils";
+import { BlockParserError, ParserError } from "./parserError";
+import { anyLiteral, block, commaList, firstOf, ignoreSpacesAndComments, keyword, longestOf, map, noLineTerminatorHere, noSpacesHere, oneOfSymbols, optional, sequence, symbol } from "./parserUtils";
 import { BlockType, NodeType } from "./syntaxTree";
 import { ArrayTokenStream, TokenStream } from "./tokenStream";
 
@@ -97,6 +98,27 @@ describe('parserUtils', () => {
             }).toThrowError('(1:1) : unknown statement "instanceof"');
             expect(stream.currentPosition()).toEqual(0);
         });
+
+        it('block rule and BlockParserError', () => {
+            const tokens = lexer(new StringInputStream(`instanceof`))
+            const stream = new ArrayTokenStream(tokens);
+            expect(() => {
+                firstOf(
+                    keyword(Keywords._if),
+                    keyword(Keywords._async),
+                    keyword(Keywords._var),
+                    sequence(
+                        keyword(new Keyword('url')),
+                        noSpacesHere,
+                        function(stream : TokenStream) {
+                            throw new BlockParserError(new ParserError('some error in the block', stream.peek()));
+                        }
+                    )
+                )(stream);
+            }).toThrowError('(1:1) : unknown statement "instanceof"');
+            expect(stream.currentPosition()).toEqual(0);
+        });
+
 
     });
 
@@ -378,6 +400,16 @@ describe('parserUtils', () => {
             }).toThrowError('(0:0) : Unexpected end of the stream');
         });
 
+    });
+
+    describe('map()', () => {
+        const tokens = lexer(new StringInputStream(`var test`))
+        const stream = new ArrayTokenStream(tokens);
+        const value = map(sequence(
+            keyword(Keywords._var),
+            anyLiteral,
+        ), item => item.join('+'))(stream);
+        expect(value).toEqual('var+test');
     });
 
 });

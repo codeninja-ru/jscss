@@ -12,6 +12,18 @@ export class ParserError extends Error {
     }
 }
 
+/**
+ * this error indicates that this error should be hight priority
+ * somethime there is an error insede a block (round brackets for example),
+ * while parsing such block it's handy to see the error thrown from the block rather than see message that the whole block rule is invalid
+ * */
+export class BlockParserError extends Error {
+    constructor(error : ParserError) {
+        // @ts-ignore
+        super(error.message, {cause: error});
+    }
+}
+
 export class EmptyStreamError extends Error {
     constructor(message : string, stream : TokenStream) {
         super(formatError(stream.startStreamPosition, message));

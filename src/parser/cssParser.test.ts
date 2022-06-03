@@ -1,7 +1,7 @@
 import { StringInputStream } from "stream/input";
 import { declaration, parseCssStyleSheet, rulesetStatement, selector, simpleSelector } from "./cssParser";
 import { lexer } from "./lexer";
-import { BlockType, CssBlockNode, CssSelectorNode, NodeType } from "./syntaxTree";
+import { BlockType, CssBlockNode, CssDeclarationNode, CssSelectorNode, IgnoreNode, NodeType } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { ArrayTokenStream, GoAheadTokenStream } from "./tokenStream";
 
@@ -15,12 +15,12 @@ div {
 
 .className > div#id#name[attr=value]:href, a:href {
   color: white;
-  background: #fff; // comment
+  background-color: #fff; // comment
 }
 
 .className + div#id#name[attr=value]:href, a:href {
   color: white;
-  background: #fff; /* comment */
+  background-color: #fff; /* comment */
 }
 
 <!-- comment -->
@@ -50,7 +50,8 @@ function cssSelector(...selectorItems : string[][]) : CssSelectorNode[] {
     });
 }
 
-function cssBlock(selectors : CssSelectorNode[], blockItems : any) : CssBlockNode {
+type CssBlockItemNode = CssDeclarationNode | IgnoreNode;
+function cssBlock(selectors : CssSelectorNode[], blockItems : CssBlockItemNode[]) : CssBlockNode {
     return {type: NodeType.CssBlock, selectors: selectors, block: {
         type: NodeType.Block,
         blockType: BlockType.CurlyBracket,
@@ -71,11 +72,43 @@ describe('CSS Parser', () => {
             {type: NodeType.Ignore, items: expect.anything()},
             {type: NodeType.CssImport, path: "'styles.css'", rawValue: "@import 'styles.css';"},
             {type: NodeType.Ignore, items: expect.anything()},
-            cssBlock(cssSelector(["div"]), []),
+            cssBlock(cssSelector(["div"]), [
+                {type: NodeType.Ignore, items: expect.anything()},
+                {type: NodeType.CssDeclaration,
+                 prop: "color",
+                 prio: "!important",
+                 value: '#777',
+                },
+                {type: NodeType.Ignore, items: expect.anything()},
+            ]),
             {type: NodeType.Ignore, items: expect.anything()},
-            cssBlock(cssSelector([".className", " >", " div#id#name[attr=value]:href"], [" a:href"]), []),
+            cssBlock(cssSelector([".className", " >", " div#id#name[attr=value]:href"], [" a:href"]), [
+                {type: NodeType.Ignore, items: expect.anything()},
+                {type: NodeType.CssDeclaration,
+                 prop: "color",
+                 value: 'white',
+                },
+                {type: NodeType.Ignore, items: expect.anything()},
+                {type: NodeType.CssDeclaration,
+                 prop: "background-color",
+                 value: '#fff',
+                },
+                {type: NodeType.Ignore, items: expect.anything()},
+            ]),
             {type: NodeType.Ignore, items: expect.anything()},
-            cssBlock(cssSelector([".className", " +", " div#id#name[attr=value]:href"], [" a:href"]), []),
+            cssBlock(cssSelector([".className", " +", " div#id#name[attr=value]:href"], [" a:href"]), [
+                {type: NodeType.Ignore, items: expect.anything()},
+                {type: NodeType.CssDeclaration,
+                 prop: "color",
+                 value: 'white',
+                },
+                {type: NodeType.Ignore, items: expect.anything()},
+                {type: NodeType.CssDeclaration,
+                 prop: "background-color",
+                 value: '#fff',
+                },
+                {type: NodeType.Ignore, items: expect.anything()},
+            ]),
             {type: NodeType.Ignore, items: [
                 '\n\n',
                 '<!-- comment -->',
@@ -89,7 +122,15 @@ describe('CSS Parser', () => {
                     blockType: BlockType.CurlyBracket,
                     items: [
                         {type: NodeType.Ignore, items: expect.anything()},
-                        cssBlock(cssSelector(["div"]), []),
+                        cssBlock(cssSelector(["div"]), [
+                            {type: NodeType.Ignore, items: expect.anything()},
+                            {type: NodeType.CssDeclaration,
+                             prop: "color",
+                             value: '#888',
+                             prio: "!important",
+                            },
+                            {type: NodeType.Ignore, items: expect.anything()},
+                        ]),
                         {type: NodeType.Ignore, items: expect.anything()},
                     ]
                 }

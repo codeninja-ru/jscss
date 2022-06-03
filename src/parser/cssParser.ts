@@ -3,7 +3,7 @@
 import { Keywords } from "keywords";
 import { Symbols } from "symbols";
 import { TokenType } from "token";
-import { anyLiteral, anyString, block, commaList, firstOf, keyword, list, loop, noSpacesHere, oneOfSymbols, optional, rawValue, regexpLiteral, returnRawValue, roundBracket, semicolon, sequence, ignoreSpacesAndComments, squareBracket, symbol } from "./parserUtils";
+import { anyLiteral, anyString, block, commaList, firstOf, ignoreSpacesAndComments, keyword, list, loop, map, noSpacesHere, oneOfSymbols, optional, rawValue, regexpLiteral, returnRawValue, roundBracket, semicolon, sequence, squareBracket, symbol } from "./parserUtils";
 import { CssBlockNode, CssDeclarationNode, CssImportNode, CssMediaNode, CssSelectorNode, Node, NodeType } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
@@ -131,13 +131,15 @@ export function rulesetStatement(stream : TokenStream) : CssBlockNode {
 export function declaration(stream : TokenStream) : CssDeclarationNode {
     const property = ident(stream);
     symbol(Symbols.colon)(stream);
-    const expression = expr(stream);
-    const prio = optional(sequence(
+    const expression = returnRawValue(expr)(stream).trim();
+    const prio = optional(
+        map(sequence(
             // prio
             // : IMPORTANT_SYM S*
             symbol(Symbols.not),
             keyword(Keywords.cssImportant),
-    ))(stream);
+        ), (item) => item.join(''))
+    )(stream);
 
     optional(semicolon)(stream);
 
@@ -145,7 +147,7 @@ export function declaration(stream : TokenStream) : CssDeclarationNode {
         type: NodeType.CssDeclaration,
         prop: property,
         value: expression,
-        prio,
+        ...(prio ? {prio} : {})
     };
 }
 
@@ -183,8 +185,8 @@ function term(stream : TokenStream) : void {
             // [ NUMBER S* | PERCENTAGE S* | LENGTH S* | EMS S* | EXS S* | ANGLE S* | TIME S* | FREQ S* ]
             regexpLiteral(/^([0-9]+|[0-9]*\.[0-9]+)(\%|px|cm|mm|in|pt|pc|em|ex|deg|rad|grad|ms|s|hz|khz)?$/g),
             anyString,
-            ident,
             uri,
+            ident,
             sequence(symbol(Symbols.numero), noSpacesHere, anyLiteral),
             functionCallDoNothing,
         )

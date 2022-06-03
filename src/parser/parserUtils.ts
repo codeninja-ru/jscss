@@ -3,7 +3,7 @@ import { SubStringInputStream } from "stream/input/SubStringInputStream";
 import { Symbols, SyntaxSymbol } from "symbols";
 import { Token, TokenType } from "token";
 import { lexer } from "./lexer";
-import { EmptyStreamError, ParserError, UnexpectedEndError } from "./parserError";
+import { BlockParserError, EmptyStreamError, ParserError, UnexpectedEndError } from "./parserError";
 import { BlockNode, BlockType, IgnoreNode, LazyNode, NodeType } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { ArrayTokenStream, FlushableTokenStream, GoAheadTokenStream, TokenStream } from "./tokenStream";
@@ -89,7 +89,7 @@ export function rawValue(stream : TokenStream | FlushableTokenStream) : string {
 }
 
 export function returnRawValue(parser : TokenParser) : TokenParser {
-    return function(stream: TokenStream) : ReturnType<TokenParser> {
+    return function(stream: TokenStream) : string {
         const childStream = new GoAheadTokenStream(stream);
         let result;
         try {
@@ -141,6 +141,21 @@ export function sequence(...parsers: TokenParser[]) : TokenParser {
     };
 }
 
+type TokenParserMapFn = (item : ReturnType<TokenParser>) => ReturnType<TokenParser>;
+export function map(parser : TokenParser, mapFn: TokenParserMapFn) : TokenParser {
+    return function(stream : TokenStream) : ReturnType<TokenParser> {
+        return mapFn(parser(stream));
+    };
+}
+
+export function mapJoinStrings(parser : TokenParser, delim = ' ') : TokenParser {
+    return map(parser, (item) => item.join(delim));
+}
+
+export function mapJoinStringsNoSpace(parser : TokenParser) : TokenParser {
+    return map(parser, (item) => item.join(''));
+}
+
 export function longestOf(...parsers: TokenParser[]) : TokenParser {
     return function(stream: TokenStream) : ReturnType<TokenParser> {
         let errors = [];
@@ -182,7 +197,11 @@ export function firstOf(...parsers: TokenParser[]) : TokenParser {
                 parserStream.flush();
                 return result;
             } catch( e ) {
-                errors.push(e);
+                if (e instanceof BlockParserError) {
+                    throw e;
+                } else {
+                    errors.push(e);
+                }
             }
         }
 
@@ -376,7 +395,12 @@ export function block(expectedTokenType : OneOfBlockTokenType, parser : TokenPar
             const tokens = lexer(SubStringInputStream.fromBlockToken(token));
             const tokenStream = new ArrayTokenStream(tokens, token.position);
             const blockType = getBlockType(token);
-            const result = parser(tokenStream);
+            let result;
+            try {
+                result = parser(tokenStream);
+            } catch (e) {
+                throw new BlockParserError(e);
+            }
             if (!tokenStream.eof()) {
                 throw new ParserError(`unexpected token " ${tokenStream.peek().value} "`, tokenStream.peek());
             }
