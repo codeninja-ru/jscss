@@ -47,6 +47,7 @@ export const Symbols = {
     astersik2: new SyntaxSymbol('**'),
     minus2: new SyntaxSymbol('--'),
     plus2: new SyntaxSymbol('++'),
+    dot3: new SyntaxSymbol('...'),
 
     shiftLeft: new SyntaxSymbol('<<'),
     shiftRight: new SyntaxSymbol('>>'),

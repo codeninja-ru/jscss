@@ -3,7 +3,7 @@
 import { Keywords } from "keywords";
 import { Symbols } from "symbols";
 import { TokenType } from "token";
-import { anyLiteral, anyString, block, commaList, firstOf, ignoreSpacesAndComments, keyword, list, loop, map, noSpacesHere, oneOfSymbols, optional, rawValue, regexpLiteral, returnRawValue, roundBracket, semicolon, sequence, squareBracket, symbol } from "./parserUtils";
+import { anyLiteral, anyString, block, commaList, firstOf, ignoreSpacesAndComments, keyword, list, loop, map, noSpacesHere, oneOfSymbols, optional, rawValue, regexpLiteral, returnRawValue, roundBracket, semicolon, sequence, squareBracket, strictLoop, symbol } from "./parserUtils";
 import { CssBlockNode, CssDeclarationNode, CssImportNode, CssMediaNode, CssSelectorNode, Node, NodeType } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
@@ -13,7 +13,7 @@ import { TokenStream } from "./tokenStream";
  * [ CHARSET_SYM STRING ';' ]?
  *
  * */
-function cssCharset(stream : TokenStream) : Node {
+export function cssCharset(stream : TokenStream) : Node {
     sequence(symbol(Symbols.at), noSpacesHere, keyword(Keywords.cssCharset), anyString, semicolon)(stream);
 
     return {
@@ -55,7 +55,7 @@ export function parseCssStyleSheet(stream : TokenStream) : ReturnType<TokenParse
     [STRING|URI] S* media_list? ';' S*
   ;
  * */
-function importStatement(stream : TokenStream) : CssImportNode {
+export function importStatement(stream : TokenStream) : CssImportNode {
     symbol(Symbols.at)(stream);
     noSpacesHere(stream);
     keyword(Keywords._import)(stream);
@@ -107,7 +107,7 @@ function ident(stream : TokenStream) : string {
  * */
 export function rulesetStatement(stream : TokenStream) : CssBlockNode {
     const selectors = commaList(selector)(stream);
-    const cssBlock = block(TokenType.LazyBlock, loop(
+    const cssBlock = block(TokenType.LazyBlock, strictLoop(
         firstOf(
             ignoreSpacesAndComments,
             declaration,
@@ -335,7 +335,7 @@ function functionCallDoNothing(stream : TokenStream) : ReturnType<TokenParser> {
   ;
  *
  * */
-function mediaStatement(stream : TokenStream) : CssMediaNode {
+export function mediaStatement(stream : TokenStream) : CssMediaNode {
     sequence(
         symbol(Symbols.at),
         noSpacesHere,
@@ -343,7 +343,7 @@ function mediaStatement(stream : TokenStream) : CssMediaNode {
     )(stream);
 
     const mediaListItems = mediaList(stream);
-    const rules = block(TokenType.LazyBlock, loop(
+    const rules = block(TokenType.LazyBlock, strictLoop(
         firstOf(ignoreSpacesAndComments, rulesetStatement)
     ))(stream);
 
@@ -362,7 +362,7 @@ function mediaStatement(stream : TokenStream) : CssMediaNode {
   ;
  *
  * */
-function pageStatement(stream : TokenStream) : void {
+export function pageStatement(stream : TokenStream) : void {
     sequence(
         symbol(Symbols.at),
         noSpacesHere,

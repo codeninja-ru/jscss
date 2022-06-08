@@ -28,7 +28,7 @@ export enum TokenType {
 interface BaseToken {
     readonly type: TokenType;
     value: string;
-    position: Position;
+    readonly position: Position;
 }
 
 export interface SpaceToken extends BaseToken {

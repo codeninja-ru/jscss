@@ -412,4 +412,23 @@ describe('parserUtils', () => {
         expect(value).toEqual('var+test');
     });
 
+    describe('class BlockParserError', () => {
+        it('instanceof', () => {
+            const parserError = new ParserError('error!', {
+                type: TokenType.Comment,
+                value: 'test token',
+                position: {
+                    line: 1,
+                    col: 5,
+                }
+            });
+            const blockError = new BlockParserError(parserError);
+
+            expect(parserError instanceof ParserError).toBeTruthy();
+            expect(blockError instanceof BlockParserError).toBeTruthy();
+            expect(blockError instanceof Error).toBeTruthy();
+        });
+
+    });
+
 });

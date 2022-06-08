@@ -15,6 +15,12 @@ const color = '#fff';
     backgound: #fff;
 }`;
 
+const SIMPLE1 = `.className > a:hover {
+    color: \${color};
+    font-family: 'Arail';
+    backgound: #fff;
+}`;
+
 describe('parseJssScript()', () => {
     it('simple script', () => {
         const tokens = lexer(new StringInputStream(SIMPLE));
@@ -22,7 +28,7 @@ describe('parseJssScript()', () => {
         const node = parseJssScript(stream);
 
         expect(node.type).toEqual(NodeType.JssScript);
-        expect(stream.rawValue()).toEqual(SIMPLE);
+        expect(stream.rawValue()).toEqual(SIMPLE1);
         expect(stream.eof()).toBeTruthy();
         expect(node.items).toEqual([
             {type: NodeType.Raw, value: "import _ from 'lodash';"},
