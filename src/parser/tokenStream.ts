@@ -1,5 +1,7 @@
+import { StringInputStream } from "stream/input";
 import { Position } from "stream/position";
 import { Token } from "token";
+import { lexer } from "./lexer";
 
 export interface TokenStream {
     take(idx: number): Token;
@@ -25,6 +27,10 @@ const ZERO_POSITION = {
 export class ArrayTokenStream implements TokenStream {
     private pos : number = 0;
     readonly startStreamPosition: Position;
+
+    static fromString(str : string) : TokenStream {
+        return new ArrayTokenStream(lexer(new StringInputStream(str)));
+    }
 
     constructor(private tokens : Token[], startStreamPosition = ZERO_POSITION) {
         this.startStreamPosition = startStreamPosition;

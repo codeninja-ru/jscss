@@ -271,6 +271,15 @@ export function anyLiteral(stream: TokenStream) : string {
     throw new ParserError(`any literal is expteced`, token);
 }
 
+export function dollarSign(stream: TokenStream) : string {
+    const token = peekAndSkipSpaces(stream);
+    if (token.type == TokenType.Literal && token.value == '$') {
+        return token.value;
+    }
+
+    throw new ParserError(`dollar ($) sign is expected here`, token);
+}
+
 export function symbol(ch: SyntaxSymbol, peekFn : TokenStreamReader = peekAndSkipSpaces) : TokenParser {
     return function(stream: TokenStream) : string {
         const token = peekFn(stream);

@@ -1,8 +1,8 @@
 import { Symbols } from "symbols";
 import { TokenType } from "token";
-import { cssCharset, importStatement, mediaStatement, pageStatement, rulesetStatement, selector } from "./cssParser";
-import { jssPropertyDefinition, moduleItem, parseComment } from "./parser";
-import { block, commaList, firstOf, ignoreSpacesAndComments, keyword, list, noSpacesHere, optional, rawValue, sequence, strictLoop, symbol } from "./parserUtils";
+import { cssCharset, importStatement, mediaStatement, pageStatement, selector } from "./cssParser";
+import { assignmentExpression, moduleItem, parseComment, propertyName } from "./parser";
+import { anyLiteral, anyString, block, commaList, dollarSign, firstOf, ignoreSpacesAndComments, lazyBlock, loop, noSpacesHere, oneOfSymbols, semicolon, sequence, strictLoop, symbol } from "./parserUtils";
 import { CssBlockNode, JssScriptNode, NodeType } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
@@ -14,15 +14,38 @@ export function parseJssScript(stream : TokenStream) : JssScriptNode {
     }
 }
 
-export function declaration(stream : TokenStream) : CssDeclarationNode {
-    return firstOf(
+function jssPropertyDefinition(stream : TokenStream) : void {
+    firstOf(
+        //sequence(propertyName, symbol(Symbols.colon), assignmentExpression), // clear js assigment
+        //sequence(propertyName, symbol(Symbols.colon), expr, optional(prioStatement)), // clear css
+        sequence(propertyName, symbol(Symbols.colon), loop(
+            firstOf(
+                sequence(dollarSign, noSpacesHere, lazyBlock), // template string ${}
+                anyLiteral, // NOTE: anyLiteral includes $, it may cause troubles in a wrong order
+                anyString,
 
+                oneOfSymbols(
+                    Symbols.plus,
+                    Symbols.minus,
+                    Symbols.at,
+                    Symbols.not,
+                    Symbols.div,
+                    Symbols.comma,
+                    Symbols.dot,
+                    Symbols.numero,
+                    Symbols.percent,
+                ),
+            )
+        )),
+        sequence(symbol(Symbols.dot3), assignmentExpression), // js assignment
     )(stream);
+
+    semicolon(stream);
 }
 
 export function rulesetStatement(stream : TokenStream) : CssBlockNode {
     const selectors = commaList(selector)(stream);
-    const cssBlock = block(TokenType.LazyBlock, commaList(jssPropertyDefinition, true)(stream);
+    const cssBlock = block(TokenType.LazyBlock, strictLoop(jssPropertyDefinition))(stream);
 
     return {
         type: NodeType.CssBlock,

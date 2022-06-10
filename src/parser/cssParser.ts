@@ -132,14 +132,7 @@ export function declaration(stream : TokenStream) : CssDeclarationNode {
     const property = ident(stream);
     symbol(Symbols.colon)(stream);
     const expression = returnRawValue(expr)(stream).trim();
-    const prio = optional(
-        map(sequence(
-            // prio
-            // : IMPORTANT_SYM S*
-            symbol(Symbols.not),
-            keyword(Keywords.cssImportant),
-        ), (item) => item.join(''))
-    )(stream);
+    const prio = optional(prioStatement)(stream);
 
     optional(semicolon)(stream);
 
@@ -151,6 +144,13 @@ export function declaration(stream : TokenStream) : CssDeclarationNode {
     };
 }
 
+export const prioStatement = map(sequence(
+        // prio
+        // : IMPORTANT_SYM S*
+        symbol(Symbols.not),
+        keyword(Keywords.cssImportant),
+    ), (item) => item.join(''));
+
 /**
  * implements:
  * expr
@@ -158,7 +158,7 @@ export function declaration(stream : TokenStream) : CssDeclarationNode {
   ;
  *
  * */
-function expr(stream : TokenStream) : void {
+export function expr(stream : TokenStream) : void {
     term(stream);
     loop(
         sequence(

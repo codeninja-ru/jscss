@@ -15,6 +15,12 @@ describe('parserUtils', () => {
         expect(node).toEqual('var');
     });
 
+    it('anyLiteral()', () => {
+        expect(anyLiteral(ArrayTokenStream.fromString('test'))).toEqual('test');
+        expect(anyLiteral(ArrayTokenStream.fromString('test-name'))).toEqual('test-name');
+        expect(anyLiteral(ArrayTokenStream.fromString('testName'))).toEqual('testName');
+    });
+
     describe('commaList()', () => {
         it('correct simple rule', () => {
             const tokens = lexer(new StringInputStream(`var, var , var var`))

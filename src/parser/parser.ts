@@ -1,9 +1,8 @@
 import { Keywords, ReservedWords } from "keywords";
 import { AssignmentOperator, Symbols } from "symbols";
 import { TokenType } from "token";
-import { rulesetStatement } from "./cssParser";
 import { anyLiteral, anyString, anyTempateStringLiteral, block, comma, commaList, firstOf, keyword, lazyBlock, leftHandRecurciveRule, longestOf, loop, noLineTerminatorHere, oneOfSymbols, optional, rawValue, regexpLiteral, roundBracket, sequence, squareBracket, strictLoop, symbol } from "./parserUtils";
-import { BlockType, CommentNode, IfNode, JsModuleNode, JsRawNode, JsScriptNode, MultiNode, Node, NodeType, SyntaxTree, VarDeclaraionNode } from "./syntaxTree";
+import { CommentNode, IfNode, JsModuleNode, JsRawNode, JsScriptNode, MultiNode, Node, NodeType, SyntaxTree, VarDeclaraionNode } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { GoAheadTokenStream, TokenStream } from "./tokenStream";
 import { peekAndSkipSpaces, peekNextToken, peekNoLineTerminatorHere } from "./tokenStreamReader";
@@ -195,7 +194,7 @@ function regularExpressionLiteral(stream: TokenStream) : string {
     return body;
 }
 
-function numericLiteral(stream : TokenStream) : void {
+export function numericLiteral(stream : TokenStream) : void {
     const numberRule = function(stream : TokenStream) {
         const numberPart = optional(regexpLiteral(/^[0-9\_]+([eE][\-\+][0-9\_]+)?n?$/))(stream);
         // NOTE: exponentioal part is odd here
@@ -311,6 +310,7 @@ export function parseComment(stream: TokenStream) : CommentNode {
 
 function identifierName(stream : TokenStream) : string {
     // NOTE it's a simplification of cause
+    // it matches font-family as a literal for example
     return anyLiteral(stream);
 }
 
@@ -333,8 +333,6 @@ function bindingIdentifier(stream : TokenStream) : Node {
         keyword(Keywords._await),
     )(stream);
 }
-
-const identifierReference = bindingIdentifier;
 
 function variableDeclaration(stream : TokenStream) : VarDeclaraionNode {
     const name = firstOf(
@@ -588,7 +586,7 @@ function asyncArrowFunction(stream : TokenStream) : void {
     firstOf(lazyBlock, assignmentExpression)(stream);
 }
 
-function assignmentExpression(stream : TokenStream) : Node {
+export function assignmentExpression(stream : TokenStream) : Node {
     return longestOf(
         // ConditionalExpression[?In, ?Yield, ?Await]
         conditionalExpression,
@@ -965,38 +963,12 @@ export function moduleItem(stream : TokenStream) : ReturnType<TokenParser> {
     )(stream);
 }
 
-/**
- * implements:
- * = AssignmentExpression[?In, ?Yield, ?Await]
- *
- * */
-function initializer(stream : TokenStream) : void {
-    symbol(Symbols.eq)(stream);
-    assignmentExpression(stream);
-}
-
-function propertyName(stream : TokenStream) : void {
+export function propertyName(stream : TokenStream) : void {
     firstOf(
         // LiteralPropertyName
         firstOf(identifierName, anyString, numericLiteral),
         // ComputedPropertyName[?Yield, ?Await]
         block(TokenType.SquareBrackets, assignmentExpression)
-    )(stream);
-}
-
-
-export function jssPropertyDefinition(stream : TokenStream) : void {
-    firstOf(
-        // IdentifierReference[?Yield, ?Await]
-        identifierReference,
-        // CoverInitializedName[?Yield, ?Await]
-        sequence(identifierReference, initializer),
-        // PropertyName[?Yield, ?Await] : AssignmentExpression[+In, ?Yield, ?Await]
-        sequence(propertyName, symbol(Symbols.colon), assignmentExpression),
-        // MethodDefinition[?Yield, ?Await]
-        // TODO do we need method difinition here?
-        // ... AssignmentExpression[+In, ?Yield, ?Await]
-        sequence(symbol(Symbols.dot3), assignmentExpression),
     )(stream);
 }
 
