@@ -3,8 +3,8 @@ import { StringInputStream } from "stream/input";
 import { Symbols } from "symbols";
 import { TokenType } from "token";
 import { lexer } from "./lexer";
-import { BlockParserError, ParserError } from "./parserError";
-import { anyLiteral, block, commaList, firstOf, ignoreSpacesAndComments, keyword, longestOf, map, noLineTerminatorHere, noSpacesHere, oneOfSymbols, optional, sequence, symbol } from "./parserUtils";
+import { BlockParserError, ParserError, SequenceError } from "./parserError";
+import { anyLiteral, anyString, block, commaList, firstOf, ignoreSpacesAndComments, keyword, longestOf, map, noLineTerminatorHere, noSpacesHere, oneOfSymbols, optional, sequence, symbol } from "./parserUtils";
 import { BlockType, NodeType } from "./syntaxTree";
 import { ArrayTokenStream, TokenStream } from "./tokenStream";
 
@@ -125,6 +125,24 @@ describe('parserUtils', () => {
             expect(stream.currentPosition()).toEqual(0);
         });
 
+        it('throw the first sequence error', () => {
+            const stream = ArrayTokenStream.fromString('var = 1');
+            const t = () => {
+                firstOf(
+                    keyword(Keywords._if),
+                    keyword(Keywords._async),
+                    sequence(
+                        keyword(Keywords._var),
+                        anyLiteral,
+                        symbol(Symbols.eq),
+                        anyString,
+                    )
+                )(stream);
+            }
+            expect(t).toThrowError(SequenceError);
+            expect(t).toThrowError('(1:5) : literal is expected');
+        });
+
 
     });
 
@@ -225,12 +243,27 @@ describe('parserUtils', () => {
             expect(stream.currentPosition()).toEqual(5);
         });
 
-        it('invalid sequence', () => {
+        it('invalid sequence (error in the middle of a sequence)', () => {
             const tokens = lexer(new StringInputStream(`var no if const`))
             const stream = new ArrayTokenStream(tokens);
             expect(() => {
                 sequence(keyword(Keywords._var), keyword(Keywords._if), keyword(Keywords._const))(stream);
             }).toThrowError(`(1:5) : keyword "if" is expected`);
+            expect(() => {
+                sequence(keyword(Keywords._var), keyword(Keywords._if), keyword(Keywords._const))(stream);
+            }).toThrowError(SequenceError);
+            expect(stream.currentPosition()).toEqual(0);
+        });
+
+        it('invalid sequence (error in the first rule of a sequence)', () => {
+            const tokens = lexer(new StringInputStream(`vor no if const`))
+            const stream = new ArrayTokenStream(tokens);
+            expect(() => {
+                sequence(keyword(Keywords._var), keyword(Keywords._if), keyword(Keywords._const))(stream);
+            }).toThrowError(`(1:1) : keyword "var" is expected`);
+            expect(() => {
+                sequence(keyword(Keywords._var), keyword(Keywords._if), keyword(Keywords._const))(stream);
+            }).toThrowError(ParserError);
             expect(stream.currentPosition()).toEqual(0);
         });
     });

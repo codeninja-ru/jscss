@@ -56,15 +56,17 @@ export function parseCssStyleSheet(stream : TokenStream) : ReturnType<TokenParse
   ;
  * */
 export function importStatement(stream : TokenStream) : CssImportNode {
-    symbol(Symbols.at)(stream);
-    noSpacesHere(stream);
-    keyword(Keywords._import)(stream);
-    const path = firstOf(
-        anyString,
-        uri,
+    const [,,,path,,] = sequence(
+        symbol(Symbols.at),
+        noSpacesHere,
+        keyword(Keywords._import),
+        firstOf(
+            anyString,
+            uri,
+        ),
+        optional(mediaList),
+        semicolon,
     )(stream);
-    optional(mediaList)(stream);
-    semicolon(stream);
 
     return {
         type: NodeType.CssImport,
@@ -106,13 +108,15 @@ function ident(stream : TokenStream) : string {
   ;
  * */
 export function rulesetStatement(stream : TokenStream) : CssBlockNode {
-    const selectors = commaList(selector)(stream);
-    const cssBlock = block(TokenType.LazyBlock, strictLoop(
-        firstOf(
-            ignoreSpacesAndComments,
-            declaration,
-        )
-    ))(stream);
+    const [selectors, cssBlock] = sequence(
+        commaList(selector),
+        block(TokenType.LazyBlock, strictLoop(
+            firstOf(
+                ignoreSpacesAndComments,
+                declaration,
+            )
+        ))
+    )(stream);
 
     return {
         type: NodeType.CssBlock,
@@ -129,17 +133,18 @@ export function rulesetStatement(stream : TokenStream) : CssBlockNode {
  *
  * */
 export function declaration(stream : TokenStream) : CssDeclarationNode {
-    const property = ident(stream);
-    symbol(Symbols.colon)(stream);
-    const expression = returnRawValue(expr)(stream).trim();
-    const prio = optional(prioStatement)(stream);
-
-    optional(semicolon)(stream);
+    const [property,,expression,prio] = sequence(
+        ident,
+        symbol(Symbols.colon),
+        returnRawValue(expr),
+        optional(prioStatement),
+        optional(semicolon)
+    )(stream);
 
     return {
         type: NodeType.CssDeclaration,
         prop: property,
-        value: expression,
+        value: expression.trim(),
         ...(prio ? {prio} : {})
     };
 }

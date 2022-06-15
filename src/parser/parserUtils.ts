@@ -3,7 +3,7 @@ import { SubStringInputStream } from "stream/input/SubStringInputStream";
 import { Symbols, SyntaxSymbol } from "symbols";
 import { Token, TokenType } from "token";
 import { lexer } from "./lexer";
-import { BlockParserError, EmptyStreamError, ParserError, UnexpectedEndError } from "./parserError";
+import { BlockParserError, EmptyStreamError, ParserError, SequenceError, UnexpectedEndError } from "./parserError";
 import { BlockNode, BlockType, IgnoreNode, LazyNode, NodeType } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { ArrayTokenStream, FlushableTokenStream, GoAheadTokenStream, TokenStream } from "./tokenStream";
@@ -127,12 +127,32 @@ export function list(parser: TokenParser, separator: TokenParser, canListBeEmpty
     };
 }
 
+export type NamedTokenParserResult = {
+    [name: string] : ReturnType<TokenParser>
+};
+
+export function sequenceName(name: string, ...parsers: TokenParser[]) : TokenParser {
+    return function(stream : TokenStream) : NamedTokenParserResult {
+        return {
+            [name]: sequence(...parsers)(stream),
+        };
+    };
+}
+
 export function sequence(...parsers: TokenParser[]) : TokenParser {
     return function(stream: TokenStream) : ReturnType<TokenParser>[] {
         const parserStream = new GoAheadTokenStream(stream);
         const result = [];
-        for (const parser of parsers) {
-            result.push(parser(parserStream));
+        for (var i = 0; i < parsers.length; i++) {
+            try {
+                result.push(parsers[i](parserStream));
+            } catch(e) {
+                if (i > 0) {
+                    throw new SequenceError(e);
+                } else {
+                    throw e;
+                }
+            }
         }
 
         // TODO flush might be not needed if we call sequence inside firstOf/or
@@ -189,7 +209,7 @@ export function longestOf(...parsers: TokenParser[]) : TokenParser {
 
 export function firstOf(...parsers: TokenParser[]) : TokenParser {
     return function(stream: TokenStream) : ReturnType<TokenParser> {
-        let errors = [];
+        let sequenceErrors = [];
         for (let i = 0; i < parsers.length; i++) {
             try {
                 let parserStream = new GoAheadTokenStream(stream);
@@ -199,14 +219,18 @@ export function firstOf(...parsers: TokenParser[]) : TokenParser {
             } catch( e ) {
                 if (e instanceof BlockParserError) {
                     throw e;
-                } else {
-                    errors.push(e);
+                } else if (e instanceof SequenceError){
+                    sequenceErrors.push(e);
                 }
             }
         }
 
-        const token = stream.peek();
-        throw new ParserError(`unknown statement "${token.value}"`, token);
+        if (sequenceErrors.length > 0) { //TODO the array is not needed here
+            throw sequenceErrors[0];
+        } else {
+            const token = stream.peek();
+            throw new ParserError(`unknown statement "${token.value}"`, token);
+        }
     };
 }
 
@@ -268,7 +292,7 @@ export function anyLiteral(stream: TokenStream) : string {
         return token.value;
     }
 
-    throw new ParserError(`any literal is expteced`, token);
+    throw new ParserError(`literal is expected`, token);
 }
 
 export function dollarSign(stream: TokenStream) : string {

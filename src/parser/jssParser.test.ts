@@ -4,33 +4,25 @@ import { lexer } from "./lexer";
 import { BlockType, NodeType } from "./syntaxTree";
 import { ArrayTokenStream, GoAheadTokenStream } from "./tokenStream";
 
-/*const SIMPLE = `import _ from 'lodash';
+const SIMPLE = `import _ from 'lodash';
 @import 'style.css';
 
 const color = '#fff';
 
 .className > a:hover {
     color: \${color};
-    font-family: 'Arail';
-    backgound: #fff;
-}`;
-*/
-
-const SIMPLE1 = `.className > a:hover {
-    color: \${color};
-    font-family: 'Arail';
-    backgound: #fff;
+    font-family: 'Arial', sans-serif;
+    background: #fff;
 }`;
 
 describe('parseJssScript()', () => {
     it('simple script', () => {
-        const tokens = lexer(new StringInputStream(SIMPLE1));
+        const tokens = lexer(new StringInputStream(SIMPLE));
         const stream = new GoAheadTokenStream(new ArrayTokenStream(tokens));
-        debugger;
         const node = parseJssScript(stream);
 
         expect(node.type).toEqual(NodeType.JssScript);
-        expect(stream.rawValue()).toEqual(SIMPLE1);
+        expect(stream.rawValue()).toEqual(SIMPLE);
         expect(stream.eof()).toBeTruthy();
         expect(node.items).toEqual([
             {type: NodeType.Raw, value: "import _ from 'lodash';"},
@@ -47,8 +39,15 @@ describe('parseJssScript()', () => {
             ], block: {
                 type: NodeType.Block,
                 blockType: BlockType.CurlyBracket,
-                items: []
-
+                items: [
+                    {type: NodeType.Ignore, items: expect.anything()},
+                    {type: NodeType.JssDeclaration, prop: "color", value: "${color}"},
+                    {type: NodeType.Ignore, items: expect.anything()},
+                    {type: NodeType.JssDeclaration, prop: "font-family", value: "'Arial', sans-serif"},
+                    {type: NodeType.Ignore, items: expect.anything()},
+                    {type: NodeType.JssDeclaration, prop: "background", value: "#fff"},
+                    {type: NodeType.Ignore, items: expect.anything()},
+                ]
             }}
         ]);
     });

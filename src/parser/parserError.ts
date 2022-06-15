@@ -24,6 +24,16 @@ export class BlockParserError extends Error {
     }
 }
 
+/**
+ * error in the middle of the sequence
+ * */
+export class SequenceError extends Error {
+    constructor(error : ParserError) {
+        // @ts-ignore
+        super(error.message, {cause: error});
+    }
+}
+
 export class EmptyStreamError extends Error {
     constructor(message : string, stream : TokenStream) {
         super(formatError(stream.startStreamPosition, message));

@@ -27,7 +27,10 @@ export enum NodeType {
     CssMedia,
     CssDeclaration,
 
+    JsTemplate,
+
     JssScript,
+    JssDeclaration,
 }
 
 export enum BlockType {
@@ -141,4 +144,15 @@ export interface CssDeclarationNode extends Node {
     readonly prop: string,
     readonly value: any,
     readonly prio?: string,
+}
+
+export interface JsTemplateNode extends Node {
+    readonly type: NodeType.JsTemplate,
+    readonly value: string,
+}
+
+export interface JssDeclarationNode extends Node {
+    readonly type: NodeType.JssDeclaration,
+    readonly prop: string,
+    readonly value: any,
 }
