@@ -28,8 +28,8 @@ export enum NodeType {
     CssDeclaration,
 
     JsTemplate,
+    JsSpread,
 
-    JssScript,
     JssDeclaration,
 }
 
@@ -93,17 +93,13 @@ export interface JsScriptNode extends MultiNode {
     type: NodeType.JsScript,
 }
 
-export interface JssScriptNode extends MultiNode {
-    type: NodeType.JssScript,
-}
-
 export interface JsModuleNode extends MultiNode {
     type: NodeType.JsModule,
 }
 
 export interface CssBlockNode extends Node {
     type: NodeType.CssBlock,
-    readonly selectors: any,
+    readonly selectors: CssSelectorNode[],
     readonly block: BlockNode,
 }
 
@@ -155,4 +151,9 @@ export interface JssDeclarationNode extends Node {
     readonly type: NodeType.JssDeclaration,
     readonly prop: string,
     readonly value: any,
+}
+
+export interface JsSpreadNode extends Node {
+    readonly type: NodeType.JsSpread,
+    readonly value: string,
 }

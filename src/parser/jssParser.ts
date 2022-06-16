@@ -3,15 +3,12 @@ import { TokenType } from "token";
 import { cssCharset, importStatement, mediaStatement, pageStatement, selector } from "./cssParser";
 import { assignmentExpression, moduleItem, parseComment, propertyName } from "./parser";
 import { anyLiteral, anyString, block, comma, commaList, dollarSign, firstOf, ignoreSpacesAndComments, lazyBlock, loop, map, noSpacesHere, oneOfSymbols, returnRawValue, semicolon, sequence, strictLoop, symbol } from "./parserUtils";
-import { CssBlockNode, JssScriptNode, NodeType } from "./syntaxTree";
+import { CssBlockNode, JssScriptNode, NodeType, SyntaxTree } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
 
-export function parseJssScript(stream : TokenStream) : JssScriptNode {
-    return {
-        type: NodeType.JssScript,
-        items: strictLoop(jssStatement)(stream),
-    }
+export function parseJssScript(stream : TokenStream) : SyntaxTree {
+    return strictLoop(jssStatement)(stream);
 }
 
 function jssPropertyDefinition(stream : TokenStream) : void {
@@ -37,7 +34,6 @@ function jssPropertyDefinition(stream : TokenStream) : void {
                 comma,
             )
         )), (result) => {
-            console.log(result);
             return result.trim();
         })), ([propName,,rest]) => {
             return {
@@ -46,7 +42,13 @@ function jssPropertyDefinition(stream : TokenStream) : void {
                 value: rest,
             }
         }),
-        sequence(symbol(Symbols.dot3), assignmentExpression), // js assignment
+        map(returnRawValue(sequence(symbol(Symbols.dot3), assignmentExpression)),
+            (value) => {
+                return {
+                    type: NodeType.JsSpread,
+                    value,
+                };
+            }), // js assignment
     )(stream);
 
     semicolon(stream);
@@ -59,6 +61,7 @@ export function rulesetStatement(stream : TokenStream) : CssBlockNode {
     const cssBlock = block(TokenType.LazyBlock, strictLoop(firstOf(
         ignoreSpacesAndComments,
         jssPropertyDefinition,
+        rulesetStatement,
     )))(stream);
 
     return {

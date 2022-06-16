@@ -12,7 +12,13 @@ const color = '#fff';
 .className > a:hover {
     color: \${color};
     font-family: 'Arial', sans-serif;
+    // comment
     background: #fff;
+    ...extend(color);
+
+    .subClass + a:hover {
+        color: red;
+    }
 }`;
 
 describe('parseJssScript()', () => {
@@ -46,6 +52,23 @@ describe('parseJssScript()', () => {
                     {type: NodeType.JssDeclaration, prop: "font-family", value: "'Arial', sans-serif"},
                     {type: NodeType.Ignore, items: expect.anything()},
                     {type: NodeType.JssDeclaration, prop: "background", value: "#fff"},
+                    {type: NodeType.Ignore, items: expect.anything()},
+                    {type: NodeType.JsSpread, value: "...extend(color)"},
+                    {type: NodeType.Ignore, items: expect.anything()},
+                    {type: NodeType.CssBlock, selectors: [
+                        {
+                            type: NodeType.CssSelector,
+                            items: [".subClass", " +", " a:hover"]
+                        },
+                    ], block: {
+                        type: NodeType.Block,
+                        blockType: BlockType.CurlyBracket,
+                        items: [
+                            {type: NodeType.Ignore, items: expect.anything()},
+                            {type: NodeType.JssDeclaration, prop: "color", value: "red"},
+                            {type: NodeType.Ignore, items: expect.anything()},
+                        ]
+                    }},
                     {type: NodeType.Ignore, items: expect.anything()},
                 ]
             }}
