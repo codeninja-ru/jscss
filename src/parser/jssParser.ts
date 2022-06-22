@@ -3,7 +3,7 @@ import { TokenType } from "token";
 import { cssCharset, importStatement, mediaStatement, pageStatement, selector } from "./cssParser";
 import { assignmentExpression, moduleItem, parseComment, propertyName } from "./parser";
 import { anyLiteral, anyString, block, comma, commaList, dollarSign, firstOf, ignoreSpacesAndComments, lazyBlock, loop, map, noSpacesHere, oneOfSymbols, returnRawValue, semicolon, sequence, strictLoop, symbol } from "./parserUtils";
-import { CssBlockNode, JssScriptNode, NodeType, SyntaxTree } from "./syntaxTree";
+import { CssBlockNode, NodeType, SyntaxTree } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
 

@@ -1,4 +1,8 @@
-export type SyntaxTree = Node[];
+export type SyntaxTree = JssNode[];
+
+export type JssNode = IgnoreNode | RawNode | BlockNode |
+    CssBlockNode | CssImportNode | CssSelectorNode |
+    CommentNode;
 
 export enum NodeType {
     JsImport,

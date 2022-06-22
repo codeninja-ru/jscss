@@ -1,17 +1,37 @@
-import { CssBlockNode, CssSelectorNode, IgnoreNode, Node, NodeType, RawNode, SyntaxTree } from 'parser/syntaxTree';
+import { JssNode, NodeType, SyntaxTree } from 'parser/syntaxTree';
 
-function translateNode(node : Node) : string {
+function quoteEscape(str : string) : string {
+    return str.replace('"', '\"');
+}
+
+function wrapValue(value : string | object) : string {
+    let safeValue;
+    if (typeof value == 'string') {
+        safeValue = quoteEscape(value);
+    } else {
+        safeValue = JSON.stringify(value);
+    }
+
+    return `css.push("${safeValue}");`;
+}
+
+function translateNode(node : JssNode) : string {
     switch(node.type) {
         case NodeType.Ignore:
-            return (<IgnoreNode>node).items.join('');
+            return node.items.join('');
         case NodeType.Raw:
-            return (<RawNode>node).value;
+            return node.value;
         case NodeType.CssBlock:
-            return translator((<CssBlockNode>node).selectors) + '{' + translateNode((<CssBlockNode>node).block) + '}';
+            return wrapValue({
+            });
+            return translatorNode(node.selectors) + '{' + translateNode(node.block) + '}';
         case NodeType.CssSelector:
-            return (<CssSelectorNode>node).items.join(',');
+            return node.items.join(',');
+        case NodeType.CssImport:
+            return wrapValue(node.path.trim());
+        case NodeType.Comment:
         default:
-            throw new Error('unsupported node');
+            throw new Error(`unsupported node ${JSON.stringify(node)}`);
     }
 }
 

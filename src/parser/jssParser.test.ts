@@ -27,10 +27,9 @@ describe('parseJssScript()', () => {
         const stream = new GoAheadTokenStream(new ArrayTokenStream(tokens));
         const node = parseJssScript(stream);
 
-        expect(node.type).toEqual(NodeType.JssScript);
         expect(stream.rawValue()).toEqual(SIMPLE);
         expect(stream.eof()).toBeTruthy();
-        expect(node.items).toEqual([
+        expect(node).toEqual([
             {type: NodeType.Raw, value: "import _ from 'lodash';"},
             {type: NodeType.Ignore, items: ["\n"]},
             {type: NodeType.CssImport, path: "'style.css'", rawValue: "@import 'style.css';"},
