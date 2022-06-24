@@ -121,7 +121,7 @@ export function rulesetStatement(stream : TokenStream) : CssBlockNode {
     return {
         type: NodeType.CssBlock,
         selectors,
-        block: cssBlock,
+        items: cssBlock.items
     }
 }
 

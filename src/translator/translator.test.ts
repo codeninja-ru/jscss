@@ -11,33 +11,34 @@ const bgColor = '#fff';
   background: $\{bgColor\};
 }`;
 
-function example(css) {
-    this.name = ".className";
-    this.value = {
-        color: "red",
-        background: `${bgColor}`
-    }
-}
-
 describe('translator()', () => {
     it('translates simple css', () => {
         const result = translator(parseJssScript(ArrayTokenStream.fromString(CSS)));
         expect(result).toEqual(`var css = [];
 css.push("@import 'main.css';");
+
 const bgColor = '#fff';
-css.push({
-  ".className": {
-    "color": "red";
-    background: \`$\{bgColor\}\`;
-  }
-});
+(function(css) {
+var _subBlocks = [];
+var name = \`.className\`;
+var value = {};
+value["color"] = \`red\`;
+value["background"] = \`$\{bgColor\}\`;
 
-export default css;
-`);
-    });
+css.push({name: name, value: value});
+for(var item of _subBlocks) {
+css.push(item);
+}
+})(css);
 
-    it('trans', () => {
+export default css;`);
 
+      const evalCode = result.replace('export default ', '');
+
+      expect(eval(evalCode)).toEqual([
+        "@import 'main.css';",
+        {name: '.className', value: { color: 'red', background: '#fff' }}
+      ])
     });
 
 

@@ -8,18 +8,19 @@ css.push("@import 'main.css';");
 // raw css
 const bgColor = '#fff';
 
-css.push((function(css) {
-  var self = {
-    name: ".className",
-    value: {
-      "color": "red",
-      "background": `${bgColor}`,
-    },
-  };
+(function(css) {
+  var subBlocks = [];
 
-  return [
-    {self.name: self.value},
-  ];
-})(css));
+  var name = `.className`;
+  var value = {};
+  value["color"] = "red";
+  value["background"] = `${bgColor}`;
+
+  css.push({name: name, value: value});
+  for (var item of subBlocks) {
+    result.push(item);
+  }
+
+})(css);
 
 export default css;

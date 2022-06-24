@@ -1,7 +1,7 @@
 import { StringInputStream } from "stream/input";
 import { parseJssScript } from "./jssParser";
 import { lexer } from "./lexer";
-import { BlockType, NodeType } from "./syntaxTree";
+import { NodeType } from "./syntaxTree";
 import { ArrayTokenStream, GoAheadTokenStream } from "./tokenStream";
 
 const SIMPLE = `import _ from 'lodash';
@@ -36,15 +36,12 @@ describe('parseJssScript()', () => {
             {type: NodeType.Ignore, items: expect.anything()},
             {type: NodeType.Raw, value: "const color = '#fff';"},
             {type: NodeType.Ignore, items: expect.anything()},
-            {type: NodeType.CssBlock, selectors: [
+            {type: NodeType.JssBlock, selectors: [
                 {
                     type: NodeType.CssSelector,
                     items: [".className", " >", " a:hover"]
                 },
-            ], block: {
-                type: NodeType.Block,
-                blockType: BlockType.CurlyBracket,
-                items: [
+            ], items: [
                     {type: NodeType.Ignore, items: expect.anything()},
                     {type: NodeType.JssDeclaration, prop: "color", value: "${color}"},
                     {type: NodeType.Ignore, items: expect.anything()},
@@ -54,23 +51,19 @@ describe('parseJssScript()', () => {
                     {type: NodeType.Ignore, items: expect.anything()},
                     {type: NodeType.JsSpread, value: "...extend(color)"},
                     {type: NodeType.Ignore, items: expect.anything()},
-                    {type: NodeType.CssBlock, selectors: [
+                    {type: NodeType.JssBlock, selectors: [
                         {
                             type: NodeType.CssSelector,
                             items: [".subClass", " +", " a:hover"]
                         },
-                    ], block: {
-                        type: NodeType.Block,
-                        blockType: BlockType.CurlyBracket,
-                        items: [
-                            {type: NodeType.Ignore, items: expect.anything()},
-                            {type: NodeType.JssDeclaration, prop: "color", value: "red"},
-                            {type: NodeType.Ignore, items: expect.anything()},
-                        ]
-                    }},
+                    ], items: [
+                        {type: NodeType.Ignore, items: expect.anything()},
+                        {type: NodeType.JssDeclaration, prop: "color", value: "red"},
+                        {type: NodeType.Ignore, items: expect.anything()},
+                    ]},
                     {type: NodeType.Ignore, items: expect.anything()},
                 ]
-            }}
+            }
         ]);
     });
 });

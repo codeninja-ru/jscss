@@ -1,7 +1,7 @@
 import { StringInputStream } from "stream/input";
 import { declaration, parseCssStyleSheet, rulesetStatement, selector, simpleSelector } from "./cssParser";
 import { lexer } from "./lexer";
-import { BlockType, CssBlockNode, CssDeclarationNode, CssSelectorNode, IgnoreNode, NodeType } from "./syntaxTree";
+import { BlockType, CssBlockItemNode, CssBlockNode, CssSelectorNode, NodeType } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { ArrayTokenStream, GoAheadTokenStream } from "./tokenStream";
 
@@ -50,13 +50,8 @@ function cssSelector(...selectorItems : string[][]) : CssSelectorNode[] {
     });
 }
 
-type CssBlockItemNode = CssDeclarationNode | IgnoreNode;
 function cssBlock(selectors : CssSelectorNode[], blockItems : CssBlockItemNode[]) : CssBlockNode {
-    return {type: NodeType.CssBlock, selectors: selectors, block: {
-        type: NodeType.Block,
-        blockType: BlockType.CurlyBracket,
-        items: blockItems
-    }};
+    return {type: NodeType.CssBlock, selectors: selectors, items: blockItems};
 }
 
 describe('CSS Parser', () => {

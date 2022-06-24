@@ -1,7 +1,7 @@
 export type SyntaxTree = JssNode[];
 
-export type JssNode = IgnoreNode | RawNode | BlockNode |
-    CssBlockNode | CssImportNode | CssSelectorNode |
+export type JssNode = IgnoreNode | RawNode |
+    JssBlockNode | CssImportNode | CssSelectorNode |
     CommentNode;
 
 export enum NodeType {
@@ -34,6 +34,7 @@ export enum NodeType {
     JsTemplate,
     JsSpread,
 
+    JssBlock,
     JssDeclaration,
 }
 
@@ -41,6 +42,12 @@ export enum BlockType {
     RoundBracket,
     SquareBracket,
     CurlyBracket,
+}
+
+export interface BlockNode extends Node {
+    type: NodeType.Block,
+    readonly blockType: BlockType,
+    readonly items: Node[],
 }
 
 export interface Node {
@@ -101,16 +108,18 @@ export interface JsModuleNode extends MultiNode {
     type: NodeType.JsModule,
 }
 
+export type CssBlockItemNode = CssDeclarationNode | IgnoreNode;
 export interface CssBlockNode extends Node {
     type: NodeType.CssBlock,
     readonly selectors: CssSelectorNode[],
-    readonly block: BlockNode,
+    readonly items: CssBlockItemNode[],
 }
 
-export interface BlockNode extends Node {
-    type: NodeType.Block,
-    blockType:  BlockType,
-    readonly items: Node[];
+export type JssBlockItemNode = CssDeclarationNode | JssDeclarationNode | IgnoreNode;
+export interface JssBlockNode extends Node {
+    type: NodeType.JssBlock,
+    readonly selectors: CssSelectorNode[],
+    readonly items: JssBlockItemNode[],
 }
 
 export interface CssImportNode extends Node {

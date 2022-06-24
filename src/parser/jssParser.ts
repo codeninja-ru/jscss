@@ -3,7 +3,7 @@ import { TokenType } from "token";
 import { cssCharset, importStatement, mediaStatement, pageStatement, selector } from "./cssParser";
 import { assignmentExpression, moduleItem, parseComment, propertyName } from "./parser";
 import { anyLiteral, anyString, block, comma, commaList, dollarSign, firstOf, ignoreSpacesAndComments, lazyBlock, loop, map, noSpacesHere, oneOfSymbols, returnRawValue, semicolon, sequence, strictLoop, symbol } from "./parserUtils";
-import { CssBlockNode, NodeType, SyntaxTree } from "./syntaxTree";
+import { JssBlockNode, NodeType, SyntaxTree } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
 
@@ -56,7 +56,7 @@ function jssPropertyDefinition(stream : TokenStream) : void {
     return result;
 }
 
-export function rulesetStatement(stream : TokenStream) : CssBlockNode {
+export function rulesetStatement(stream : TokenStream) : JssBlockNode {
     const selectors = commaList(selector)(stream);
     const cssBlock = block(TokenType.LazyBlock, strictLoop(firstOf(
         ignoreSpacesAndComments,
@@ -65,9 +65,9 @@ export function rulesetStatement(stream : TokenStream) : CssBlockNode {
     )))(stream);
 
     return {
-        type: NodeType.CssBlock,
+        type: NodeType.JssBlock,
         selectors,
-        block: cssBlock,
+        items: cssBlock.items,
     }
 }
 
