@@ -1,9 +1,9 @@
 import { Symbols } from "symbols";
 import { TokenType } from "token";
-import { cssCharset, importStatement, mediaStatement, pageStatement, selector } from "./cssParser";
+import { attrib, combinator, cssCharset, hash, importStatement, mediaStatement, pageStatement, pseudo } from "./cssParser";
 import { assignmentExpression, moduleItem, parseComment, propertyName } from "./parser";
-import { anyLiteral, anyString, block, comma, commaList, dollarSign, firstOf, ignoreSpacesAndComments, lazyBlock, loop, map, noSpacesHere, oneOfSymbols, returnRawValue, semicolon, sequence, strictLoop, symbol } from "./parserUtils";
-import { JssBlockNode, NodeType, SyntaxTree } from "./syntaxTree";
+import { anyLiteral, anyString, block, comma, commaList, dollarSign, firstOf, ignoreSpacesAndComments, lazyBlock, leftHandRecurciveRule, loop, map, noSpacesHere, oneOfSymbols, optional, returnRawValue, semicolon, sequence, strictLoop, symbol } from "./parserUtils";
+import { JssBlockNode, JssSelectorNode, NodeType, SyntaxTree } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
 
@@ -11,13 +11,15 @@ export function parseJssScript(stream : TokenStream) : SyntaxTree {
     return strictLoop(jssStatement)(stream);
 }
 
+const templatePlaceholder = sequence(dollarSign, noSpacesHere, lazyBlock); // template string ${}
+
 function jssPropertyDefinition(stream : TokenStream) : void {
     const result = firstOf(
         //sequence(propertyName, symbol(Symbols.colon), assignmentExpression), // clear js assigment
         //sequence(propertyName, symbol(Symbols.colon), expr, optional(prioStatement)), // clear css
         map(sequence(propertyName, symbol(Symbols.colon), map(returnRawValue(loop(
             firstOf(
-                sequence(dollarSign, noSpacesHere, lazyBlock), // template string ${}
+                templatePlaceholder, // template string ${}
                 anyLiteral, // NOTE: anyLiteral includes $, it may cause troubles in a wrong order
                 anyString,
 
@@ -56,6 +58,55 @@ function jssPropertyDefinition(stream : TokenStream) : void {
     return result;
 }
 
+function jssIdent(stream : TokenStream) : string {
+    return returnRawValue(leftHandRecurciveRule(
+        firstOf(
+            templatePlaceholder,
+            anyLiteral,//NOTE it can't be started with numbers, and content some chars, read the spec
+        ),
+        sequence(noSpacesHere, jssIdent),
+    ))(stream);
+}
+
+export function simpleSelector(stream : TokenStream) : string {
+    const elementName = returnRawValue(firstOf(jssIdent, symbol(Symbols.astersik)));
+    const cssClass = sequence(symbol(Symbols.dot), noSpacesHere, jssIdent);
+    const rest = firstOf(
+        hash,
+        cssClass,
+        attrib,
+        pseudo,
+    );
+
+    const name = optional(elementName)(stream);
+    if (name) {
+        return name + returnRawValue(loop(sequence(noSpacesHere, rest)))(stream);
+    } else {
+        return returnRawValue(rest)(stream) + returnRawValue(loop(sequence(noSpacesHere, rest)))(stream);
+    }
+}
+
+export function selector(stream : TokenStream) : JssSelectorNode {
+    let result = [simpleSelector(stream)];
+    while(!stream.eof()) {
+        const comb = optional(combinator)(stream);
+        const sel = optional(simpleSelector)(stream);
+
+        if (comb && sel) {
+            result.push(comb, sel);
+        } else if (sel) {
+            result.push(sel);
+        } else {
+            break;
+        }
+    }
+
+    return {
+        type: NodeType.JssSelector,
+        items: result,
+    };
+}
+
 export function rulesetStatement(stream : TokenStream) : JssBlockNode {
     const selectors = commaList(selector)(stream);
     const cssBlock = block(TokenType.LazyBlock, strictLoop(firstOf(
@@ -90,8 +141,8 @@ export function stylesheetItem(stream : TokenStream) : ReturnType<TokenParser> {
 function jssStatement(stream : TokenStream) : ReturnType<TokenParser> {
     return firstOf(
         ignoreSpacesAndComments, //TODO it's duplicated in stylesheeiItem
-        moduleItem,
         stylesheetItem,
+        moduleItem,
         parseComment,
     )(stream);
 }

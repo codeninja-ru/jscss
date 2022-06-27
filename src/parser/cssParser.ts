@@ -245,7 +245,7 @@ export function selector(stream : TokenStream) : CssSelectorNode {
   ;
  *
  * */
-function combinator(stream : TokenStream) : void {
+export function combinator(stream : TokenStream) : void {
     oneOfSymbols(
         Symbols.plus,
         Symbols.lt,
@@ -287,7 +287,7 @@ export function simpleSelector(stream : TokenStream) : string {
  * "#"{name}		{return HASH;}
  *
  * */
-function hash(stream : TokenStream) : string {
+export function hash(stream : TokenStream) : string {
     return returnRawValue(sequence(
         symbol(Symbols.numero),
         noSpacesHere,
@@ -304,7 +304,7 @@ function hash(stream : TokenStream) : string {
   ;
  *
  * */
-function attrib(stream : TokenStream) : string {
+export function attrib(stream : TokenStream) : string {
     return returnRawValue(squareBracket)(stream); //TODO parse the content
 }
 
@@ -315,7 +315,7 @@ function attrib(stream : TokenStream) : string {
   ;
  *
  * */
-function pseudo(stream : TokenStream) : string {
+export function pseudo(stream : TokenStream) : string {
     return returnRawValue(sequence(
         symbol(Symbols.colon),
         firstOf(

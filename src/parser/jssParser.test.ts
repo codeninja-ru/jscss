@@ -1,6 +1,4 @@
-import { StringInputStream } from "stream/input";
 import { parseJssScript } from "./jssParser";
-import { lexer } from "./lexer";
 import { NodeType } from "./syntaxTree";
 import { ArrayTokenStream, GoAheadTokenStream } from "./tokenStream";
 
@@ -23,8 +21,7 @@ const color = '#fff';
 
 describe('parseJssScript()', () => {
     it('simple script', () => {
-        const tokens = lexer(new StringInputStream(SIMPLE));
-        const stream = new GoAheadTokenStream(new ArrayTokenStream(tokens));
+        const stream = new GoAheadTokenStream(ArrayTokenStream.fromString(SIMPLE));
         const node = parseJssScript(stream);
 
         expect(stream.rawValue()).toEqual(SIMPLE);
@@ -38,7 +35,7 @@ describe('parseJssScript()', () => {
             {type: NodeType.Ignore, items: expect.anything()},
             {type: NodeType.JssBlock, selectors: [
                 {
-                    type: NodeType.CssSelector,
+                    type: NodeType.JssSelector,
                     items: [".className", " >", " a:hover"]
                 },
             ], items: [
@@ -53,7 +50,7 @@ describe('parseJssScript()', () => {
                     {type: NodeType.Ignore, items: expect.anything()},
                     {type: NodeType.JssBlock, selectors: [
                         {
-                            type: NodeType.CssSelector,
+                            type: NodeType.JssSelector,
                             items: [".subClass", " +", " a:hover"]
                         },
                     ], items: [
@@ -66,4 +63,23 @@ describe('parseJssScript()', () => {
             }
         ]);
     });
+
+    it('parses javascript templates in selectors', () => {
+        const source = `$\{name\} .className { color: red; }`;
+        debugger;
+        const node = parseJssScript(ArrayTokenStream.fromString(source));
+        expect(node).toEqual([
+            { type: NodeType.JssBlock, selectors: [
+                {
+                    type: NodeType.JssSelector,
+                    items: ["${name}", " .className"],
+                }
+            ], items: [
+            {type: NodeType.Ignore, items: expect.anything()},
+            {type: NodeType.JssDeclaration, prop: "color", value: "red"},
+            {type: NodeType.Ignore, items: expect.anything()},
+            ]}
+        ]);
+    });
+
 });

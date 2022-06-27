@@ -36,6 +36,7 @@ export enum NodeType {
 
     JssBlock,
     JssDeclaration,
+    JssSelector,
 }
 
 export enum BlockType {
@@ -115,10 +116,10 @@ export interface CssBlockNode extends Node {
     readonly items: CssBlockItemNode[],
 }
 
-export type JssBlockItemNode = CssDeclarationNode | JssDeclarationNode | IgnoreNode;
+export type JssBlockItemNode = CssDeclarationNode | JssDeclarationNode | IgnoreNode | JssBlockNode;
 export interface JssBlockNode extends Node {
     type: NodeType.JssBlock,
-    readonly selectors: CssSelectorNode[],
+    readonly selectors: CssSelectorNode[] | JssSelectorNode[],
     readonly items: JssBlockItemNode[],
 }
 
@@ -134,6 +135,11 @@ export interface LazyNode extends Node {
 
 export interface CssSelectorNode extends Node {
     type: NodeType.CssSelector,
+    readonly items: string[];
+}
+
+export interface JssSelectorNode extends Node {
+    type: NodeType.JssSelector,
     readonly items: string[];
 }
 
