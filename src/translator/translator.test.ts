@@ -65,7 +65,7 @@ export styles;`);
 }`).toEqual([
     {name: '.className1 .className2', value: { "font-size": "10px" }},
     {name: '.className3', value: { "font-size": "12px" }},
-])
+]);
     });
 
     it('parses vars in selectors', () => {
@@ -74,6 +74,19 @@ $\{className\} .className2 {
   font-size: 10px; }`).toEqual([
     {name: '.someClassName .className2', value: { "font-size": "10px" }},
 ])
+    });
+
+    it('can access parents objects by this keyword', () => {
+        evalCode(`.className1 .className2 {
+  font-size: 10px;
+
+  $\{this.name\}.className3 {
+    font-size: 12px;
+}
+}`).toEqual([
+    {name: '.className1 .className2', value: { "font-size": "10px" }},
+    {name: '.className1 .className2.className3', value: { "font-size": "12px" }},
+]);
     });
 
 
