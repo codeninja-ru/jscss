@@ -19,6 +19,13 @@ const color = '#fff';
     }
 }`;
 
+function parseCode(source : string) {
+    const node = parseJssScript(ArrayTokenStream.fromString(source));
+    console.log(node);
+    console.trace();
+    return expect(node);
+}
+
 describe('parseJssScript()', () => {
     it('simple script', () => {
         const stream = new GoAheadTokenStream(ArrayTokenStream.fromString(SIMPLE));
@@ -66,7 +73,6 @@ describe('parseJssScript()', () => {
 
     it('parses javascript templates in selectors', () => {
         const source = `$\{name\} .className { color: red; }`;
-        debugger;
         const node = parseJssScript(ArrayTokenStream.fromString(source));
         expect(node).toEqual([
             { type: NodeType.JssBlock, selectors: [
@@ -80,6 +86,38 @@ describe('parseJssScript()', () => {
             {type: NodeType.Ignore, items: expect.anything()},
             ]}
         ]);
+    });
+
+    it('parses javascript functions', () => {
+        const source = `function pad2(n) { return n.length > 1 ? n : "0" + n; }`;
+        const node = parseJssScript(ArrayTokenStream.fromString(source));
+        expect(node).toEqual([
+            { type: NodeType.Raw, value: 'function pad2(n) { return n.length > 1 ? n : "0" + n; }' }
+        ]);
+    });
+
+    it('parses code with functions', () => {
+        debugger;
+        parseCode(`function pad2(n) { return n.length > 1 ? n : "0" + n; }
+function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) + pad2(g.toString(b)); }
+.className {
+  color: $\{rgb(255,255,255)\}
+}`).toEqual([
+    { type: NodeType.Raw, value: 'function pad2(n) { return n.length > 1 ? n : "0" + n; }' },
+    {type: NodeType.Ignore, items: expect.anything()},
+    { type: NodeType.Raw, value: 'function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) + pad2(g.toString(b)); }' },
+    {type: NodeType.Ignore, items: expect.anything()},
+    { type: NodeType.JssBlock, selectors: [
+        {
+            type: NodeType.JssSelector,
+            items: [".className"],
+        }
+    ], items: [
+        {type: NodeType.Ignore, items: expect.anything()},
+        {type: NodeType.JssDeclaration, prop: "color", value: "${red(255,255,255)}"},
+        {type: NodeType.Ignore, items: expect.anything()},
+    ]}
+])
     });
 
 });
