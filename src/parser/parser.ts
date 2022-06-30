@@ -1,7 +1,7 @@
 import { Keywords, ReservedWords } from "keywords";
 import { AssignmentOperator, Symbols } from "symbols";
 import { TokenType } from "token";
-import { anyLiteral, anyString, anyTempateStringLiteral, block, comma, commaList, firstOf, keyword, lazyBlock, leftHandRecurciveRule, longestOf, loop, noLineTerminatorHere, oneOfSymbols, optional, rawValue, regexpLiteral, roundBracket, sequence, squareBracket, strictLoop, symbol } from "./parserUtils";
+import { anyLiteral, anyString, anyTempateStringLiteral, block, cannotStartWith, comma, commaList, firstOf, keyword, lazyBlock, leftHandRecurciveRule, longestOf, loop, noLineTerminatorHere, oneOfSymbols, optional, rawValue, regexpLiteral, roundBracket, sequence, squareBracket, strictLoop, symbol } from "./parserUtils";
 import { CommentNode, IfNode, JsModuleNode, JsRawNode, JsScriptNode, MultiNode, Node, NodeType, SyntaxTree, VarDeclaraionNode } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { GoAheadTokenStream, TokenStream } from "./tokenStream";
@@ -619,20 +619,6 @@ export function parseJsVarStatement(stream: TokenStream) : MultiNode {
         type: NodeType.VarStatement,
         items,
     }
-}
-
-function cannotStartWith(...parsers : TokenParser[]) : TokenParser {
-    return function(stream : TokenStream) : ReturnType<TokenParser> {
-        for (const parser of parsers) {
-            const stubStream = new GoAheadTokenStream(stream);
-            try {
-                const token = parser(stubStream);
-                throw new Error(`cannot start with ${token}`)
-            } catch (e) {
-                // it's ok
-            }
-        }
-    };
 }
 
 export function expression(stream : TokenStream) : MultiNode {

@@ -4,7 +4,7 @@ import { Symbols } from "symbols";
 import { TokenType } from "token";
 import { lexer } from "./lexer";
 import { BlockParserError, ParserError, SequenceError } from "./parserError";
-import { anyLiteral, anyString, block, commaList, firstOf, ignoreSpacesAndComments, keyword, longestOf, map, noLineTerminatorHere, noSpacesHere, oneOfSymbols, optional, sequence, symbol } from "./parserUtils";
+import { anyLiteral, anyString, block, cannotStartWith, commaList, firstOf, ignoreSpacesAndComments, keyword, longestOf, map, noLineTerminatorHere, noSpacesHere, oneOfSymbols, optional, sequence, symbol } from "./parserUtils";
 import { BlockType, NodeType } from "./syntaxTree";
 import { ArrayTokenStream, TokenStream } from "./tokenStream";
 
@@ -141,6 +141,51 @@ describe('parserUtils', () => {
             }
             expect(t).toThrowError(SequenceError);
             expect(t).toThrowError('(1:5) : literal is expected');
+        });
+
+
+    });
+
+    describe('cannotStartWith()', () => {
+        it('throws an exception', () => {
+                debugger;
+            expect(() => {
+                cannotStartWith(
+                    keyword(Keywords._function),
+                    keyword(Keywords._if),
+                )(ArrayTokenStream.fromString('  function var var'));
+            }).toThrowError();
+            expect(() => {
+                cannotStartWith(
+                    keyword(Keywords._function),
+                    keyword(Keywords._if),
+                )(ArrayTokenStream.fromString('function var var'));
+            }).toThrowError();
+            expect(() => {
+                cannotStartWith(
+                    keyword(Keywords._function),
+                    keyword(Keywords._if),
+                )(ArrayTokenStream.fromString('  if var var'));
+            }).toThrowError();
+
+            expect(() => {
+                cannotStartWith(
+                    keyword(Keywords._function),
+                    keyword(Keywords._if),
+                )(ArrayTokenStream.fromString('  if function var var'));
+            }).toThrowError();
+        });
+
+        it('does not throw an exception if the rule does not match', () => {
+            cannotStartWith(
+                keyword(Keywords._function),
+                keyword(Keywords._if),
+            )(ArrayTokenStream.fromString('  (list 1 2 3) if'));
+
+            cannotStartWith(
+                keyword(Keywords._function),
+                keyword(Keywords._if),
+            )(ArrayTokenStream.fromString('no if function (list 1 2 3) if'));
         });
 
 

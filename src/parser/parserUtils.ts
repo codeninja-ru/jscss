@@ -473,3 +473,18 @@ export function ignoreSpacesAndComments(stream : TokenStream) : IgnoreNode {
         items: result
     };
 }
+
+export function cannotStartWith(...parsers : TokenParser[]) : TokenParser {
+    return function(stream : TokenStream) : ReturnType<TokenParser> {
+        for (const parser of parsers) {
+            const stubStream = new GoAheadTokenStream(stream);
+            try {
+                parser(stubStream);
+            } catch (e) {
+                // it's ok
+                continue;
+            }
+            throw new Error(`cannot start with`)
+        }
+    };
+}
