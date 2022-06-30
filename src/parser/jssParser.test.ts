@@ -21,8 +21,6 @@ const color = '#fff';
 
 function parseCode(source : string) {
     const node = parseJssScript(ArrayTokenStream.fromString(source));
-    console.log(node);
-    console.trace();
     return expect(node);
 }
 
@@ -101,7 +99,7 @@ describe('parseJssScript()', () => {
         parseCode(`function pad2(n) { return n.length > 1 ? n : "0" + n; }
 function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) + pad2(g.toString(b)); }
 .className {
-  color: $\{rgb(255,255,255)\}
+  color: $\{rgb(255,255,255)\};
 }`).toEqual([
     { type: NodeType.Raw, value: 'function pad2(n) { return n.length > 1 ? n : "0" + n; }' },
     {type: NodeType.Ignore, items: expect.anything()},
@@ -114,7 +112,7 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
         }
     ], items: [
         {type: NodeType.Ignore, items: expect.anything()},
-        {type: NodeType.JssDeclaration, prop: "color", value: "${red(255,255,255)}"},
+        {type: NodeType.JssDeclaration, prop: "color", value: "${rgb(255,255,255)}"},
         {type: NodeType.Ignore, items: expect.anything()},
     ]}
 ])

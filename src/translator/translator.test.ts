@@ -94,15 +94,14 @@ $\{className\} .className2 {
     it('can call functions', () => {
         evalCode(`
 function pad2(n) { return n.length > 1 ? n : "0" + n; }
-function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) + pad2(g.toString(b)); }
+function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) + pad2(b.toString(16)); }
 .className {
-  color: $\{rgb(255,255,255)\}
+  color: $\{rgb(255,255,255)\};
 }
 `).toEqual([
     {name: 'className', value: { color:  "#fff"}}
 ])
     });
-
 
     it('can extend class by ... (3 dots) operator', () => {
         evalCode(`.baseClass { color: red; }

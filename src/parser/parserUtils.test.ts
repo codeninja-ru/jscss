@@ -187,8 +187,6 @@ describe('parserUtils', () => {
                 keyword(Keywords._if),
             )(ArrayTokenStream.fromString('no if function (list 1 2 3) if'));
         });
-
-
     });
 
     describe('longestOf', () => {
