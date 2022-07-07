@@ -99,16 +99,18 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
   color: $\{rgb(255,255,255)\};
 }
 `).toEqual([
-    {name: 'className', value: { color:  "#fff"}}
+    {name: '.className', value: { color:  "#ffffff"}}
 ])
     });
 
     it('can extend class by ... (3 dots) operator', () => {
-        evalCode(`.baseClass { color: red; }
+        evalCode(`const mixin = { "color": "red" };
 .childClass {
   font-size: 10px;
-  ...styles[".baseClass"];
-}`).toEqual("todo")
+  ...mixin;
+}`).toEqual([
+    {name: ".childClass", value: {color: "red", "font-size": "10px"}}
+])
     });
 
 

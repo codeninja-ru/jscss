@@ -24,6 +24,8 @@ function declarations2js(blockList : JssBlockItemNode[]) : string {
                     return '';
                 case NodeType.JssBlock:
                     return jssBlock2js(item, SUB_BLOCKS_VAR_NAME);
+                case NodeType.JssSpread:
+                    return `Object.assign(value, ${item.value});`;
                 default:
                     throw new Error(`unsupported block item ${JSON.stringify(item)}`);
             }

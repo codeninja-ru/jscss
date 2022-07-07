@@ -51,7 +51,7 @@ describe('parseJssScript()', () => {
                     {type: NodeType.Ignore, items: expect.anything()},
                     {type: NodeType.JssDeclaration, prop: "background", value: "#fff"},
                     {type: NodeType.Ignore, items: expect.anything()},
-                    {type: NodeType.JsSpread, value: "...extend(color)"},
+                    {type: NodeType.JssSpread, value: "extend(color)"},
                     {type: NodeType.Ignore, items: expect.anything()},
                     {type: NodeType.JssBlock, selectors: [
                         {

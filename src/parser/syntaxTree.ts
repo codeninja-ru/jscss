@@ -32,7 +32,7 @@ export enum NodeType {
     CssDeclaration,
 
     JsTemplate,
-    JsSpread,
+    JssSpread,
 
     JssBlock,
     JssDeclaration,
@@ -101,7 +101,7 @@ export interface IfNode extends Node {
     right?: Node,
 }
 
-export interface JsScriptNode extends MultiNode {
+export interface JssScriptNode extends MultiNode {
     type: NodeType.JsScript,
 }
 
@@ -116,7 +116,7 @@ export interface CssBlockNode extends Node {
     readonly items: CssBlockItemNode[],
 }
 
-export type JssBlockItemNode = CssDeclarationNode | JssDeclarationNode | IgnoreNode | JssBlockNode;
+export type JssBlockItemNode = CssDeclarationNode | JssDeclarationNode | IgnoreNode | JssBlockNode | JsSpreadNode;
 export interface JssBlockNode extends Node {
     type: NodeType.JssBlock,
     readonly selectors: CssSelectorNode[] | JssSelectorNode[],
@@ -173,6 +173,6 @@ export interface JssDeclarationNode extends Node {
 }
 
 export interface JsSpreadNode extends Node {
-    readonly type: NodeType.JsSpread,
+    readonly type: NodeType.JssSpread,
     readonly value: string,
 }

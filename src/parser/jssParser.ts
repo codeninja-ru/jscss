@@ -44,10 +44,10 @@ function jssPropertyDefinition(stream : TokenStream) : void {
                 value: rest,
             }
         }),
-        map(returnRawValue(sequence(symbol(Symbols.dot3), assignmentExpression)),
-            (value) => {
+        map(sequence(symbol(Symbols.dot3), returnRawValue(assignmentExpression)),
+            ([, value]) => {
                 return {
-                    type: NodeType.JsSpread,
+                    type: NodeType.JssSpread,
                     value,
                 };
             }), // js assignment
