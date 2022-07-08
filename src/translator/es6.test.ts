@@ -1,8 +1,6 @@
 import { parseJssScript } from "parser/jssParser";
 import { ArrayTokenStream } from "parser/tokenStream";
-import { translator } from "./translator";
-// @ts-ignore
-import { JssStyleItem, JssStylesheet } from "./lib/core";
+import { translator } from "./es6";
 
 const CSS = `@import 'main.css';
 
