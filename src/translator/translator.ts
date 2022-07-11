@@ -1,7 +1,6 @@
 import { CssSelectorNode, JssBlockItemNode, JssBlockNode, JssNode, JssSelectorNode, NodeType, SyntaxTree } from 'parser/syntaxTree';
 
 const EXPORT_VAR_NAME = '_styles';
-const SUB_BLOCKS_VAR_NAME = '_subBlocks';
 
 function quoteEscape(str : string) : string {
     return str.replace('"', '\"');
@@ -23,7 +22,7 @@ function declarations2js(blockList : JssBlockItemNode[]) : string {
                 case NodeType.Ignore:
                     return '';
                 case NodeType.JssBlock:
-                    return jssBlock2js(item, SUB_BLOCKS_VAR_NAME);
+                    return `slef.addChild(${jssBlock2js(item)})`;
                 case NodeType.JssSpread:
                     return `${EXPORT_VAR_NAME}.extend(${item.value});\n`;
                 default:
@@ -33,12 +32,11 @@ function declarations2js(blockList : JssBlockItemNode[]) : string {
         .join('');
 }
 
-function jssBlock2js(node : JssBlockNode, externalVarName : string = EXPORT_VAR_NAME) : string {
-    return `(function(${EXPORT_VAR_NAME}) {
-var ${SUB_BLOCKS_VAR_NAME} = new JssStyleItem(${cssSelectors2js(node.selectors)});
-var self = { name: name, value: value };
+function jssBlock2js(node : JssBlockNode) : string {
+    return `(function() {
+var self = new JssStyleItem(${cssSelectors2js(node.selectors)});
 ${declarations2js(node.items)}
-}).bind(self)(${externalVarName});`;
+}).bind(self)();`;
 }
 
 function translateNode(node : JssNode) : string {

@@ -74,5 +74,17 @@ describe('class JssStyleBlock', () => {
     });
 
 
+    it('has styles', () => {
+        const block = new JssStyleBlock('p');
+        block.push("font-size", "10px");
+
+        expect(block.styles.fontSize).toEqual("10px");
+        expect(block.styles["font-size"]).toEqual("10px");
+        expect(block.styles.noProp).toBeUndefined();
+
+        expect(Object.assign({}, block.styles)).toEqual({
+            "font-size": "10px",
+        });
+    });
 
 });

@@ -1,6 +1,6 @@
 interface IJssStyleBlock {
+    styles : JssStyleProp;
     name: string;
-    value: JssStyleProp;
     children: IJssStyleBlock[];
     push(name : string, value: any) : void;
     addChild(value: IJssStyleBlock) : void;
@@ -8,6 +8,10 @@ interface IJssStyleBlock {
     isEmpty() : boolean;
     toCss() : string;
     __toString() : string;
+}
+
+function toKebabCase(propName : string) : string {
+    return propName.replace(/[A-Z]/g, m => '-' + m.toLowerCase());
 }
 
 function getPrivate<K extends object, V>(key : K, store : WeakMap<K, V>) : V {
@@ -24,13 +28,15 @@ function setPrivate<K extends object, V>(key : K, store : WeakMap<K, V>, value :
     store.set(key, value);
 }
 
+export type JssStylePropValue = string | number;
+
 export interface JssStyleProp {
-    [name : string] : string | number;
+    [name : string] : JssStylePropValue;
 }
 
 export const JssStyleBlock = (function() {
     const privateValue = new WeakMap<JssStyleBlock, JssStyleProp>();
-    const privateChildren = new WeakMap<JssStyleBlock, JssStyleBlock[]>();
+    const privateChildren = new WeakMap<JssStyleBlock, IJssStyleBlock[]>();
     const privateName = new WeakMap<JssStyleBlock, string>();
     const privateIsEmpty = new WeakMap<JssStyleBlock, boolean>();
 
@@ -60,7 +66,7 @@ export const JssStyleBlock = (function() {
             return Object.assign({}, getPrivate(this, privateValue));
         }
 
-        get children() : JssStyleBlock[] {
+        get children() : IJssStyleBlock[] {
             return [...getPrivate(this, privateChildren)];
         }
 
@@ -108,6 +114,25 @@ export const JssStyleBlock = (function() {
 
         __toString() : string {
             return this.toCss();
+        }
+
+        get styles() : JssStyleProp {
+            return new Proxy(getPrivate(this, privateValue), {
+                get(value : JssStyleProp, prop : string) : JssStylePropValue | undefined {
+                    if (value[prop] !== undefined) {
+                        return value[prop];
+                    }
+
+                    const kebabProp = toKebabCase(prop);
+                    console.log(value, kebabProp);
+
+                    if (value[kebabProp] !== undefined) {
+                        return value[kebabProp];
+                    }
+
+                    return undefined;
+                }
+            });
         }
     }
 

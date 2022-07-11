@@ -12,11 +12,13 @@ const bgColor = '#fff';
 css.insertBlock((function() {
     var self = new JssStyleBlock('.className');
     self.push("color", "red");
+    self.push("font-size", "10px");
     self.push("background", `${bgColor}`);
     self.addChild((function() {
         var self = new JssStyleBlock('.subClass');
         self.push("color", "blue");
-
+        self.push("font-size", this.fontSize);
+        self.extend(this.styles);
         return self;
     }).bind(self)());
 
