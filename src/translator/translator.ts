@@ -3,7 +3,7 @@ import { CssSelectorNode, JssBlockItemNode, JssBlockNode, JssNode, JssSelectorNo
 const EXPORT_VAR_NAME = '_styles';
 
 function quoteEscape(str : string) : string {
-    return str.replace('"', '\"');
+    return str.replace('"', '\"').replace("`", "\`");
 }
 
 function cssSelectors2js(selectors : JssSelectorNode[] | CssSelectorNode[]) : string {
@@ -15,16 +15,16 @@ function declarations2js(blockList : JssBlockItemNode[]) : string {
         .map((item) => {
             switch(item.type) {
                 case NodeType.CssDeclaration:
-                    return `${EXPORT_VAR_NAME}.push(${quoteEscape(item.prop)}, "${quoteEscape(item.value) + item.prio ? " " + item.prio : ""}");\n`;
+                    return `self.push("${quoteEscape(item.prop)}", "${quoteEscape(item.value) + item.prio ? " " + item.prio : ""}");\n`;
                 case NodeType.JssDeclaration:
                     //NOTE we do not parse content of the blocks here so an syntax error in the block can break the final code
-                    return `${EXPORT_VAR_NAME}.push(${quoteEscape(item.prop)}, \`${item.value}\`);\n`;
+                    return `self.push(\`${quoteEscape(item.prop)}\`, \`${item.value}\`);\n`;
                 case NodeType.Ignore:
                     return '';
                 case NodeType.JssBlock:
-                    return `slef.addChild(${jssBlock2js(item)})`;
+                    return `self.addChild(${jssBlock2js(item)})`;
                 case NodeType.JssSpread:
-                    return `${EXPORT_VAR_NAME}.extend(${item.value});\n`;
+                    return `self.extend(${item.value});\n`;
                 default:
                     throw new Error(`unsupported block item ${JSON.stringify(item)}`);
             }
@@ -34,9 +34,10 @@ function declarations2js(blockList : JssBlockItemNode[]) : string {
 
 function jssBlock2js(node : JssBlockNode) : string {
     return `(function() {
-var self = new JssStyleItem(${cssSelectors2js(node.selectors)});
+var self = new JssStyleBlock(${cssSelectors2js(node.selectors)});
 ${declarations2js(node.items)}
-}).bind(self)();`;
+return self;
+}).bind(self)()`;
 }
 
 function translateNode(node : JssNode) : string {
@@ -46,11 +47,11 @@ function translateNode(node : JssNode) : string {
         case NodeType.Raw:
             return node.value;
         case NodeType.JssBlock:
-            return jssBlock2js(node);
+            return `${EXPORT_VAR_NAME}.insertBlock(${jssBlock2js(node)});`;
         case NodeType.CssSelector:
             return node.items.join(',');
         case NodeType.CssImport:
-            return `${EXPORT_VAR_NAME}.push("@import ${quoteEscape(node.path)};");\n`;
+            return `${EXPORT_VAR_NAME}.insertCss("@import ${quoteEscape(node.path)};");\n`;
         case NodeType.Comment:
         default:
             throw new Error(`unsupported node ${JSON.stringify(node)}`);

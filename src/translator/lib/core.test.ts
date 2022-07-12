@@ -71,6 +71,11 @@ describe('class JssStyleBlock', () => {
 .className2 {
     color: blue;
 }`);
+
+        expect(block1.toArray()).toEqual([
+            {name: '.className1', value: { color: 'red', 'font-size': '10px'}},
+            {name: '.className2', value: {color: 'blue'}}
+        ]);
     });
 
 
@@ -85,6 +90,7 @@ describe('class JssStyleBlock', () => {
         expect(Object.assign({}, block.styles)).toEqual({
             "font-size": "10px",
         });
+        //TODO check clone
     });
 
 });

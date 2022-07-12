@@ -1,3 +1,11 @@
+interface JssStyleArrayItem {
+    name: string,
+    value: JssStyleProp
+}
+
+type JssStyleArray = JssStyleArrayItem[];
+type JssStyleSheetArray = (JssStyleArrayItem | string)[];
+
 interface IJssStyleBlock {
     styles : JssStyleProp;
     name: string;
@@ -7,6 +15,7 @@ interface IJssStyleBlock {
     extend(value : object) : void;
     isEmpty() : boolean;
     toCss() : string;
+    toArray() : JssStyleArray;
     __toString() : string;
 }
 
@@ -91,6 +100,23 @@ export const JssStyleBlock = (function() {
             return getPrivate(this, privateIsEmpty);
         }
 
+        toArray() : JssStyleArray {
+            const name = getPrivate(this, privateName);
+            const children = getPrivate(this, privateChildren);
+            const value = getPrivate(this, privateValue);
+            const result = [];
+
+            result.push({name: name, value: Object.assign({}, value)});
+
+            if (children.length > 0) {
+                for (const child of children) {
+                    result.push(...child.toArray());
+                }
+            }
+
+            return result;
+        }
+
         toCss() : string {
             const name = getPrivate(this, privateName);
             const children = getPrivate(this, privateChildren);
@@ -124,7 +150,6 @@ export const JssStyleBlock = (function() {
                     }
 
                     const kebabProp = toKebabCase(prop);
-                    console.log(value, kebabProp);
 
                     if (value[kebabProp] !== undefined) {
                         return value[kebabProp];
@@ -139,11 +164,19 @@ export const JssStyleBlock = (function() {
     return JssStyleBlock;
 })();
 
+export interface JssStyleSheet {
+    insertBlock(block : IJssStyleBlock) : void;
+    insertCss(cssCode : string) : void;
+    toCss() : string;
+    __toString() : string;
+    toArray() : JssStyleSheetArray;
+}
+
 export const JssStyleSheet = (function() {
     type TItem = string | IJssStyleBlock;
     let privateItems = new WeakMap<JssStyleSheet, TItem[]>();
 
-    class JssStyleSheet {
+    class JssStyleSheet implements JssStyleSheet {
         constructor() {
             setPrivate(this, privateItems, []);
         }
@@ -165,6 +198,21 @@ export const JssStyleSheet = (function() {
                         return item.toCss();
                     }
                 }).join("\n\n");
+        }
+
+        toArray() : JssStyleSheetArray {
+            const items = getPrivate(this, privateItems)
+            const result = [] as JssStyleSheetArray;
+
+            for (const item of items) {
+                if (typeof item == 'string') {
+                    result.push(item);
+                } else {
+                    result.push(...item.toArray());
+                }
+            }
+
+            return result;
         }
 
         __toString() {
