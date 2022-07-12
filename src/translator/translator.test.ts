@@ -86,11 +86,11 @@ font-size: 10px; }`).toArray()).toEqual([
   font-size: 10px;
 
   $\{this.name\}.className3 {
-    font-size: 12px;
+    font-size: $\{this.styles.fontSize\};
 }
 }`).toArray()).toEqual([
     {name: '.className1 .className2', value: { "font-size": "10px" }},
-    {name: '.className1 .className2.className3', value: { "font-size": "12px" }},
+    {name: '.className1 .className2.className3', value: { "font-size": "10px" }},
 ]);
     });
 

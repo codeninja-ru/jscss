@@ -21,13 +21,13 @@ describe('class JssStyleBlock', () => {
         expect(block.isEmpty()).toBeTruthy();
         expect(block.toCss()).toEqual('.className { }')
         expect(block.name).toEqual(".className");
-        expect(block.value).toEqual({});
+        expect(block.styles).toEqual({});
 
         block.push("color", "red");
         block.push("font-size", "10px");
 
         expect(block.isEmpty()).toBeFalsy();
-        expect(block.value).toEqual({ "color" : "red", "font-size" : "10px"});
+        expect(block.styles).toEqual({ "color" : "red", "font-size" : "10px"});
         expect(block.toCss()).toEqual(`.className {
     color: red;
     font-size: 10px;
@@ -90,7 +90,6 @@ describe('class JssStyleBlock', () => {
         expect(Object.assign({}, block.styles)).toEqual({
             "font-size": "10px",
         });
-        //TODO check clone
     });
 
 });

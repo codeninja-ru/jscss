@@ -71,10 +71,6 @@ export const JssStyleBlock = (function() {
             return getPrivate(this, privateName);
         }
 
-        get value() : JssStyleProp {
-            return Object.assign({}, getPrivate(this, privateValue));
-        }
-
         get children() : JssStyleBlock[] {
             return [...getPrivate(this, privateChildren)];
         }
@@ -145,6 +141,9 @@ export const JssStyleBlock = (function() {
         get styles() : JssStyleProp {
             return new Proxy(getPrivate(this, privateValue), {
                 get(value : JssStyleProp, prop : string) : JssStylePropValue | undefined {
+                    if (typeof prop != 'string') {
+                        return undefined;
+                    }
                     if (value[prop] !== undefined) {
                         return value[prop];
                     }
