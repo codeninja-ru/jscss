@@ -1,6 +1,6 @@
 // this is handmade example of jss output, for test purpose only
 
-var css = new JssStyleSheet();
+var css = css ? css : new JssStyleSheet();
 var self = null;
 
 // css imports are not needed to be translated
