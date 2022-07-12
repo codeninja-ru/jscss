@@ -6,12 +6,12 @@ interface JssStyleArrayItem {
 type JssStyleArray = JssStyleArrayItem[];
 type JssStyleSheetArray = (JssStyleArrayItem | string)[];
 
-interface IJssStyleBlock {
+export interface JssStyleBlock {
     styles : JssStyleProp;
     name: string;
-    children: IJssStyleBlock[];
+    children: JssStyleBlock[];
     push(name : string, value: any) : void;
-    addChild(value: IJssStyleBlock) : void;
+    addChild(value: JssStyleBlock) : void;
     extend(value : object) : void;
     isEmpty() : boolean;
     toCss() : string;
@@ -45,7 +45,7 @@ export interface JssStyleProp {
 
 export const JssStyleBlock = (function() {
     const privateValue = new WeakMap<JssStyleBlock, JssStyleProp>();
-    const privateChildren = new WeakMap<JssStyleBlock, IJssStyleBlock[]>();
+    const privateChildren = new WeakMap<JssStyleBlock, JssStyleBlock[]>();
     const privateName = new WeakMap<JssStyleBlock, string>();
     const privateIsEmpty = new WeakMap<JssStyleBlock, boolean>();
 
@@ -59,7 +59,7 @@ export const JssStyleBlock = (function() {
         return result;
     }
 
-    class JssStyleBlock implements IJssStyleBlock {
+    class JssStyleBlock implements JssStyleBlock {
         constructor(name : string) {
             privateName.set(this, name);
             privateIsEmpty.set(this, true);
@@ -75,7 +75,7 @@ export const JssStyleBlock = (function() {
             return Object.assign({}, getPrivate(this, privateValue));
         }
 
-        get children() : IJssStyleBlock[] {
+        get children() : JssStyleBlock[] {
             return [...getPrivate(this, privateChildren)];
         }
 
@@ -84,7 +84,7 @@ export const JssStyleBlock = (function() {
             setPrivate(this, privateIsEmpty, false);
         }
 
-        addChild(value : IJssStyleBlock) {
+        addChild(value : JssStyleBlock) {
             if (value == this) {
                 throw new Error('cannot contain itself')
             }
@@ -165,7 +165,7 @@ export const JssStyleBlock = (function() {
 })();
 
 export interface JssStyleSheet {
-    insertBlock(block : IJssStyleBlock) : void;
+    insertBlock(block : JssStyleBlock) : void;
     insertCss(cssCode : string) : void;
     toCss() : string;
     __toString() : string;
@@ -173,7 +173,7 @@ export interface JssStyleSheet {
 }
 
 export const JssStyleSheet = (function() {
-    type TItem = string | IJssStyleBlock;
+    type TItem = string | JssStyleBlock;
     let privateItems = new WeakMap<JssStyleSheet, TItem[]>();
 
     class JssStyleSheet implements JssStyleSheet {
@@ -181,7 +181,7 @@ export const JssStyleSheet = (function() {
             setPrivate(this, privateItems, []);
         }
 
-        insertBlock(block : IJssStyleBlock) {
+        insertBlock(block : JssStyleBlock) {
             getPrivate(this, privateItems).push(block);
         }
 
