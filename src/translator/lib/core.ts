@@ -6,18 +6,36 @@ interface JssStyleArrayItem {
 type JssStyleArray = JssStyleArrayItem[];
 type JssStyleSheetArray = (JssStyleArrayItem | string)[];
 
-export interface JssStyleBlock {
+export interface JssBlock {
     styles : JssStyleProp;
-    name: string;
     children: JssStyleBlock[];
     push(name : string, value: any) : void;
     addChild(value: JssStyleBlock) : void;
     extend(value : object) : void;
     isEmpty() : boolean;
+}
+
+export interface JssStyleBlock extends JssBlock {
+    name: string;
     toCss() : string;
     toArray() : JssStyleArray;
     __toString() : string;
 }
+
+export class JssBlockCaller {
+    call(caller : JssBlock) : JssBlock {
+        throw Error('implement me');
+    }
+}
+
+export interface JssStyleSheet {
+    insertBlock(block : JssStyleBlock) : void;
+    insertCss(cssCode : string) : void;
+    toCss() : string;
+    __toString() : string;
+    toArray() : JssStyleSheetArray;
+}
+
 
 function toKebabCase(propName : string) : string {
     return propName.replace(/[A-Z]/g, m => '-' + m.toLowerCase());
@@ -41,134 +59,6 @@ export type JssStylePropValue = string | number;
 
 export interface JssStyleProp {
     [name : string] : JssStylePropValue;
-}
-
-export const JssStyleBlock = (function() {
-    const privateValue = new WeakMap<JssStyleBlock, JssStyleProp>();
-    const privateChildren = new WeakMap<JssStyleBlock, JssStyleBlock[]>();
-    const privateName = new WeakMap<JssStyleBlock, string>();
-    const privateIsEmpty = new WeakMap<JssStyleBlock, boolean>();
-
-    function sprintObject(value : any) {
-        var result = "";
-
-        for (const key in value) {
-            result += `    ${key}: ${value[key]};\n`;
-        }
-
-        return result;
-    }
-
-    class JssStyleBlock implements JssStyleBlock {
-        constructor(name : string) {
-            privateName.set(this, name);
-            privateIsEmpty.set(this, true);
-            privateChildren.set(this, []);
-            privateValue.set(this, {});
-        }
-
-        get name() : string {
-            return getPrivate(this, privateName);
-        }
-
-        get children() : JssStyleBlock[] {
-            return [...getPrivate(this, privateChildren)];
-        }
-
-        push(name : string, value : any) {
-            getPrivate(this, privateValue)[name] = value;
-            setPrivate(this, privateIsEmpty, false);
-        }
-
-        addChild(value : JssStyleBlock) {
-            if (value == this) {
-                throw new Error('cannot contain itself')
-            }
-            getPrivate(this, privateChildren).push(value);
-            setPrivate(this, privateIsEmpty, false);
-        }
-
-        extend(value : object) : void {
-            Object.assign(getPrivate(this, privateValue), value);
-        }
-
-        isEmpty() : boolean {
-            return getPrivate(this, privateIsEmpty);
-        }
-
-        toArray() : JssStyleArray {
-            const name = getPrivate(this, privateName);
-            const children = getPrivate(this, privateChildren);
-            const value = getPrivate(this, privateValue);
-            const result = [];
-
-            result.push({name: name, value: Object.assign({}, value)});
-
-            if (children.length > 0) {
-                for (const child of children) {
-                    result.push(...child.toArray());
-                }
-            }
-
-            return result;
-        }
-
-        toCss() : string {
-            const name = getPrivate(this, privateName);
-            const children = getPrivate(this, privateChildren);
-            const value = getPrivate(this, privateValue);
-            const result = [] as string[];
-
-            if (this.isEmpty()) {
-                result.push(`${name} { }`);
-            } else {
-                result.push(`${name} {\n${sprintObject(value)}}`);
-            }
-
-            if (children.length > 0) {
-                for (const child of children) {
-                    result.push(child.toCss());
-                }
-            }
-
-            return result.join("\n\n");
-        }
-
-        __toString() : string {
-            return this.toCss();
-        }
-
-        get styles() : JssStyleProp {
-            return new Proxy(getPrivate(this, privateValue), {
-                get(value : JssStyleProp, prop : string) : JssStylePropValue | undefined {
-                    if (typeof prop != 'string') {
-                        return undefined;
-                    }
-                    if (value[prop] !== undefined) {
-                        return value[prop];
-                    }
-
-                    const kebabProp = toKebabCase(prop);
-
-                    if (value[kebabProp] !== undefined) {
-                        return value[kebabProp];
-                    }
-
-                    return undefined;
-                }
-            });
-        }
-    }
-
-    return JssStyleBlock;
-})();
-
-export interface JssStyleSheet {
-    insertBlock(block : JssStyleBlock) : void;
-    insertCss(cssCode : string) : void;
-    toCss() : string;
-    __toString() : string;
-    toArray() : JssStyleSheetArray;
 }
 
 export const JssStyleSheet = (function() {
@@ -220,4 +110,143 @@ export const JssStyleSheet = (function() {
     }
 
     return JssStyleSheet;
+})();
+
+export const JssBlock = (function() {
+    const privateValue = new WeakMap<JssBlock, JssStyleProp>();
+    const privateChildren = new WeakMap<JssBlock, JssStyleBlock[]>();
+    const privateIsEmpty = new WeakMap<JssBlock, boolean>();
+
+    class JssBlock implements JssBlock {
+        constructor() {
+            privateIsEmpty.set(this, true);
+            privateChildren.set(this, []);
+            privateValue.set(this, {});
+        }
+
+        get children() : JssStyleBlock[] {
+            return [...getPrivate(this, privateChildren)];
+        }
+
+        push(name : string, value : any) {
+            getPrivate(this, privateValue)[name] = value;
+            setPrivate(this, privateIsEmpty, false);
+        }
+
+        addChild(value : JssStyleBlock) {
+            // @ts-ignore
+            if (value == this) {
+                throw new Error('cannot contain itself')
+            }
+            getPrivate(this, privateChildren).push(value);
+            setPrivate(this, privateIsEmpty, false);
+        }
+
+        extend(value : object | JssBlockCaller) : void {
+            if (value instanceof JssBlockCaller) {
+                const blockInstance = value.call(this);
+                Object.assign(getPrivate(this, privateValue), blockInstance.styles);
+                blockInstance.children.forEach((child) => this.addChild(child));
+            } else {
+                Object.assign(getPrivate(this, privateValue), value);
+            }
+        }
+
+        isEmpty() : boolean {
+            return getPrivate(this, privateIsEmpty);
+        }
+
+        get styles() : JssStyleProp {
+            return new Proxy(getPrivate(this, privateValue), {
+                get(value : JssStyleProp, prop : string) : JssStylePropValue | undefined {
+                    if (typeof prop != 'string') {
+                        return undefined;
+                    }
+                    if (value[prop] !== undefined) {
+                        return value[prop];
+                    }
+
+                    const kebabProp = toKebabCase(prop);
+
+                    if (value[kebabProp] !== undefined) {
+                        return value[kebabProp];
+                    }
+
+                    return undefined;
+                }
+            });
+        }
+    }
+
+    return JssBlock;
+})();
+
+export const JssStyleBlock = (function() {
+    const privateName = new WeakMap<JssStyleBlock, string>();
+
+    function sprintObject(value : any) {
+        var result = "";
+
+        for (const key in value) {
+            result += `    ${key}: ${value[key]};\n`;
+        }
+
+        return result;
+    }
+
+    class JssStyleBlock extends JssBlock implements JssStyleBlock {
+        constructor(name : string) {
+            super();
+            privateName.set(this, name);
+        }
+
+        get name() : string {
+            return getPrivate(this, privateName);
+        }
+
+        toArray() : JssStyleArray {
+            const name = getPrivate(this, privateName);
+            // TODO it might be a bit faster if getPrivate is used since the getter makes a copy of object
+            const children = this.children;
+            const value = this.styles;
+            const result = [];
+
+            result.push({name: name, value: Object.assign({}, value)});
+
+            if (children.length > 0) {
+                for (const child of children) {
+                    result.push(...child.toArray());
+                }
+            }
+
+            return result;
+        }
+
+        toCss() : string {
+            const name = getPrivate(this, privateName);
+            const children = this.children;
+            const value = this.styles;
+            const result = [] as string[];
+
+            if (this.isEmpty()) {
+                result.push(`${name} { }`);
+            } else {
+                result.push(`${name} {\n${sprintObject(value)}}`);
+            }
+
+            if (children.length > 0) {
+                for (const child of children) {
+                    result.push(child.toCss());
+                }
+            }
+
+            return result.join("\n\n");
+        }
+
+        __toString() : string {
+            return this.toCss();
+        }
+    }
+
+    return JssStyleBlock;
 })();

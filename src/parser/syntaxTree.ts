@@ -2,7 +2,7 @@ export type SyntaxTree = JssNode[];
 
 export type JssNode = IgnoreNode | RawNode |
     JssBlockNode | CssImportNode | CssSelectorNode |
-    CommentNode;
+    CommentNode | JssVarDeclarationNode;
 
 export enum NodeType {
     JsImport,
@@ -37,6 +37,7 @@ export enum NodeType {
     JssBlock,
     JssDeclaration,
     JssSelector,
+    JssVarDeclaration,
 }
 
 export enum BlockType {
@@ -45,10 +46,10 @@ export enum BlockType {
     CurlyBracket,
 }
 
-export interface BlockNode extends Node {
+export interface BlockNode<N extends Node = Node> extends Node {
     type: NodeType.Block,
     readonly blockType: BlockType,
-    readonly items: Node[],
+    readonly items: N[],
 }
 
 export interface Node {
@@ -170,6 +171,14 @@ export interface JssDeclarationNode extends Node {
     readonly type: NodeType.JssDeclaration,
     readonly prop: string,
     readonly value: any,
+}
+
+export interface JssVarDeclarationNode extends Node {
+    readonly type: NodeType.JssVarDeclaration,
+    readonly keyword : 'const' | 'var' | 'let',
+    readonly name: string;
+    readonly items: JssBlockItemNode[];
+    readonly hasExport : boolean;
 }
 
 export interface JsSpreadNode extends Node {

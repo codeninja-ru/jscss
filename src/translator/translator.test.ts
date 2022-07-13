@@ -3,7 +3,7 @@ import { ArrayTokenStream } from "parser/tokenStream";
 import { translator } from "./translator";
 // @ts-ignore
 import vm from "vm";
-import { JssStyleBlock, JssStyleSheet } from "./lib/core";
+import { JssBlock, JssBlockCaller, JssStyleBlock, JssStyleSheet } from "./lib/core";
 
 const CSS = `@import 'main.css';
 
@@ -16,17 +16,19 @@ const bgColor = '#fff';
 
 function evalCode(css : string) {
     const sourceCode = translator(parseJssScript(ArrayTokenStream.fromString(css)));
-    const script = new vm.Script(sourceCode.replace('export _styles', '_styles'));
     const context = {
         'JssStylesheet': JssStyleSheet,
         'JssStyleBlock': JssStyleBlock,
+        'JssBlock' : JssBlock,
+        'JssBlockCaller' : JssBlockCaller,
     };
 
-    vm.createContext(context);
-
     try {
+        const script = new vm.Script(sourceCode.replace('export _styles', '_styles'));
+        vm.createContext(context);
         return script.runInContext(context);
     } catch(e) {
+        console.log(sourceCode);
         console.error(e);
         throw e;
     }
@@ -126,6 +128,36 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
 }`).toArray()).toEqual([
     {name: ".parent", value: {color: "red", "font-size": "10px"}},
     {name: ".child", value: {color: "red", "font-size": "10px"}}
+]);
+    });
+
+    it('can handle jss varables', () => {
+        expect(evalCode(`const hidden = { display: none; };
+.className {
+    font-size: 10px;
+    ...hidden;
+}
+`)).toEqual([
+    {name: ".className", value: {display: "none", "font-size": "10px"}},
+]);
+    });
+
+    it('can handle jss variables with child nodes, and ${this} is refered to the parent class', () => {
+        expect(evalCode(`const clearfix = {
+    display: block;
+    ${this}:after {
+        content: "";
+        display: table;
+        clear: both;
+    }
+};
+.className {
+    font-size: 10px;
+    ...clearfix;
+}
+`)).toEqual([
+    {name: ".className", value: {"font-size": "10px"}},
+    {name: ".className:after", value: {content: "", display: "table", clear: "both"}},
 ]);
     });
 

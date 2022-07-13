@@ -1,9 +1,10 @@
+import { Keywords } from "keywords";
 import { Symbols } from "symbols";
 import { TokenType } from "token";
 import { attrib, combinator, cssCharset, hash, importStatement, mediaStatement, pageStatement, pseudo } from "./cssParser";
-import { assignmentExpression, moduleItem, parseComment, propertyName } from "./parser";
-import { anyLiteral, anyString, block, comma, commaList, dollarSign, firstOf, ignoreSpacesAndComments, lazyBlock, leftHandRecurciveRule, loop, map, noSpacesHere, oneOfSymbols, optional, returnRawValue, semicolon, sequence, strictLoop, symbol } from "./parserUtils";
-import { JssBlockNode, JssSelectorNode, NodeType, SyntaxTree } from "./syntaxTree";
+import { assignmentExpression, identifier, moduleItem, parseComment, propertyName } from "./parser";
+import { anyLiteral, anyString, block, comma, commaList, dollarSign, firstOf, ignoreSpacesAndComments, keyword, lazyBlock, leftHandRecurciveRule, loop, map, noSpacesHere, oneOfSymbols, optional, returnRawValue, semicolon, sequence, strictLoop, symbol } from "./parserUtils";
+import { BlockNode, JssBlockItemNode, JssBlockNode, JssSelectorNode, JssVarDeclarationNode, NodeType, SyntaxTree } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
 
@@ -107,19 +108,56 @@ export function selector(stream : TokenStream) : JssSelectorNode {
     };
 }
 
-export function rulesetStatement(stream : TokenStream) : JssBlockNode {
-    const selectors = commaList(selector)(stream);
-    const cssBlock = block(TokenType.LazyBlock, strictLoop(firstOf(
+/**
+ * implements:
+ * const varName = {
+ *   someCss: rule;
+ * }
+ *
+ * */
+function jssVariableStatement(stream : TokenStream) : JssVarDeclarationNode {
+    const [exportKeyword, decKeyword, varName,,block] = sequence(
+        optional(keyword(Keywords._export)),
+        firstOf(
+            keyword(Keywords._const),
+            keyword(Keywords._let),
+            keyword(Keywords._var),
+        ),
+        identifier,
+        symbol(Symbols.eq),
+        jssBlockStatement,
+    )(stream);
+
+    if (varName in {"self" : 1, "_styles" : 1, "JssStylesheet" : 1, "JssStyleBlock" : 1, "JssBlock": 1}) {
+        throw new Error(`${varName} is a reseved word`);
+    }
+
+    return {
+        type: NodeType.JssVarDeclaration,
+        keyword: decKeyword,
+        name: varName,
+        items: block.items,
+        hasExport: exportKeyword !== undefined,
+    };
+}
+
+function jssBlockStatement(stream : TokenStream) : BlockNode<JssBlockItemNode> {
+    return block(TokenType.LazyBlock, strictLoop(firstOf(
         ignoreSpacesAndComments,
         jssPropertyDefinition,
         rulesetStatement,
     )))(stream);
+}
+
+export function rulesetStatement(stream : TokenStream) : JssBlockNode {
+    const selectors = commaList(selector)(stream);
+    const cssBlock = jssBlockStatement(stream);
 
     return {
         type: NodeType.JssBlock,
         selectors,
         items: cssBlock.items,
-    }
+    };
 }
 
 export function stylesheetItem(stream : TokenStream) : ReturnType<TokenParser> {
@@ -130,6 +168,7 @@ export function stylesheetItem(stream : TokenStream) : ReturnType<TokenParser> {
         rulesetStatement,
         mediaStatement,
         pageStatement,
+        jssVariableStatement,
     )(stream);
 }
 

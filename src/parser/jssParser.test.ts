@@ -95,7 +95,6 @@ describe('parseJssScript()', () => {
     });
 
     it('parses code with functions', () => {
-        debugger;
         parseCode(`function pad2(n) { return n.length > 1 ? n : "0" + n; }
 function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) + pad2(g.toString(b)); }
 .className {
@@ -117,5 +116,16 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
     ]}
 ])
     });
+
+    it('parses jss var declarations', () => {
+        parseCode(`const hidden = { display: none; }`).toEqual([
+            {type: NodeType.JssVarDeclaration, keyword: 'const', name: 'hidden', items: [
+                {type: NodeType.Ignore, items: expect.anything()},
+                {type: NodeType.JssDeclaration, prop: "display", value: "none"},
+                {type: NodeType.Ignore, items: expect.anything()},
+            ]}
+        ]);
+    });
+
 
 });

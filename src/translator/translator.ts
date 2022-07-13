@@ -1,4 +1,4 @@
-import { CssSelectorNode, JssBlockItemNode, JssBlockNode, JssNode, JssSelectorNode, NodeType, SyntaxTree } from 'parser/syntaxTree';
+import { CssSelectorNode, JssBlockItemNode, JssBlockNode, JssNode, JssSelectorNode, JssVarDeclarationNode, NodeType, SyntaxTree } from 'parser/syntaxTree';
 
 const EXPORT_VAR_NAME = '_styles';
 
@@ -10,7 +10,7 @@ function cssSelectors2js(selectors : JssSelectorNode[] | CssSelectorNode[]) : st
     return '`' + selectors.map((item) => item.items.join('')).join(',') + '`';
 }
 
-function declarations2js(blockList : JssBlockItemNode[]) : string {
+function declarations2js(blockList : JssBlockItemNode[], bindName = 'self') : string {
     return blockList
         .map((item) => {
             switch(item.type) {
@@ -22,7 +22,7 @@ function declarations2js(blockList : JssBlockItemNode[]) : string {
                 case NodeType.Ignore:
                     return '';
                 case NodeType.JssBlock:
-                    return `self.addChild(${jssBlock2js(item)})`;
+                    return `self.addChild(${jssBlock2js(item, bindName)})`;
                 case NodeType.JssSpread:
                     return `self.extend(${item.value});\n`;
                 default:
@@ -32,12 +32,23 @@ function declarations2js(blockList : JssBlockItemNode[]) : string {
         .join('');
 }
 
-function jssBlock2js(node : JssBlockNode) : string {
+function jssBlock2js(node : JssBlockNode, bindName = 'self') : string {
     return `(function() {
 var self = new JssStyleBlock(${cssSelectors2js(node.selectors)});
 ${declarations2js(node.items)}
 return self;
-}).bind(self)()`;
+}).bind(${bindName})()`;
+}
+
+function jssVarBlock2js(node : JssVarDeclarationNode, bindName = 'caller') : string {
+    return `${node.hasExport ? 'export ' : ''}${node.keyword} ${node.name} = new (class extends JssBlockCaller {
+    call(${bindName}) {
+        var self = new JssBlock();
+        ${declarations2js(node.items, bindName)}
+
+        return self;
+    }
+})();`;
 }
 
 function translateNode(node : JssNode) : string {
@@ -52,6 +63,8 @@ function translateNode(node : JssNode) : string {
             return node.items.join(',');
         case NodeType.CssImport:
             return `${EXPORT_VAR_NAME}.insertCss("@import ${quoteEscape(node.path)};");\n`;
+        case NodeType.JssVarDeclaration:
+            return jssVarBlock2js(node);
         case NodeType.Comment:
         default:
             throw new Error(`unsupported node ${JSON.stringify(node)}`);

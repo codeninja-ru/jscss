@@ -314,7 +314,7 @@ function identifierName(stream : TokenStream) : string {
     return anyLiteral(stream);
 }
 
-function identifier(stream: TokenStream) : string {
+export function identifier(stream: TokenStream) : string {
     const bindingIdentifier = identifierName(stream);
     if (bindingIdentifier in ReservedWords) {
         throw new Error(`${bindingIdentifier} is a reseved word`);
