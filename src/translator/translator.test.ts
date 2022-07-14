@@ -22,7 +22,6 @@ function evalCode(css : string) {
         'JssBlock' : JssBlock,
         'JssBlockCaller' : JssBlockCaller,
     };
-
     try {
         const script = new vm.Script(sourceCode.replace('export _styles', '_styles'));
         vm.createContext(context);
@@ -137,7 +136,7 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
     font-size: 10px;
     ...hidden;
 }
-`)).toEqual([
+`).toArray()).toEqual([
     {name: ".className", value: {display: "none", "font-size": "10px"}},
 ]);
     });
@@ -145,8 +144,8 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
     it('can handle jss variables with child nodes, and ${this} is refered to the parent class', () => {
         expect(evalCode(`const clearfix = {
     display: block;
-    ${this}:after {
-        content: "";
+    $\{this.name\}:after {
+        content: ".";
         display: table;
         clear: both;
     }
@@ -155,9 +154,15 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
     font-size: 10px;
     ...clearfix;
 }
-`)).toEqual([
-    {name: ".className", value: {"font-size": "10px"}},
-    {name: ".className:after", value: {content: "", display: "table", clear: "both"}},
+.className2 {
+    font-size: 11px;
+    ...clearfix;
+}
+`).toArray()).toEqual([
+    {name: ".className", value: {"font-size": "10px", "display": "block"}},
+    {name: ".className:after", value: {content: '"."', display: "table", clear: "both"}},
+    {name: ".className2", value: {"font-size": "11px", "display": "block"}},
+    {name: ".className2:after", value: {content: '"."', display: "table", clear: "both"}},
 ]);
     });
 

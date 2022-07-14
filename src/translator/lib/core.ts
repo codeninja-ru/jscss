@@ -142,7 +142,7 @@ export const JssBlock = (function() {
             setPrivate(this, privateIsEmpty, false);
         }
 
-        extend(value : object | JssBlockCaller) : void {
+        extend(value : JssStyleProp | JssBlockCaller) : void {
             if (value instanceof JssBlockCaller) {
                 const blockInstance = value.call(this);
                 Object.assign(getPrivate(this, privateValue), blockInstance.styles);

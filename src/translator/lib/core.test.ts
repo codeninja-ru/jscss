@@ -1,4 +1,4 @@
-import { JssStyleBlock, JssStyleSheet } from './core';
+import { JssBlock, JssBlockCaller, JssStyleBlock, JssStyleSheet } from './core';
 
 describe('class JssStyleSheet', () => {
     it('prints css', () => {
@@ -90,6 +90,43 @@ describe('class JssStyleBlock', () => {
         expect(Object.assign({}, block.styles)).toEqual({
             "font-size": "10px",
         });
+    });
+
+    it('can be extended by prop object', () => {
+        const block = new JssStyleBlock('p');
+        block.push("font-size", "10px");
+        block.extend({display: "block", color: 'red'});
+
+        expect(block.styles).toEqual({
+            "font-size": "10px",
+            "display": "block",
+            "color": "red",
+        });
+    });
+
+    it('can be extended by block caller', () => {
+        const block = new JssStyleBlock('p');
+        block.push("font-size", "10px");
+        const child2 = new JssStyleBlock('p');
+        child2.push("font-size", "10px");
+        const blockCaller = new (class extends JssBlockCaller {
+            call() {
+                const child = new JssBlock();
+                child.push('display', 'block');
+                child.push('color', 'red');
+                child.addChild(child2)
+
+                return child;
+            }
+        })();
+        block.extend(blockCaller);
+
+        expect(block.styles).toEqual({
+            "font-size": "10px",
+            "display": "block",
+            "color": "red",
+        });
+        expect(block.children).toEqual([child2]);
     });
 
 });

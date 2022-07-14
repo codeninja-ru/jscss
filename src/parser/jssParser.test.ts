@@ -118,14 +118,18 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
     });
 
     it('parses jss var declarations', () => {
+        const expectedItems = [
+            {type: NodeType.Ignore, items: expect.anything()},
+            {type: NodeType.JssDeclaration, prop: "display", value: "none"},
+            {type: NodeType.Ignore, items: expect.anything()},
+        ];
         parseCode(`const hidden = { display: none; }`).toEqual([
-            {type: NodeType.JssVarDeclaration, keyword: 'const', name: 'hidden', items: [
-                {type: NodeType.Ignore, items: expect.anything()},
-                {type: NodeType.JssDeclaration, prop: "display", value: "none"},
-                {type: NodeType.Ignore, items: expect.anything()},
-            ]}
+            {type: NodeType.JssVarDeclaration, keyword: 'const', name: 'hidden', hasExport: false, items: expectedItems}
         ]);
+        parseCode(`let hidden = { display: none; }`).toEqual([{type: NodeType.JssVarDeclaration, name: 'hidden', keyword: 'let', hasExport: false, items: expectedItems}]);
+        parseCode(`var hidden = { display: none; }`).toEqual([{type: NodeType.JssVarDeclaration, name: 'hidden', keyword: 'var', hasExport: false, items: expectedItems}]);
+        parseCode(`export let hidden = { display: none; }`).toEqual([{type: NodeType.JssVarDeclaration, name: 'hidden', keyword: 'let', hasExport: true, items: expectedItems}]);
+        parseCode(`export var hidden = { display: none; }`).toEqual([{type: NodeType.JssVarDeclaration, name: 'hidden', keyword: 'var', hasExport: true, items: expectedItems}]);
+        parseCode(`export const hidden = { display: none; }`).toEqual([{type: NodeType.JssVarDeclaration, name: 'hidden', keyword: 'const', hasExport: true, items: expectedItems}]);
     });
-
-
 });
