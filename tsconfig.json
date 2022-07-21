@@ -2,7 +2,7 @@
     "extends": "@tsconfig/node12/tsconfig.json",
     "compilerOptions": {
         "target": "es2015" /* Specify ECMAScript target version: 'ES3' (default), 'ES5', 'ES2015', 'ES2016', 'ES2017','ES2018' or 'ESNEXT'. */,
-        "module": "commonjs" /* Specify module code generation: 'none', 'commonjs', 'amd', 'system', 'umd', 'es2015', or 'ESNext'. */,
+        "module": "esnext" /* Specify module code generation: 'none', 'commonjs', 'amd', 'system', 'umd', 'es2015', or 'ESNext'. */,
         "preserveConstEnums": true,
         "sourceMap": true,
         "outDir":"build",
@@ -22,7 +22,8 @@
         "noImplicitReturns": true /* Report error when not all code paths in function return a value. */,
         "noFallthroughCasesInSwitch": true /* Report errors for fallthrough cases in switch statement. */,
 
-        "baseUrl": "./src"
+        "baseUrl": "./src",
+        "moduleResolution": "node",
     },
     "include": ["src/**/*"],
     "exclude": ["node_modules", "./build"],

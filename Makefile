@@ -1,8 +1,12 @@
 SHELL=/bin/bash
 JEST=./node_modules/jest/bin/jest.js
+ROLLUP=NODE_PATH=${CURDIR}/build ./node_modules/rollup/dist/bin/rollup
 
 clean:
 	rm -rf ./build
+
+rollup:
+	$(ROLLUP) -c rollup.config.js
 
 build: clean
 	./node_modules/typescript/bin/tsc
