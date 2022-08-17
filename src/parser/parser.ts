@@ -8,9 +8,11 @@ import { GoAheadTokenStream, TokenStream } from "./tokenStream";
 import { peekAndSkipSpaces, peekNextToken, peekNoLineTerminatorHere } from "./tokenStreamReader";
 
 function returnRawNode(stream : TokenStream) : JsRawNode {
+    const source = rawValue(stream);
     return {
         type: NodeType.Raw,
-        value: rawValue(stream),
+        value: source.value,
+        position: source.position,
     };
 }
 

@@ -1,8 +1,10 @@
+import { Position } from "stream/position";
+
 export type SyntaxTree = JssNode[];
 
-export type JssNode = IgnoreNode | RawNode |
+export type JssNode = IgnoreNode | JsRawNode |
     JssBlockNode | CssImportNode | CssSelectorNode |
-    CommentNode | JssVarDeclarationNode;
+    CommentNode | JssVarDeclarationNode | CssCharsetNode;
 
 export enum NodeType {
     JsImport,
@@ -55,11 +57,6 @@ export interface BlockNode<N extends Node = Node> extends Node {
 export interface Node {
     readonly type: NodeType;
     rawValue?: string;
-}
-
-export interface RawNode extends Node {
-    type: NodeType.Raw;
-    value: string;
 }
 
 export interface IgnoreNode extends Node {
@@ -124,9 +121,14 @@ export interface JssBlockNode extends Node {
     readonly items: JssBlockItemNode[],
 }
 
-export interface CssImportNode extends Node {
+export interface CssImportNode extends Node, SourceMappedNode {
     type: NodeType.CssImport,
     readonly path: string,
+}
+
+export interface CssCharsetNode extends Node, SourceMappedNode {
+    type: NodeType.CssCharset,
+    readonly rawValue: string,
 }
 
 export interface LazyNode extends Node {
@@ -144,8 +146,12 @@ export interface JssSelectorNode extends Node {
     readonly items: string[];
 }
 
-export interface JsRawNode extends Node {
-    readonly type: NodeType,
+interface SourceMappedNode {
+    readonly position: Position;
+}
+
+export interface JsRawNode extends Node, SourceMappedNode {
+    readonly type: NodeType.Raw,
     readonly value: string;
 }
 

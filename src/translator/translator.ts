@@ -2,6 +2,16 @@ import { CssSelectorNode, JssBlockItemNode, JssBlockNode, JssNode, JssSelectorNo
 
 const EXPORT_VAR_NAME = '_styles';
 
+/*interface SourceMapMapping {
+    sourceColumn: number;
+    generatedColumn: number;
+}
+
+interface SourceString {
+    value: string;
+    mapping: SourceMapMapping[];
+}*/
+
 function quoteEscape(str : string) : string {
     return str.replace('"', '\"').replace("`", "\`");
 }

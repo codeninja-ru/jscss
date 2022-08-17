@@ -2,6 +2,7 @@ import { StringInputStream } from "stream/input";
 import { Position } from "stream/position";
 import { Token } from "token";
 import { lexer } from "./lexer";
+import { SourceFragment } from "./parserUtils";
 
 export interface TokenStream {
     take(idx: number): Token;
@@ -16,7 +17,9 @@ export interface TokenStream {
 
 export interface FlushableTokenStream extends TokenStream {
     flush() : void;
+    // deprecated use souceFragment
     rawValue() : string;
+    sourceFragment() : SourceFragment;
 }
 
 const ZERO_POSITION = {
@@ -94,6 +97,15 @@ export class GoAheadTokenStream implements FlushableTokenStream {
 
     eof() : boolean {
         return this.parent.length() <= this.pos;
+    }
+
+    sourceFragment() : SourceFragment {
+        const startToken = this.parent.take(this.startPos);
+
+        return {
+            position: startToken.position,
+            value: this.rawValue(),
+        };
     }
 
     rawValue() : string {

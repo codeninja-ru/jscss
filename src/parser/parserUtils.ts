@@ -1,5 +1,6 @@
 import { Keyword } from "keywords";
 import { SubStringInputStream } from "stream/input/SubStringInputStream";
+import { Position } from "stream/position";
 import { Symbols, SyntaxSymbol } from "symbols";
 import { Token, TokenType } from "token";
 import { lexer } from "./lexer";
@@ -79,12 +80,16 @@ function isFlushableTokenStream(stream : TokenStream | FlushableTokenStream) : s
     return (stream as FlushableTokenStream).rawValue !== undefined;
 }
 
-export function rawValue(stream : TokenStream | FlushableTokenStream) : string {
+export interface SourceFragment {
+    readonly position: Position;
+    value: string;
+}
+
+export function rawValue(stream : TokenStream | FlushableTokenStream) : SourceFragment {
     if (isFlushableTokenStream(stream)) {
-        return stream.rawValue();
+        return stream.sourceFragment();
     } else {
-        console.log('could not obtain the rawValue');
-        return '';
+        throw new Error('could not obtain the rawValue')
     }
 }
 

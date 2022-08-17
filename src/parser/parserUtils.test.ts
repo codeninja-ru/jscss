@@ -148,7 +148,6 @@ describe('parserUtils', () => {
 
     describe('cannotStartWith()', () => {
         it('throws an exception', () => {
-                debugger;
             expect(() => {
                 cannotStartWith(
                     keyword(Keywords._function),

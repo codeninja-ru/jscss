@@ -4,11 +4,12 @@ import fs from 'fs';
 import { translator } from 'translator/translator';
 import { parseJssScript } from 'parser/jssParser';
 import { ArrayTokenStream } from 'parser/tokenStream';
+import { evalCode } from './eval';
 
 const [,execname, infile, outfile] = argv;
 
 function printUsage() {
-console.log(`Usage: ${path.basename(execname)} filename [outputfile]\n`);
+console.log(`Usage: ${path.basename(execname)} [options] filename [outputfile]\n`);
 }
 
 if (infile === undefined) {
@@ -35,7 +36,8 @@ if (infilepath == outfilepath) {
     process.exit(1);
 }
 
-const inStr = fs.readFileSync(infilepath).toString();
+const inStr = fs.readFileSync(infilepath).toString() ;
 const outStr = translator(parseJssScript(ArrayTokenStream.fromString(inStr)));
 
 console.log(outStr);
+console.log(evalCode(outStr));

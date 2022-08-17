@@ -4,7 +4,7 @@ import { Keywords } from "keywords";
 import { Symbols } from "symbols";
 import { TokenType } from "token";
 import { anyLiteral, anyString, block, commaList, firstOf, ignoreSpacesAndComments, keyword, list, loop, map, noSpacesHere, oneOfSymbols, optional, rawValue, regexpLiteral, returnRawValue, roundBracket, semicolon, sequence, squareBracket, strictLoop, symbol } from "./parserUtils";
-import { CssBlockNode, CssDeclarationNode, CssImportNode, CssMediaNode, CssSelectorNode, Node, NodeType } from "./syntaxTree";
+import { CssBlockNode, CssCharsetNode, CssDeclarationNode, CssImportNode, CssMediaNode, CssSelectorNode, NodeType } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
 
@@ -13,12 +13,14 @@ import { TokenStream } from "./tokenStream";
  * [ CHARSET_SYM STRING ';' ]?
  *
  * */
-export function cssCharset(stream : TokenStream) : Node {
+export function cssCharset(stream : TokenStream) : CssCharsetNode {
     sequence(symbol(Symbols.at), noSpacesHere, keyword(Keywords.cssCharset), anyString, semicolon)(stream);
 
+    const source = rawValue(stream);
     return {
         type: NodeType.CssCharset,
-        rawValue: rawValue(stream),
+        rawValue: source.value,
+        position: source.position,
     };
 }
 
@@ -68,10 +70,12 @@ export function importStatement(stream : TokenStream) : CssImportNode {
         semicolon,
     )(stream);
 
+    const source = rawValue(stream);
     return {
         type: NodeType.CssImport,
         path,
-        rawValue: rawValue(stream),
+        position: source.position,
+        rawValue: source.value,
     };
 }
 

@@ -8,8 +8,10 @@ clean:
 rollup:
 	$(ROLLUP) -c rollup.config.js
 
-build: clean
+compile:
 	./node_modules/typescript/bin/tsc
+
+build: clean compile rollup
 
 test: build
 	$(JEST)
