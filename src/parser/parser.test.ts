@@ -91,13 +91,13 @@ for (var i = 0; i < 10; i++) {
         const stream = new GoAheadTokenStream(new ArrayTokenStream(tokens));
         const node = parseJsStatement(stream);
         expect(stream.rawValue()).toEqual(script);
-        expect(node).toEqual({"type": NodeType.Raw, value: script});
+        expect(node).toEqual({"type": NodeType.Raw, value: script, position: {line: 1, col: 1}});
     });
 
     it('console.log()', () => {
         const script = `console.log(1)`;
         const node = testParserFunction(parseJsStatement, script);
-        expect(node).toEqual({type: NodeType.Raw, value: script});
+        expect(node).toEqual({type: NodeType.Raw, value: script, position: {line: 1, col: 1}});
     });
 });
 

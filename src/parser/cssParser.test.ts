@@ -63,9 +63,9 @@ describe('CSS Parser', () => {
         expect(stream.rawValue()).toEqual(SAMPLE);
         expect(result).toEqual([
             {type: NodeType.Ignore, items: expect.anything()},
-            {type: NodeType.CssCharset, rawValue: "@charset 'utf-8';"},
+            {type: NodeType.CssCharset, rawValue: "@charset 'utf-8';", position: { col: 1, line: 2 }},
             {type: NodeType.Ignore, items: expect.anything()},
-            {type: NodeType.CssImport, path: "'styles.css'", rawValue: "@import 'styles.css';"},
+            {type: NodeType.CssImport, path: "'styles.css'", rawValue: "@import 'styles.css';", position: { col: 1, line: 3}},
             {type: NodeType.Ignore, items: expect.anything()},
             cssBlock(cssSelector(["div"]), [
                 {type: NodeType.Ignore, items: expect.anything()},

@@ -32,11 +32,11 @@ describe('parseJssScript()', () => {
         expect(stream.rawValue()).toEqual(SIMPLE);
         expect(stream.eof()).toBeTruthy();
         expect(node).toEqual([
-            {type: NodeType.Raw, value: "import _ from 'lodash';"},
+            {type: NodeType.Raw, value: "import _ from 'lodash';", position: {line: 1, col: 1}},
             {type: NodeType.Ignore, items: ["\n"]},
-            {type: NodeType.CssImport, path: "'style.css'", rawValue: "@import 'style.css';"},
+            {type: NodeType.CssImport, path: "'style.css'", rawValue: "@import 'style.css';", position: {line: 2, col: 1}},
             {type: NodeType.Ignore, items: expect.anything()},
-            {type: NodeType.Raw, value: "const color = '#fff';"},
+            {type: NodeType.Raw, value: "const color = '#fff';", position: {line: 4, col: 1}},
             {type: NodeType.Ignore, items: expect.anything()},
             {type: NodeType.JssBlock, selectors: [
                 {
@@ -90,7 +90,7 @@ describe('parseJssScript()', () => {
         const source = `function pad2(n) { return n.length > 1 ? n : "0" + n; }`;
         const node = parseJssScript(ArrayTokenStream.fromString(source));
         expect(node).toEqual([
-            { type: NodeType.Raw, value: 'function pad2(n) { return n.length > 1 ? n : "0" + n; }' }
+            { type: NodeType.Raw, value: 'function pad2(n) { return n.length > 1 ? n : "0" + n; }', position: {line: 1, col: 1} }
         ]);
     });
 
@@ -100,9 +100,9 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
 .className {
   color: $\{rgb(255,255,255)\};
 }`).toEqual([
-    { type: NodeType.Raw, value: 'function pad2(n) { return n.length > 1 ? n : "0" + n; }' },
+    { type: NodeType.Raw, value: 'function pad2(n) { return n.length > 1 ? n : "0" + n; }', position: {line: 1, col: 1} },
     {type: NodeType.Ignore, items: expect.anything()},
-    { type: NodeType.Raw, value: 'function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) + pad2(g.toString(b)); }' },
+    { type: NodeType.Raw, value: 'function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) + pad2(g.toString(b)); }', position: {line: 2, col: 1} },
     {type: NodeType.Ignore, items: expect.anything()},
     { type: NodeType.JssBlock, selectors: [
         {
