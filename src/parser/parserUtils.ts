@@ -6,7 +6,7 @@ import { Token, TokenType } from "token";
 import { lexer } from "./lexer";
 import { BlockParserError, EmptyStreamError, ParserError, SequenceError, UnexpectedEndError } from "./parserError";
 import { BlockNode, BlockType, IgnoreNode, LazyNode, NodeType } from "./syntaxTree";
-import { TokenParser } from "./tokenParser";
+import { ParsedSource, TokenParser, TokenParserArrayWithPosition, TokenParserWithPosition } from "./tokenParser";
 import { ArrayTokenStream, FlushableTokenStream, GoAheadTokenStream, TokenStream } from "./tokenStream";
 import { isSpaceOrComment, peekAndSkipSpaces, TokenStreamReader } from "./tokenStreamReader";
 
@@ -151,6 +151,32 @@ export function sequence(...parsers: TokenParser[]) : TokenParser {
         for (var i = 0; i < parsers.length; i++) {
             try {
                 result.push(parsers[i](parserStream));
+            } catch(e) {
+                if (i > 0) {
+                    throw new SequenceError(e);
+                } else {
+                    throw e;
+                }
+            }
+        }
+
+        // TODO flush might be not needed if we call sequence inside firstOf/or
+        parserStream.flush();
+        return result;
+    };
+}
+
+export function sequenceWithPosition(...parsers: TokenParser[]) : TokenParserArrayWithPosition {
+    return function(stream: TokenStream) : ParsedSource[] {
+        const parserStream = new GoAheadTokenStream(stream);
+        const result = [] as ParsedSource[];
+        for (var i = 0; i < parsers.length; i++) {
+            try {
+                const pos = parserStream.currentTokenPosition();
+                result.push({
+                    value: parsers[i](parserStream),
+                    position: pos,
+                });
             } catch(e) {
                 if (i > 0) {
                     throw new SequenceError(e);

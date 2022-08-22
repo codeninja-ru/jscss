@@ -310,6 +310,10 @@ describe('parserUtils', () => {
         });
     });
 
+    describe('sequenceWithPosition()', () => {
+
+    });
+
     it('symbol()', () => {
         const tokens = lexer(new StringInputStream(`**`))
         const stream = new ArrayTokenStream(tokens);

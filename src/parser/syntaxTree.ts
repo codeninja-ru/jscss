@@ -114,7 +114,7 @@ export interface CssBlockNode extends Node {
     readonly items: CssBlockItemNode[],
 }
 
-export type JssBlockItemNode = CssDeclarationNode | JssDeclarationNode | IgnoreNode | JssBlockNode | JsSpreadNode;
+export type JssBlockItemNode = CssDeclarationNode | JssDeclarationNode | IgnoreNode | JssBlockNode | JssSpreadNode;
 export interface JssBlockNode extends Node {
     type: NodeType.JssBlock,
     readonly selectors: CssSelectorNode[] | JssSelectorNode[],
@@ -136,7 +136,7 @@ export interface LazyNode extends Node {
     value: string,
 }
 
-export interface CssSelectorNode extends Node {
+export interface CssSelectorNode extends Node, SourceMappedNode {
     type: NodeType.CssSelector,
     readonly items: string[];
 }
@@ -166,6 +166,9 @@ export interface CssDeclarationNode extends Node {
     readonly prop: string,
     readonly value: any,
     readonly prio?: string,
+    readonly propPros: Position,
+    readonly valuePos: Position,
+    readonly prioPos?: Position,
 }
 
 export interface JsTemplateNode extends Node {
@@ -182,12 +185,16 @@ export interface JssDeclarationNode extends Node {
 export interface JssVarDeclarationNode extends Node {
     readonly type: NodeType.JssVarDeclaration,
     readonly keyword : 'const' | 'var' | 'let',
+    readonly keywrodPos: Position;
     readonly name: string;
+    readonly namePos: Position;
     readonly items: JssBlockItemNode[];
     readonly hasExport : boolean;
+    readonly exportPos: Position;
 }
 
-export interface JsSpreadNode extends Node {
+export interface JssSpreadNode extends Node {
     readonly type: NodeType.JssSpread,
     readonly value: string,
+    readonly valuePos: Position,
 }

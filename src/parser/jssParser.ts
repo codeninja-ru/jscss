@@ -3,8 +3,8 @@ import { Symbols } from "symbols";
 import { TokenType } from "token";
 import { attrib, combinator, cssCharset, hash, importStatement, mediaStatement, pageStatement, pseudo } from "./cssParser";
 import { assignmentExpression, identifier, moduleItem, parseComment, propertyName } from "./parser";
-import { anyLiteral, anyString, block, comma, commaList, dollarSign, firstOf, ignoreSpacesAndComments, keyword, lazyBlock, leftHandRecurciveRule, loop, map, noSpacesHere, oneOfSymbols, optional, returnRawValue, semicolon, sequence, strictLoop, symbol } from "./parserUtils";
-import { BlockNode, JssBlockItemNode, JssBlockNode, JssSelectorNode, JssVarDeclarationNode, NodeType, SyntaxTree } from "./syntaxTree";
+import { anyLiteral, anyString, block, comma, commaList, dollarSign, firstOf, ignoreSpacesAndComments, keyword, lazyBlock, leftHandRecurciveRule, loop, map, noSpacesHere, oneOfSymbols, optional, returnRawValue, semicolon, sequence, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
+import { BlockNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssSelectorNode, JssSpreadNode, JssVarDeclarationNode, NodeType, SyntaxTree } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
 
@@ -14,7 +14,17 @@ export function parseJssScript(stream : TokenStream) : SyntaxTree {
 
 const templatePlaceholder = sequence(dollarSign, noSpacesHere, lazyBlock); // template string ${}
 
-function jssPropertyDefinition(stream : TokenStream) : void {
+function jssSpreadDefinition(stream : TokenStream) : JssSpreadNode {
+    const [, value] = sequenceWithPosition(symbol(Symbols.dot3, returnRawValue(assignmentExpression)))(stream);
+
+    return {
+        type: NodeType.JssSpread,
+        value: value.value,
+        valuePos: value.position,
+    };
+}
+
+function jssPropertyDefinition(stream : TokenStream) : (JssDeclarationNode | JssSpreadNode) {
     const result = firstOf(
         //sequence(propertyName, symbol(Symbols.colon), assignmentExpression), // clear js assigment
         //sequence(propertyName, symbol(Symbols.colon), expr, optional(prioStatement)), // clear css
@@ -45,13 +55,7 @@ function jssPropertyDefinition(stream : TokenStream) : void {
                 value: rest,
             }
         }),
-        map(sequence(symbol(Symbols.dot3), returnRawValue(assignmentExpression)),
-            ([, value]) => {
-                return {
-                    type: NodeType.JssSpread,
-                    value,
-                };
-            }), // js assignment
+        jssSpreadDefinition,
     )(stream);
 
     semicolon(stream);
@@ -116,7 +120,7 @@ export function selector(stream : TokenStream) : JssSelectorNode {
  *
  * */
 function jssVariableStatement(stream : TokenStream) : JssVarDeclarationNode {
-    const [exportKeyword, decKeyword, varName,,block] = sequence(
+    const [exportKeyword, decKeyword, varName,,block] = sequenceWithPosition(
         optional(keyword(Keywords._export)),
         firstOf(
             keyword(Keywords._const),
@@ -128,16 +132,19 @@ function jssVariableStatement(stream : TokenStream) : JssVarDeclarationNode {
         jssBlockStatement,
     )(stream);
 
-    if (varName in {"self" : 1, "_styles" : 1, "JssStylesheet" : 1, "JssStyleBlock" : 1, "JssBlock": 1}) {
+    if (varName.value in {"self" : 1, "_styles" : 1, "JssStylesheet" : 1, "JssStyleBlock" : 1, "JssBlock": 1}) {
         throw new Error(`${varName} is a reseved word`);
     }
 
     return {
         type: NodeType.JssVarDeclaration,
-        keyword: decKeyword,
-        name: varName,
+        keyword: decKeyword.value,
+        keywrodPos: decKeyword.postion,
+        name: varName.value,
+        namePos: varName.postion,
         items: block.items,
         hasExport: exportKeyword !== undefined,
+        exportPos: exportKeyword?.position,
     };
 }
 

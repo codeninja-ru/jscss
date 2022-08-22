@@ -3,7 +3,7 @@
 import { Keywords } from "keywords";
 import { Symbols } from "symbols";
 import { TokenType } from "token";
-import { anyLiteral, anyString, block, commaList, firstOf, ignoreSpacesAndComments, keyword, list, loop, map, noSpacesHere, oneOfSymbols, optional, rawValue, regexpLiteral, returnRawValue, roundBracket, semicolon, sequence, squareBracket, strictLoop, symbol } from "./parserUtils";
+import { anyLiteral, anyString, block, commaList, firstOf, ignoreSpacesAndComments, keyword, list, loop, map, noSpacesHere, oneOfSymbols, optional, rawValue, regexpLiteral, returnRawValue, roundBracket, semicolon, sequence, sequenceWithPosition, squareBracket, strictLoop, symbol } from "./parserUtils";
 import { CssBlockNode, CssCharsetNode, CssDeclarationNode, CssImportNode, CssMediaNode, CssSelectorNode, NodeType } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
@@ -137,7 +137,7 @@ export function rulesetStatement(stream : TokenStream) : CssBlockNode {
  *
  * */
 export function declaration(stream : TokenStream) : CssDeclarationNode {
-    const [property,,expression,prio] = sequence(
+    const [property,,expression,prio] = sequenceWithPosition(
         ident,
         symbol(Symbols.colon),
         returnRawValue(expr),
@@ -147,9 +147,11 @@ export function declaration(stream : TokenStream) : CssDeclarationNode {
 
     return {
         type: NodeType.CssDeclaration,
-        prop: property,
-        value: expression.trim(),
-        ...(prio ? {prio} : {})
+        prop: property.value,
+        propPros: property.position,
+        value: expression.value.trim(),
+        valuePos: expression.position,
+        ...(prio ? {prio: prio.value, prioPos: prio.position} : {})
     };
 }
 

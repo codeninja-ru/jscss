@@ -20,6 +20,7 @@ export interface FlushableTokenStream extends TokenStream {
     // deprecated use souceFragment
     rawValue() : string;
     sourceFragment() : SourceFragment;
+    currentTokenPosition() : Position;
 }
 
 const ZERO_POSITION = {
@@ -97,6 +98,10 @@ export class GoAheadTokenStream implements FlushableTokenStream {
 
     eof() : boolean {
         return this.parent.length() <= this.pos;
+    }
+
+    currentTokenPosition() : Position {
+        return this.parent.take(this.startPos).position;
     }
 
     sourceFragment() : SourceFragment {
