@@ -1,4 +1,4 @@
-import { CssImportNode, CssSelectorNode, JssBlockItemNode, JssBlockNode, JssNode, JssSelectorNode, JssVarDeclarationNode, NodeType, SyntaxTree } from 'parser/syntaxTree';
+import { CssDeclarationNode, CssImportNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssNode, JssSelectorNode, JssSpreadNode, JssVarDeclarationNode, NodeType, SyntaxTree } from 'parser/syntaxTree';
 import { SourceNode } from 'source-map';
 
 const EXPORT_VAR_NAME = '_styles';
@@ -12,8 +12,23 @@ export interface GeneratedCode {
     sourceMap: string;
 }
 
-function cssSelectors2js(selectors : JssSelectorNode[] | CssSelectorNode[]) : string {
-    return '`' + selectors.map((item) => item.items.join('')).join(',') + '`';
+function cssSelectors2js(selectors : JssSelectorNode[]) : SourceNode {
+    const chunks = ['`'] as (string | SourceNode)[];
+    selectors.forEach((item, key) => {
+        chunks.push(new SourceNode(item.position.line,
+                                      item.position.col,
+                                      null,
+                                      item.items.map(quoteEscape).join('')
+                                     ));
+        if (key < selectors.length - 1) {
+            chunks.push(',');
+        }
+    });
+    chunks.push('`');
+    return new SourceNode(null,
+                          null,
+                          null,
+                          chunks);
 }
 
 type TemplateParams = (string | SourceNode)[];
@@ -30,38 +45,58 @@ function tag(strings : TemplateStringsArray, ...params : TemplateParams) : Sourc
     return new SourceNode(null, null, null, result);
 }
 
+function cssDeclration2SourceNode(item : CssDeclarationNode) : SourceNode {
+    const prop = new SourceNode(item.propPos.line,
+                                item.propPos.col,
+                                null,
+                                quoteEscape(item.prop));
+    const value = new SourceNode(item.valuePos.line,
+                                 item.valuePos.col,
+                                 null,
+                                 quoteEscape(item.value) + item.prio ? " " + item.prio : "");
+    const prio = item.prioPos ? new SourceNode(item.prioPos.line,
+                                               item.prioPos.col,
+                                               null,
+                                               item.prio) : null;
+    return tag`self.push("${prop}", "${value}${prio ? " " : ""}${prio ? prio : ""}");\n`;
+}
+
+function jssDeclaration2SourceNode(item : JssDeclarationNode) : SourceNode {
+    //NOTE we do not parse content of the blocks here so an syntax error in the block can break the final code
+
+    const prop = new SourceNode(item.propPos.line,
+                                item.propPos.col,
+                                null,
+                                quoteEscape(item.prop));
+    const value = new SourceNode(item.valuePos.line,
+                                 item.valuePos.col,
+                                 null,
+                                 item.value);
+    return tag`self.push(\`${prop}\`, \`${value}\`);\n`;
+}
+
+function jssSpread2SourceNode(item : JssSpreadNode) : SourceNode {
+    const spread = new SourceNode(item.valuePos.line,
+                                  item.valuePos.col,
+                                  null,
+                                  item.value);
+    return tag`self.extend(${spread});\n`;
+}
+
 function declarations2js(blockList : JssBlockItemNode[], bindName = 'self') : SourceNode {
     const code = blockList
         .map((item) => {
             switch(item.type) {
                 case NodeType.CssDeclaration:
-                    const prop = new SourceNode(item.propPros.line,
-                                                item.propPros.col,
-                                                null,
-                                                quoteEscape(item.prop));
-                    const value = new SourceNode(item.valuePos.line,
-                                                 item.valuePos.col,
-                                                 null,
-                                                 quoteEscape(item.value) + item.prio ? " " + item.prio : "");
-                    const prio = item.prioPos ? new SourceNode(item.prioPos.line,
-                                                            item.prioPos.col,
-                                                            null,
-                                                            item.prio) : null;
-                    return tag`self.push("${prop}", "${value}${prio ? " " : ""}${prio ? prio : ""}");\n`;
+                    return cssDeclration2SourceNode(item);
                 case NodeType.JssDeclaration:
-                    //NOTE we do not parse content of the blocks here so an syntax error in the block can break the final code
-
-                    return tag`self.push(\`${quoteEscape(item.prop)}\`, \`${item.value}\`);\n`;
+                    return jssDeclaration2SourceNode(item);
                 case NodeType.Ignore:
                     return null;
                 case NodeType.JssBlock:
-                    return `self.addChild(${jssBlock2js(item, bindName)})`;
+                    return tag`self.addChild(${jssBlock2js(item, bindName)})`;
                 case NodeType.JssSpread:
-                    const spread = new SourceNode(item.valuePos.line,
-                                                  item.valuePos.col,
-                                                  null,
-                                                  item.value);
-                    return tag`self.extend(${spread});\n`;
+                    return jssSpread2SourceNode(item);
                 default:
                     throw new Error(`unsupported block item ${JSON.stringify(item)}`);
             }
@@ -72,8 +107,8 @@ function declarations2js(blockList : JssBlockItemNode[], bindName = 'self') : So
                           code as SourceNode[]);
 }
 
-function jssBlock2js(node : JssBlockNode, bindName = 'self') : string {
-    return `(function() {
+function jssBlock2js(node : JssBlockNode, bindName = 'self') : SourceNode {
+    return tag`(function() {
 var self = new JssStyleBlock(${cssSelectors2js(node.selectors)});
 ${declarations2js(node.items)}
 return self;
@@ -124,7 +159,7 @@ function translateNode(node : JssNode) : SourceNode {
                                   null,
                                   null, //TODO add file name
                                   `${EXPORT_VAR_NAME}.insertBlock(${jssBlock2js(node)});`);
-        case NodeType.CssSelector:
+        case NodeType.JssSelector:
             return new SourceNode(node.position.line,
                                   node.position.col,
                                   null,

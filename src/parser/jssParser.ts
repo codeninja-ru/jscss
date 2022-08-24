@@ -7,6 +7,7 @@ import { anyLiteral, anyString, block, comma, commaList, dollarSign, firstOf, ig
 import { BlockNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssSelectorNode, JssSpreadNode, JssVarDeclarationNode, NodeType, SyntaxTree } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
+import { positionOfNextToken } from "./tokenStreamReader";
 
 export function parseJssScript(stream : TokenStream) : SyntaxTree {
     return strictLoop(jssStatement)(stream);
@@ -24,37 +25,43 @@ function jssSpreadDefinition(stream : TokenStream) : JssSpreadNode {
     };
 }
 
+function jsProperyDefinition(stream : TokenStream) : JssDeclarationNode {
+    //sequence(propertyName, symbol(Symbols.colon), assignmentExpression), // clear js assigment
+    //sequence(propertyName, symbol(Symbols.colon), expr, optional(prioStatement)), // clear css
+    const [propName,,value] = sequenceWithPosition(propertyName, symbol(Symbols.colon), map(returnRawValue(loop(
+        firstOf(
+            templatePlaceholder, // template string ${}
+            anyLiteral, // NOTE: anyLiteral includes $, it may cause troubles in a wrong order
+            anyString,
+
+            oneOfSymbols(
+                Symbols.plus,
+                Symbols.minus,
+                Symbols.at,
+                Symbols.not,
+                Symbols.div,
+                Symbols.dot,
+                Symbols.numero,
+                Symbols.percent,
+            ),
+            comma,
+        )
+    )), (result) => {
+        return result.trim();
+    }))(stream);
+
+    return {
+        type: NodeType.JssDeclaration,
+        prop: propName.value,
+        propPos: propName.position,
+        value: value.value,
+        valuePos: value.position,
+    };
+}
+
 function jssPropertyDefinition(stream : TokenStream) : (JssDeclarationNode | JssSpreadNode) {
     const result = firstOf(
-        //sequence(propertyName, symbol(Symbols.colon), assignmentExpression), // clear js assigment
-        //sequence(propertyName, symbol(Symbols.colon), expr, optional(prioStatement)), // clear css
-        map(sequence(propertyName, symbol(Symbols.colon), map(returnRawValue(loop(
-            firstOf(
-                templatePlaceholder, // template string ${}
-                anyLiteral, // NOTE: anyLiteral includes $, it may cause troubles in a wrong order
-                anyString,
-
-                oneOfSymbols(
-                    Symbols.plus,
-                    Symbols.minus,
-                    Symbols.at,
-                    Symbols.not,
-                    Symbols.div,
-                    Symbols.dot,
-                    Symbols.numero,
-                    Symbols.percent,
-                ),
-                comma,
-            )
-        )), (result) => {
-            return result.trim();
-        })), ([propName,,rest]) => {
-            return {
-                type: NodeType.JssDeclaration,
-                prop: propName,
-                value: rest,
-            }
-        }),
+        jsProperyDefinition,
         jssSpreadDefinition,
     )(stream);
 
@@ -92,6 +99,8 @@ export function simpleSelector(stream : TokenStream) : string {
 }
 
 export function selector(stream : TokenStream) : JssSelectorNode {
+    const pos = positionOfNextToken(stream);
+
     let result = [simpleSelector(stream)];
     while(!stream.eof()) {
         const comb = optional(combinator)(stream);
@@ -109,6 +118,7 @@ export function selector(stream : TokenStream) : JssSelectorNode {
     return {
         type: NodeType.JssSelector,
         items: result,
+        position: pos,
     };
 }
 
@@ -139,10 +149,10 @@ function jssVariableStatement(stream : TokenStream) : JssVarDeclarationNode {
     return {
         type: NodeType.JssVarDeclaration,
         keyword: decKeyword.value,
-        keywrodPos: decKeyword.postion,
+        keywrodPos: decKeyword.position,
         name: varName.value,
-        namePos: varName.postion,
-        items: block.items,
+        namePos: varName.position,
+        items: block.value.items,
         hasExport: exportKeyword !== undefined,
         exportPos: exportKeyword?.position,
     };

@@ -2,7 +2,7 @@ import { StringInputStream } from "stream/input";
 import { Position } from "stream/position";
 import { Token } from "token";
 import { lexer } from "./lexer";
-import { SourceFragment } from "./parserUtils";
+import { SourceFragment } from "./tokenParser";
 
 export interface TokenStream {
     take(idx: number): Token;

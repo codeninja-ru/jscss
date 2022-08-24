@@ -1,12 +1,11 @@
 import { Keyword } from "keywords";
 import { SubStringInputStream } from "stream/input/SubStringInputStream";
-import { Position } from "stream/position";
 import { Symbols, SyntaxSymbol } from "symbols";
 import { Token, TokenType } from "token";
 import { lexer } from "./lexer";
 import { BlockParserError, EmptyStreamError, ParserError, SequenceError, UnexpectedEndError } from "./parserError";
 import { BlockNode, BlockType, IgnoreNode, LazyNode, NodeType } from "./syntaxTree";
-import { ParsedSource, TokenParser, TokenParserArrayWithPosition, TokenParserWithPosition } from "./tokenParser";
+import { ParsedSourceWithPosition, SourceFragment, TokenParser, TokenParserArrayWithPosition } from "./tokenParser";
 import { ArrayTokenStream, FlushableTokenStream, GoAheadTokenStream, TokenStream } from "./tokenStream";
 import { isSpaceOrComment, peekAndSkipSpaces, TokenStreamReader } from "./tokenStreamReader";
 
@@ -78,11 +77,6 @@ export function flushed(parser : TokenParser) : TokenParser {
 
 function isFlushableTokenStream(stream : TokenStream | FlushableTokenStream) : stream is FlushableTokenStream {
     return (stream as FlushableTokenStream).rawValue !== undefined;
-}
-
-export interface SourceFragment {
-    readonly position: Position;
-    value: string;
 }
 
 export function rawValue(stream : TokenStream | FlushableTokenStream) : SourceFragment {
@@ -167,9 +161,9 @@ export function sequence(...parsers: TokenParser[]) : TokenParser {
 }
 
 export function sequenceWithPosition(...parsers: TokenParser[]) : TokenParserArrayWithPosition {
-    return function(stream: TokenStream) : ParsedSource[] {
+    return function(stream: TokenStream) : ParsedSourceWithPosition[] {
         const parserStream = new GoAheadTokenStream(stream);
-        const result = [] as ParsedSource[];
+        const result = [] as ParsedSourceWithPosition[];
         for (var i = 0; i < parsers.length; i++) {
             try {
                 const pos = parserStream.currentTokenPosition();

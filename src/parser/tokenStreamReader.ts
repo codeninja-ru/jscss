@@ -1,3 +1,4 @@
+import { Position } from "stream/position";
 import { Token, TokenType } from "token";
 import { TokenStream } from "./tokenStream";
 
@@ -30,13 +31,25 @@ export function isSpaceOrComment(token : Token) : boolean {
     }
 }
 
-
 export function peekNextToken(stream : TokenStream) : Token {
     if (stream.eof()) {
         throw new Error(`end of the file`);
     }
 
     return stream.next();
+}
+
+export function positionOfNextToken(stream : TokenStream) : Position {
+    for (let pos = stream.currentPosition(); pos < stream.length(); pos++) {
+        const token = stream.take(pos++);
+        if (isSpaceOrComment(token)) {
+            continue;
+        } else {
+            return token.position;
+        }
+    }
+
+    throw new Error(`end of the file`);
 }
 
 export function peekAndSkipSpaces(stream: TokenStream) : Token {

@@ -3,7 +3,7 @@ import { Position } from "stream/position";
 export type SyntaxTree = JssNode[];
 
 export type JssNode = IgnoreNode | JsRawNode |
-    JssBlockNode | CssImportNode | CssSelectorNode |
+    JssBlockNode | CssImportNode | JssSelectorNode |
     CommentNode | JssVarDeclarationNode | CssCharsetNode;
 
 export enum NodeType {
@@ -117,7 +117,7 @@ export interface CssBlockNode extends Node {
 export type JssBlockItemNode = CssDeclarationNode | JssDeclarationNode | IgnoreNode | JssBlockNode | JssSpreadNode;
 export interface JssBlockNode extends Node {
     type: NodeType.JssBlock,
-    readonly selectors: CssSelectorNode[] | JssSelectorNode[],
+    readonly selectors: JssSelectorNode[],
     readonly items: JssBlockItemNode[],
 }
 
@@ -136,12 +136,12 @@ export interface LazyNode extends Node {
     value: string,
 }
 
-export interface CssSelectorNode extends Node, SourceMappedNode {
+export interface CssSelectorNode extends Node {
     type: NodeType.CssSelector,
     readonly items: string[];
 }
 
-export interface JssSelectorNode extends Node {
+export interface JssSelectorNode extends Node, SourceMappedNode {
     type: NodeType.JssSelector,
     readonly items: string[];
 }
@@ -166,7 +166,7 @@ export interface CssDeclarationNode extends Node {
     readonly prop: string,
     readonly value: any,
     readonly prio?: string,
-    readonly propPros: Position,
+    readonly propPos: Position,
     readonly valuePos: Position,
     readonly prioPos?: Position,
 }
@@ -179,7 +179,9 @@ export interface JsTemplateNode extends Node {
 export interface JssDeclarationNode extends Node {
     readonly type: NodeType.JssDeclaration,
     readonly prop: string,
-    readonly value: any,
+    readonly propPos: Position;
+    readonly value: any;
+    readonly valuePos: Position;
 }
 
 export interface JssVarDeclarationNode extends Node {

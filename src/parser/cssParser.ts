@@ -148,7 +148,7 @@ export function declaration(stream : TokenStream) : CssDeclarationNode {
     return {
         type: NodeType.CssDeclaration,
         prop: property.value,
-        propPros: property.position,
+        propPos: property.position,
         value: expression.value.trim(),
         valuePos: expression.position,
         ...(prio ? {prio: prio.value, prioPos: prio.position} : {})

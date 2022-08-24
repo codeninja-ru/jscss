@@ -23,7 +23,7 @@ function evalCode(css : string) {
         'JssBlockCaller' : JssBlockCaller,
     };
     try {
-        const script = new vm.Script(sourceCode.replace('export _styles', '_styles'));
+        const script = new vm.Script(sourceCode.value.replace('export _styles', '_styles'));
         vm.createContext(context);
         return script.runInContext(context);
     } catch(e) {

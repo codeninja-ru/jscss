@@ -40,4 +40,4 @@ const inStr = fs.readFileSync(infilepath).toString() ;
 const outStr = translator(parseJssScript(ArrayTokenStream.fromString(inStr)));
 
 console.log(outStr);
-console.log(evalCode(outStr));
+console.log(evalCode(outStr.value));
