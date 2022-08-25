@@ -2,7 +2,7 @@ import { StringInputStream } from "stream/input";
 import { Position } from "stream/position";
 import { Token } from "token";
 import { lexer } from "./lexer";
-import { SourceFragment } from "./tokenParser";
+import { ArraySourceFragment, SourceFragment } from "./sourceFragment";
 
 export interface TokenStream {
     take(idx: number): Token;
@@ -17,8 +17,6 @@ export interface TokenStream {
 
 export interface FlushableTokenStream extends TokenStream {
     flush() : void;
-    // deprecated use souceFragment
-    rawValue() : string;
     sourceFragment() : SourceFragment;
     currentTokenPosition() : Position;
 }
@@ -74,7 +72,7 @@ export class GoAheadTokenStream implements FlushableTokenStream {
     private startPos : number;
     readonly startStreamPosition: Position;
 
-    constructor(private parent: TokenStream) {
+    constructor(private parent: (TokenStream | FlushableTokenStream)) {
         this.pos = parent.currentPosition();
         this.startPos = parent.currentPosition();
         this.startStreamPosition = parent.startStreamPosition;
@@ -101,25 +99,16 @@ export class GoAheadTokenStream implements FlushableTokenStream {
     }
 
     currentTokenPosition() : Position {
-        return this.parent.take(this.startPos).position;
+        return this.parent.take(this.pos).position;
     }
 
     sourceFragment() : SourceFragment {
-        const startToken = this.parent.take(this.startPos);
-
-        return {
-            position: startToken.position,
-            value: this.rawValue(),
-        };
-    }
-
-    rawValue() : string {
-        let result = '';
+        const tokens = [];
         for (let i = this.startPos; i < this.pos; i++) {
-            result += this.parent.take(i).value;
+            tokens.push(this.parent.take(i));
         }
 
-        return result;
+        return new ArraySourceFragment(tokens);
     }
 
     flush() {

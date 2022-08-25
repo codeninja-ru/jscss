@@ -9,7 +9,7 @@ function testParserFunction(fn : TokenParser , script : string) : Node {
     const tokens = lexer(new StringInputStream(script))
     const stream = new GoAheadTokenStream(new ArrayTokenStream(tokens));
     const node = fn(stream);
-    expect(stream.rawValue()).toEqual(script);
+    expect(stream.sourceFragment().value).toEqual(script);
 
     return node;
 }
@@ -42,7 +42,7 @@ describe('parsers', () => {
             expect(node).toEqual({"type": NodeType.VarStatement, items: [
                 {type: NodeType.VarDeclaration, name: "fn"}
             ]});
-            expect(stream.rawValue()).toEqual('let fn = function(test) {};');
+            expect(stream.sourceFragment().value).toEqual('let fn = function(test) {};');
             expect(stream.currentPosition()).toEqual(11);
         });
 
@@ -53,7 +53,7 @@ describe('parsers', () => {
             expect(node).toEqual({"type": NodeType.VarStatement, items: [
                 {name: {type: NodeType.Lazy, value: "{a, b}"}, type: NodeType.VarDeclaration}
             ]});
-            expect(stream.rawValue()).toEqual('let {a, b} = fn(kek)[1].test');
+            expect(stream.sourceFragment().value).toEqual('let {a, b} = fn(kek)[1].test');
             expect(stream.currentPosition()).toEqual(11);
         });
 
@@ -66,7 +66,7 @@ describe('parsers', () => {
                 {type: NodeType.VarDeclaration, name: 't2'},
                 {type: NodeType.VarDeclaration, name: 't3'},
             ]});
-            expect(stream.rawValue()).toEqual('var t1 = 1, t2 = .2, t3 = 3;');
+            expect(stream.sourceFragment().value).toEqual('var t1 = 1, t2 = .2, t3 = 3;');
             expect(stream.currentPosition()).toEqual(23);
         });
 
@@ -75,7 +75,7 @@ describe('parsers', () => {
             const stream = new GoAheadTokenStream(new ArrayTokenStream(tokens));
             const node = parseJsVarStatement(stream);
             expect(node.type).toEqual(NodeType.VarStatement);
-            expect(stream.rawValue()).toEqual('let fn = (test) => {};');
+            expect(stream.sourceFragment().value).toEqual('let fn = (test) => {};');
             expect(stream.currentPosition()).toEqual(12);
         });
     });
@@ -90,7 +90,7 @@ for (var i = 0; i < 10; i++) {
         const tokens = lexer(new StringInputStream(script))
         const stream = new GoAheadTokenStream(new ArrayTokenStream(tokens));
         const node = parseJsStatement(stream);
-        expect(stream.rawValue()).toEqual(script);
+        expect(stream.sourceFragment().value).toEqual(script);
         expect(node).toEqual({"type": NodeType.Raw, value: script, position: {line: 1, col: 1}});
     });
 
@@ -125,7 +125,7 @@ console.log('hi');
         const tokens = lexer(new StringInputStream(script))
         const stream = new GoAheadTokenStream(new ArrayTokenStream(tokens));
         const node = parseJsScript(stream);
-        expect(stream.rawValue()).toEqual(script);
+        expect(stream.sourceFragment().value).toEqual(script);
         expect(node.type).toEqual(NodeType.JsScript);
     });
 

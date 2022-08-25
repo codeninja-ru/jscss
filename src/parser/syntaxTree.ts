@@ -40,6 +40,7 @@ export enum NodeType {
     JssDeclaration,
     JssSelector,
     JssVarDeclaration,
+    JssMedia,
 }
 
 export enum BlockType {
@@ -57,6 +58,10 @@ export interface BlockNode<N extends Node = Node> extends Node {
 export interface Node {
     readonly type: NodeType;
     rawValue?: string;
+}
+
+export interface StringNode extends SourceMappedNode {
+    value: string;
 }
 
 export interface IgnoreNode extends Node {
@@ -157,6 +162,12 @@ export interface JsRawNode extends Node, SourceMappedNode {
 
 export interface CssMediaNode extends Node {
     readonly type: NodeType.CssMedia,
+    readonly mediaList: string[],
+    readonly items: CssBlockNode[],
+}
+
+export interface JssMediaNode extends Node, SourceMappedNode {
+    readonly type: NodeType.JssMedia,
     readonly mediaList: string[],
     readonly items: CssBlockNode[],
 }

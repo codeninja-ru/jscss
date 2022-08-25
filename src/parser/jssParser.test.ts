@@ -29,7 +29,7 @@ describe('parseJssScript()', () => {
         const stream = new GoAheadTokenStream(ArrayTokenStream.fromString(SIMPLE));
         const node = parseJssScript(stream);
 
-        expect(stream.rawValue()).toEqual(SIMPLE);
+        expect(stream.sourceFragment().value).toEqual(SIMPLE);
         expect(stream.eof()).toBeTruthy();
         expect(node).toEqual([
             {type: NodeType.Raw, value: "import _ from 'lodash';", position: {line: 1, col: 1}},
@@ -41,29 +41,34 @@ describe('parseJssScript()', () => {
             {type: NodeType.JssBlock, selectors: [
                 {
                     type: NodeType.JssSelector,
-                    items: [".className", " >", " a:hover"]
+                    items: [".className", " >", " a:hover"],
+                    position: {line: 7, col: 7},
                 },
             ], items: [
+                {type: NodeType.Ignore, items: expect.anything()},
+                {type: NodeType.JssDeclaration,
+                 prop: "color", propPos: {line: 7, col: 5},
+                 value: "${color}", valuePos: {line: 7, col: 12}},
+                {type: NodeType.Ignore, items: expect.anything()},
+                {type: NodeType.JssDeclaration, prop: "font-family", value: "'Arial', sans-serif",
+                 propPos: {line: 8, col: 5}, valuePos: {line: 8, col: 18}},
+                {type: NodeType.Ignore, items: expect.anything()},
+                {type: NodeType.JssDeclaration, prop: "background", value: "#fff"},
+                {type: NodeType.Ignore, items: expect.anything()},
+                {type: NodeType.JssSpread, value: "extend(color)", position: {line: 7, col: 7}},
+                {type: NodeType.Ignore, items: expect.anything()},
+                {type: NodeType.JssBlock, selectors: [
+                    {
+                        type: NodeType.JssSelector,
+                        items: [".subClass", " +", " a:hover"],
+                        position: {line: 7, col: 7},
+                    },
+                ], items: [
                     {type: NodeType.Ignore, items: expect.anything()},
-                    {type: NodeType.JssDeclaration, prop: "color", value: "${color}"},
+                    {type: NodeType.JssDeclaration, prop: "color", value: "red"},
                     {type: NodeType.Ignore, items: expect.anything()},
-                    {type: NodeType.JssDeclaration, prop: "font-family", value: "'Arial', sans-serif"},
-                    {type: NodeType.Ignore, items: expect.anything()},
-                    {type: NodeType.JssDeclaration, prop: "background", value: "#fff"},
-                    {type: NodeType.Ignore, items: expect.anything()},
-                    {type: NodeType.JssSpread, value: "extend(color)"},
-                    {type: NodeType.Ignore, items: expect.anything()},
-                    {type: NodeType.JssBlock, selectors: [
-                        {
-                            type: NodeType.JssSelector,
-                            items: [".subClass", " +", " a:hover"]
-                        },
-                    ], items: [
-                        {type: NodeType.Ignore, items: expect.anything()},
-                        {type: NodeType.JssDeclaration, prop: "color", value: "red"},
-                        {type: NodeType.Ignore, items: expect.anything()},
-                    ]},
-                    {type: NodeType.Ignore, items: expect.anything()},
+                ]},
+                {type: NodeType.Ignore, items: expect.anything()},
                 ]
             }
         ]);

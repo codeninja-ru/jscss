@@ -1,13 +1,12 @@
 import { Keywords } from "keywords";
 import { Symbols } from "symbols";
-import { TokenType } from "token";
-import { attrib, combinator, cssCharset, hash, importStatement, mediaStatement, pageStatement, pseudo } from "./cssParser";
+import { LiteralToken, TokenType } from "token";
+import { attrib, combinator, cssCharset, hash, importStatement, pageStatement, pseudo } from "./cssParser";
 import { assignmentExpression, identifier, moduleItem, parseComment, propertyName } from "./parser";
-import { anyLiteral, anyString, block, comma, commaList, dollarSign, firstOf, ignoreSpacesAndComments, keyword, lazyBlock, leftHandRecurciveRule, loop, map, noSpacesHere, oneOfSymbols, optional, returnRawValue, semicolon, sequence, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
-import { BlockNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssSelectorNode, JssSpreadNode, JssVarDeclarationNode, NodeType, SyntaxTree } from "./syntaxTree";
+import { anyLiteral, anyString, block, comma, commaList, dollarSign, firstOf, ignoreSpacesAndComments, keyword, lazyBlock, leftHandRecurciveRule, loop, noSpacesHere, oneOfSymbols, optional, returnRawValue, returnRawValueWithPosition, semicolon, sequence, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
+import { BlockNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssMediaNode, JssSelectorNode, JssSpreadNode, JssVarDeclarationNode, NodeType, SyntaxTree } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
-import { positionOfNextToken } from "./tokenStreamReader";
 
 export function parseJssScript(stream : TokenStream) : SyntaxTree {
     return strictLoop(jssStatement)(stream);
@@ -16,7 +15,7 @@ export function parseJssScript(stream : TokenStream) : SyntaxTree {
 const templatePlaceholder = sequence(dollarSign, noSpacesHere, lazyBlock); // template string ${}
 
 function jssSpreadDefinition(stream : TokenStream) : JssSpreadNode {
-    const [, value] = sequenceWithPosition(symbol(Symbols.dot3, returnRawValue(assignmentExpression)))(stream);
+    const [, value] = sequence(symbol(Symbols.dot3), returnRawValueWithPosition(assignmentExpression))(stream);
 
     return {
         type: NodeType.JssSpread,
@@ -28,27 +27,28 @@ function jssSpreadDefinition(stream : TokenStream) : JssSpreadNode {
 function jsProperyDefinition(stream : TokenStream) : JssDeclarationNode {
     //sequence(propertyName, symbol(Symbols.colon), assignmentExpression), // clear js assigment
     //sequence(propertyName, symbol(Symbols.colon), expr, optional(prioStatement)), // clear css
-    const [propName,,value] = sequenceWithPosition(propertyName, symbol(Symbols.colon), map(returnRawValue(loop(
-        firstOf(
-            templatePlaceholder, // template string ${}
-            anyLiteral, // NOTE: anyLiteral includes $, it may cause troubles in a wrong order
-            anyString,
+    const [propName,,value] = sequence(
+        propertyName,
+        symbol(Symbols.colon),
+        returnRawValueWithPosition(loop(
+            firstOf(
+                templatePlaceholder, // template string ${}
+                anyLiteral, // NOTE: anyLiteral includes $, it may cause troubles in a wrong order
+                anyString,
 
-            oneOfSymbols(
-                Symbols.plus,
-                Symbols.minus,
-                Symbols.at,
-                Symbols.not,
-                Symbols.div,
-                Symbols.dot,
-                Symbols.numero,
-                Symbols.percent,
-            ),
-            comma,
-        )
-    )), (result) => {
-        return result.trim();
-    }))(stream);
+                oneOfSymbols(
+                    Symbols.plus,
+                    Symbols.minus,
+                    Symbols.at,
+                    Symbols.not,
+                    Symbols.div,
+                    Symbols.dot,
+                    Symbols.numero,
+                    Symbols.percent,
+                ),
+                comma,
+            )
+        )))(stream);
 
     return {
         type: NodeType.JssDeclaration,
@@ -99,9 +99,8 @@ export function simpleSelector(stream : TokenStream) : string {
 }
 
 export function selector(stream : TokenStream) : JssSelectorNode {
-    const pos = positionOfNextToken(stream);
-
-    let result = [simpleSelector(stream)];
+    const firstSelector = returnRawValueWithPosition(simpleSelector)(stream);
+    let result = [firstSelector.value];
     while(!stream.eof()) {
         const comb = optional(combinator)(stream);
         const sel = optional(simpleSelector)(stream);
@@ -118,7 +117,7 @@ export function selector(stream : TokenStream) : JssSelectorNode {
     return {
         type: NodeType.JssSelector,
         items: result,
-        position: pos,
+        position: firstSelector.position,
     };
 }
 
@@ -177,13 +176,40 @@ export function rulesetStatement(stream : TokenStream) : JssBlockNode {
     };
 }
 
+function jssMediaList(stream : TokenStream) : LiteralToken[] {
+    return commaList(jssIdent)(stream);
+}
+
+export function jssMediaStatement(stream : TokenStream) : JssMediaNode {
+    const [at,,,] = sequence(
+        symbol(Symbols.at),
+        noSpacesHere,
+        keyword(Keywords.cssMedia),
+    )(stream);
+
+    const mediaListItems = jssMediaList(stream).map((token : LiteralToken) => token.value);
+    const rules = block(TokenType.LazyBlock, strictLoop(
+        firstOf(
+            ignoreSpacesAndComments,
+            rulesetStatement,
+            jssVariableStatement,
+    )))(stream);
+
+    return {
+        type: NodeType.JssMedia,
+        mediaList: mediaListItems,
+        position: at.position,
+        items: rules,
+    };
+}
+
 export function stylesheetItem(stream : TokenStream) : ReturnType<TokenParser> {
     //TODO everything that starts with @ can be optimized by combining together
     return firstOf(
         cssCharset,
         importStatement,
         rulesetStatement,
-        mediaStatement,
+        jssMediaStatement,
         pageStatement,
         jssVariableStatement,
     )(stream);

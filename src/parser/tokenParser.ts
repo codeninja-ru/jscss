@@ -6,9 +6,8 @@ export interface ParsedSourceWithPosition {
     position: Position;
 }
 
-export interface SourceFragment {
-    readonly position: Position;
-    value: string;
+export function isWithPosition(obj : any) : obj is ParsedSourceWithPosition {
+    return obj.postion != undefined && obj.value != undefined;
 }
 
 export type TokenParser = (stream: TokenStream) => any;

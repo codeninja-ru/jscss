@@ -1,6 +1,6 @@
 import { Keywords, ReservedWords } from "keywords";
 import { AssignmentOperator, Symbols } from "symbols";
-import { TokenType } from "token";
+import { LiteralToken, TokenType } from "token";
 import { anyLiteral, anyString, anyTempateStringLiteral, block, cannotStartWith, comma, commaList, firstOf, keyword, lazyBlock, leftHandRecurciveRule, longestOf, loop, noLineTerminatorHere, oneOfSymbols, optional, rawValue, regexpLiteral, roundBracket, sequence, squareBracket, strictLoop, symbol } from "./parserUtils";
 import { CommentNode, IfNode, JsModuleNode, JsRawNode, JssScriptNode, MultiNode, Node, NodeType, SyntaxTree, VarDeclaraionNode } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
@@ -310,14 +310,14 @@ export function parseComment(stream: TokenStream) : CommentNode {
     }
 }
 
-function identifierName(stream : TokenStream) : string {
+function identifierName(stream : TokenStream) : LiteralToken {
     // NOTE it's a simplification of cause
     // it matches font-family as a literal for example
     return anyLiteral(stream);
 }
 
 export function identifier(stream: TokenStream) : string {
-    const bindingIdentifier = identifierName(stream);
+    const bindingIdentifier = identifierName(stream).value;
     if (bindingIdentifier in ReservedWords) {
         throw new Error(`${bindingIdentifier} is a reseved word`);
     }
@@ -980,7 +980,7 @@ export function parse(stream: TokenStream) : SyntaxTree {
             const parserStream = new GoAheadTokenStream(stream);
             try {
                 node = parser(parserStream);
-                node.rawValue = parserStream.rawValue();
+                node.rawValue = parserStream.sourceFragment().value;
                 parserStream.flush();
                 break;
             } catch ( e ) {

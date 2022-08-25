@@ -2,9 +2,9 @@
 
 import { Keywords } from "keywords";
 import { Symbols } from "symbols";
-import { TokenType } from "token";
-import { anyLiteral, anyString, block, commaList, firstOf, ignoreSpacesAndComments, keyword, list, loop, map, noSpacesHere, oneOfSymbols, optional, rawValue, regexpLiteral, returnRawValue, roundBracket, semicolon, sequence, sequenceWithPosition, squareBracket, strictLoop, symbol } from "./parserUtils";
-import { CssBlockNode, CssCharsetNode, CssDeclarationNode, CssImportNode, CssMediaNode, CssSelectorNode, NodeType } from "./syntaxTree";
+import { LiteralToken, TokenType } from "token";
+import { anyLiteral, anyString, block, commaList, firstOf, ignoreSpacesAndComments, keyword, list, loop, noSpacesHere, oneOfSymbols, optional, rawValue, regexpLiteral, returnRawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, squareBracket, strictLoop, symbol } from "./parserUtils";
+import { CssBlockNode, CssCharsetNode, CssDeclarationNode, CssImportNode, CssMediaNode, CssSelectorNode, NodeType, StringNode } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
 
@@ -73,7 +73,7 @@ export function importStatement(stream : TokenStream) : CssImportNode {
     const source = rawValue(stream);
     return {
         type: NodeType.CssImport,
-        path,
+        path: path.value,
         position: source.position,
         rawValue: source.value,
     };
@@ -95,11 +95,11 @@ function uri(stream : TokenStream) : void {
   : medium [ COMMA S* medium]*
   ;
  * */
-function mediaList(stream : TokenStream) : string[] {
+function mediaList(stream : TokenStream) : LiteralToken[] {
     return commaList(ident)(stream);
 }
 
-function ident(stream : TokenStream) : string {
+function ident(stream : TokenStream) : LiteralToken {
     //NOTE it can't be started with numbers, and content some chars, read the spec
     return anyLiteral(stream);
 }
@@ -137,10 +137,10 @@ export function rulesetStatement(stream : TokenStream) : CssBlockNode {
  *
  * */
 export function declaration(stream : TokenStream) : CssDeclarationNode {
-    const [property,,expression,prio] = sequenceWithPosition(
+    const [property,,expression,prio] = sequence(
         ident,
         symbol(Symbols.colon),
-        returnRawValue(expr),
+        returnRawValueWithPosition(expr),
         optional(prioStatement),
         optional(semicolon)
     )(stream);
@@ -149,18 +149,26 @@ export function declaration(stream : TokenStream) : CssDeclarationNode {
         type: NodeType.CssDeclaration,
         prop: property.value,
         propPos: property.position,
-        value: expression.value.trim(),
+        value: expression.value,
         valuePos: expression.position,
         ...(prio ? {prio: prio.value, prioPos: prio.position} : {})
     };
 }
 
-export const prioStatement = map(sequence(
+export function prioStatement(stream : TokenStream) : StringNode {
+    const [not,,,] = sequence(
         // prio
         // : IMPORTANT_SYM S*
         symbol(Symbols.not),
+        noSpacesHere,
         keyword(Keywords.cssImportant),
-    ), (item) => item.join(''));
+    )(stream);
+
+    return {
+        position: not.position,
+        value: "!important",
+    };
+}
 
 /**
  * implements:
@@ -353,7 +361,7 @@ export function mediaStatement(stream : TokenStream) : CssMediaNode {
         keyword(Keywords.cssMedia),
     )(stream);
 
-    const mediaListItems = mediaList(stream);
+    const mediaListItems = mediaList(stream).map((token : LiteralToken) => token.value);
     const rules = block(TokenType.LazyBlock, strictLoop(
         firstOf(ignoreSpacesAndComments, rulesetStatement)
     ))(stream);

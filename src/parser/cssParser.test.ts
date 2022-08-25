@@ -36,7 +36,7 @@ function testParser(fn : TokenParser, str : string) : any {
     const stream = new GoAheadTokenStream(new ArrayTokenStream(tokens));
 
     const result = fn(stream);
-    expect(stream.rawValue()).toEqual(str);
+    expect(stream.sourceFragment().value).toEqual(str);
 
     return result;
 }
@@ -60,7 +60,7 @@ describe('CSS Parser', () => {
         const stream = new GoAheadTokenStream(new ArrayTokenStream(tokens));
 
         const result = parseCssStyleSheet(stream);
-        expect(stream.rawValue()).toEqual(SAMPLE);
+        expect(stream.sourceFragment().value).toEqual(SAMPLE);
         expect(result).toEqual([
             {type: NodeType.Ignore, items: expect.anything()},
             {type: NodeType.CssCharset, rawValue: "@charset 'utf-8';", position: { col: 1, line: 2 }},
@@ -71,11 +71,11 @@ describe('CSS Parser', () => {
                 {type: NodeType.Ignore, items: expect.anything()},
                 {type: NodeType.CssDeclaration,
                  prop: "color",
-                 propPos: {line: 1, col: 1},
+                 propPos: {line: 6, col: 3},
                  prio: "!important",
-                 prioPos: {line: 1, col: 1},
+                 prioPos: {line: 6, col: 15},
                  value: '#777',
-                 valuePos: {line: 1, col: 1},
+                 valuePos: {line: 6, col: 10},
                 },
                 {type: NodeType.Ignore, items: expect.anything()},
             ]),
@@ -84,16 +84,16 @@ describe('CSS Parser', () => {
                 {type: NodeType.Ignore, items: expect.anything()},
                 {type: NodeType.CssDeclaration,
                  prop: "color",
-                 propPos: {line: 1, col: 1},
+                 propPos: {line: 10, col: 3},
                  value: 'white',
-                 valuePos: {line: 1, col: 1},
+                 valuePos: {line: 10, col: 10},
                 },
                 {type: NodeType.Ignore, items: expect.anything()},
                 {type: NodeType.CssDeclaration,
                  prop: "background-color",
-                 propPos: {line: 1, col: 1},
+                 propPos: {line: 11, col: 3},
                  value: '#fff',
-                 valuePos: {line: 1, col: 1},
+                 valuePos: {line: 11, col: 21},
                 },
                 {type: NodeType.Ignore, items: expect.anything()},
             ]),
@@ -102,16 +102,16 @@ describe('CSS Parser', () => {
                 {type: NodeType.Ignore, items: expect.anything()},
                 {type: NodeType.CssDeclaration,
                  prop: "color",
-                 propPos: {line: 1, col: 1},
+                 propPos: {line: 15, col: 3},
                  value: 'white',
-                 valuePos: {line: 1, col: 1},
+                 valuePos: {line: 15, col: 10},
                 },
                 {type: NodeType.Ignore, items: expect.anything()},
                 {type: NodeType.CssDeclaration,
                  prop: "background-color",
-                 propPos: {line: 1, col: 1},
+                 propPos: {line: 16, col: 3},
                  value: '#fff',
-                 valuePos: {line: 1, col: 1},
+                 valuePos: {line: 16, col: 21},
                 },
                 {type: NodeType.Ignore, items: expect.anything()},
             ]),
@@ -132,11 +132,11 @@ describe('CSS Parser', () => {
                             {type: NodeType.Ignore, items: expect.anything()},
                             {type: NodeType.CssDeclaration,
                              prop: "color",
-                             propPos: {line: 1, col: 1},
+                             propPos: {line: 23, col: 9},
                              value: '#888',
-                             valuePos: {line: 1, col: 1},
+                             valuePos: {line: 23, col: 16},
                              prio: "!important",
-                             prioPos: {line: 1, col: 1},
+                             prioPos: {line: 23, col: 21},
                             },
                             {type: NodeType.Ignore, items: expect.anything()},
                         ]),

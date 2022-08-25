@@ -11,7 +11,7 @@ export default {
     },
     plugins: [resolve({
         // make it find the local imports
-        moduleDirectories: ['build', 'node_modules'],
+        moduleDirectories: ['build'],
         preferBuiltins: false,
     })]
 };
