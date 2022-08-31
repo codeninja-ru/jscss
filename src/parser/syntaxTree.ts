@@ -169,7 +169,7 @@ export interface CssMediaNode extends Node {
 export interface JssMediaNode extends Node, SourceMappedNode {
     readonly type: NodeType.JssMedia,
     readonly mediaList: string[],
-    readonly items: CssBlockNode[],
+    readonly items: JssBlockNode[],
 }
 
 export interface CssDeclarationNode extends Node {
@@ -198,12 +198,12 @@ export interface JssDeclarationNode extends Node {
 export interface JssVarDeclarationNode extends Node {
     readonly type: NodeType.JssVarDeclaration,
     readonly keyword : 'const' | 'var' | 'let',
-    readonly keywrodPos: Position;
+    readonly keywordPos: Position;
     readonly name: string;
     readonly namePos: Position;
     readonly items: JssBlockItemNode[];
     readonly hasExport : boolean;
-    readonly exportPos: Position;
+    readonly exportPos?: Position;
 }
 
 export interface JssSpreadNode extends Node {

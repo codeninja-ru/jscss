@@ -7,8 +7,8 @@ describe('makeStringReader()', () => {
         const reader1 = makeStringReader(new StringInputStream(`'test string \\'' next`), "'");
         const reader2 = makeStringReader(new StringInputStream('"test string \\"" next'), '"');
 
-        expect(reader1()).toEqual({ "type": TokenType.String, "value": "'test string \\''", position: expect.anything() });
-        expect(reader2()).toEqual({ "type": TokenType.String, "value": "\"test string \\\"\"", position: expect.anything()  });
+        expect(reader1()).toEqual({ "type": TokenType.String, "value": "'test string \\''", position: {line: 1, col: 1}});
+        expect(reader2()).toEqual({ "type": TokenType.String, "value": "\"test string \\\"\"", position: {line: 1, col: 1}});
     });
 
     test('incorect strings', () => {

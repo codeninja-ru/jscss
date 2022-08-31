@@ -1,5 +1,4 @@
-import { Token } from "token";
-import { TokenType } from "token";
+import { Token, TokenType } from "token";
 import { ArraySourceFragment, LeftTrimSourceFragment } from "./sourceFragment";
 
 const array = [
@@ -47,11 +46,25 @@ describe('class LeftTrimSourceFragment', () => {
             {type: TokenType.Literal, value: '5', position: {line: 2, col: 5}},
             {type: TokenType.Literal, value: '6', position: {line: 2, col: 6}},
         ]);
+        // try again
+        expect(fragment.position).toEqual({line: 2, col: 1});
+        expect(fragment.value).toEqual("1no23456");
+        expect(fragment.position).toEqual({line: 2, col: 1});
+        expect(fragment.value).toEqual("1no23456");
+        expect(fragment.position).toEqual({line: 2, col: 1});
+        expect(fragment.value).toEqual("1no23456");
     });
 
     it('does nothing without the left spaces', () => {
         const fragment = new LeftTrimSourceFragment(new ArraySourceFragment(array));
 
+        expect(fragment.position).toEqual({line: 2, col: 1});
+        expect(fragment.value).toEqual("123456");
+        expect(fragment.tokens).toEqual(array);
+        // try again
+        expect(fragment.position).toEqual({line: 2, col: 1});
+        expect(fragment.value).toEqual("123456");
+        expect(fragment.tokens).toEqual(array);
         expect(fragment.position).toEqual({line: 2, col: 1});
         expect(fragment.value).toEqual("123456");
         expect(fragment.tokens).toEqual(array);

@@ -30,7 +30,7 @@ export interface WithPosition {
 }
 
 export function isToken(obj : any) : obj is BaseToken {
-    return obj.type !== undefined && obj.position != undefined && obj.value != undefined;
+    return obj !== undefined && obj.type !== undefined && obj.position != undefined && obj.value != undefined;
 }
 
 interface BaseToken extends WithPosition {

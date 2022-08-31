@@ -1,31 +1,41 @@
 import { Keyword, Keywords } from "keywords";
 import { StringInputStream } from "stream/input";
 import { Symbols } from "symbols";
-import { TokenType } from "token";
+import { LiteralToken, TokenType } from "token";
 import { lexer } from "./lexer";
 import { BlockParserError, ParserError, SequenceError } from "./parserError";
 import { anyLiteral, anyString, block, cannotStartWith, commaList, firstOf, ignoreSpacesAndComments, keyword, longestOf, map, noLineTerminatorHere, noSpacesHere, oneOfSymbols, optional, sequence, symbol } from "./parserUtils";
 import { BlockType, NodeType } from "./syntaxTree";
 import { ArrayTokenStream, TokenStream } from "./tokenStream";
 
+function extractValues(array : any[]) : any[] {
+    return array.map((item : LiteralToken | any[]) => {
+        if (Array.isArray(item)) {
+            return extractValues(item);
+        } else {
+            return item.value;
+        }
+    });
+}
+
 describe('parserUtils', () => {
     it('keyword', () => {
         const tokens = lexer(new StringInputStream(`var`))
         const node = keyword(Keywords._var)(new ArrayTokenStream(tokens));
-        expect(node).toEqual('var');
+        expect(node.value).toEqual('var');
     });
 
     it('anyLiteral()', () => {
-        expect(anyLiteral(ArrayTokenStream.fromString('test'))).toEqual('test');
-        expect(anyLiteral(ArrayTokenStream.fromString('test-name'))).toEqual('test-name');
-        expect(anyLiteral(ArrayTokenStream.fromString('testName'))).toEqual('testName');
+        expect(anyLiteral(ArrayTokenStream.fromString('test')).value).toEqual('test');
+        expect(anyLiteral(ArrayTokenStream.fromString('test-name')).value).toEqual('test-name');
+        expect(anyLiteral(ArrayTokenStream.fromString('testName')).value).toEqual('testName');
     });
 
     describe('commaList()', () => {
         it('correct simple rule', () => {
             const tokens = lexer(new StringInputStream(`var, var , var var`))
             const node = commaList(keyword(Keywords._var))(new ArrayTokenStream(tokens));
-            expect(node).toEqual(['var', 'var', 'var']);
+            expect(node.map((item : LiteralToken) => item.value)).toEqual(['var', 'var', 'var']);
         });
 
         it('complex rule', () => {
@@ -44,7 +54,7 @@ describe('parserUtils', () => {
                     )
                 )
             )(stream);
-            expect(node).toEqual([['var', 'if'], ['var', 'if', 'async']]);
+            expect(node.map((array : LiteralToken[]) => array.map((node : LiteralToken) => node.value))).toEqual([['var', 'if'], ['var', 'if', 'async']]);
             expect(stream.currentPosition()).toEqual(11);
         });
 
@@ -59,7 +69,7 @@ describe('parserUtils', () => {
             const tokens = lexer(new StringInputStream(`var, xvar, var`))
             const stream = new ArrayTokenStream(tokens);
             const node = commaList(keyword(Keywords._var))(stream);
-            expect(node).toEqual(['var']);
+            expect(extractValues(node)).toEqual(['var']);
             expect(stream.currentPosition()).toEqual(2)
         });
 
@@ -88,7 +98,7 @@ describe('parserUtils', () => {
                 keyword(Keywords._async),
                 keyword(Keywords._var),
             )(stream);
-            expect(node).toEqual('var');
+            expect(node.value).toEqual('var');
             expect(stream.currentPosition()).toEqual(1);
         });
 
@@ -197,7 +207,7 @@ describe('parserUtils', () => {
                 keyword(Keywords._async),
                 keyword(Keywords._var),
             )(stream);
-            expect(node).toEqual('var');
+            expect(node.value).toEqual('var');
             expect(stream.currentPosition()).toEqual(1);
         });
 
@@ -220,7 +230,7 @@ describe('parserUtils', () => {
                     keyword(Keywords._var),
                 ),
             )(stream);
-            expect(node).toEqual(['if', 'async', 'var']);
+            expect(extractValues(node)).toEqual(['if', 'async', 'var']);
             expect(stream.currentPosition()).toEqual(5);
         });
 
@@ -240,7 +250,7 @@ describe('parserUtils', () => {
                 sequence(keyword(Keywords._if), symbol(Symbols.plus)),
                 rule1,
             )(stream);
-            expect(node).toEqual(['if', '+', ['if', '+', 'if']]);
+            expect(extractValues(node)).toEqual(['if', '+', ['if', '+', 'if']]);
             expect(stream.currentPosition()).toEqual(9);
         });
 
@@ -263,7 +273,7 @@ describe('parserUtils', () => {
             const tokens = lexer(new StringInputStream(`var`))
             const stream = new ArrayTokenStream(tokens);
             const node = optional(keyword(Keywords._var))(stream);
-            expect(node).toEqual('var');
+            expect(node.value).toEqual('var');
             expect(stream.currentPosition()).toEqual(1);
         });
 
@@ -281,7 +291,7 @@ describe('parserUtils', () => {
             const tokens = lexer(new StringInputStream(`var if const no`))
             const stream = new ArrayTokenStream(tokens);
             const node = sequence(keyword(Keywords._var), keyword(Keywords._if), keyword(Keywords._const))(stream);
-            expect(node).toEqual(['var', 'if', 'const']);
+            expect(extractValues(node)).toEqual(['var', 'if', 'const']);
             expect(stream.currentPosition()).toEqual(5);
         });
 
@@ -318,7 +328,7 @@ describe('parserUtils', () => {
         const tokens = lexer(new StringInputStream(`**`))
         const stream = new ArrayTokenStream(tokens);
         const node = symbol(Symbols.astersik2)(stream);
-        expect(node).toEqual('**');
+        expect(node.value).toEqual('**');
         expect(stream.currentPosition()).toEqual(1);
     });
 
@@ -331,7 +341,7 @@ describe('parserUtils', () => {
             Symbols.eq2and,
             Symbols.astersik2
         )(stream);
-        expect(node).toEqual('**');
+        expect(node.value).toEqual('**');
         expect(stream.currentPosition()).toEqual(1);
     });
 
@@ -341,10 +351,10 @@ describe('parserUtils', () => {
             const stream = new ArrayTokenStream(tokens);
 
             const literal = anyLiteral(stream);
-            expect(literal).toEqual('i');
+            expect(literal.value).toEqual('i');
             noLineTerminatorHere(stream);
             const node = symbol(Symbols.plus2)(stream);
-            expect(node).toEqual('++');
+            expect(node.value).toEqual('++');
         });
 
         it('noLineTerminatorHere() with spaces', () => {
@@ -352,10 +362,10 @@ describe('parserUtils', () => {
             const stream = new ArrayTokenStream(tokens);
 
             const literal = anyLiteral(stream);
-            expect(literal).toEqual('i');
+            expect(literal.value).toEqual('i');
             noLineTerminatorHere(stream);
             const node = symbol(Symbols.plus2)(stream);
-            expect(node).toEqual('++');
+            expect(node.value).toEqual('++');
         });
 
         it('noLineTerminatorHere() with lineTerminator', () => {
@@ -363,7 +373,7 @@ describe('parserUtils', () => {
             const stream = new ArrayTokenStream(tokens);
 
             const literal = anyLiteral(stream);
-            expect(literal).toEqual('i');
+            expect(literal.value).toEqual('i');
             expect(() => {
                 noLineTerminatorHere(stream);
             }).toThrowError();
@@ -382,7 +392,7 @@ describe('parserUtils', () => {
 
             expect(node.type).toEqual(NodeType.Block);
             expect(node.blockType).toEqual(BlockType.RoundBracket);
-            expect(node.items).toEqual(["1", "2", "3", "4"]);
+            expect(extractValues(node.items)).toEqual(["1", "2", "3", "4"]);
         });
 
         it('parses curly bracket block', () => {
@@ -396,7 +406,7 @@ describe('parserUtils', () => {
 
             expect(node.type).toEqual(NodeType.Block);
             expect(node.blockType).toEqual(BlockType.CurlyBracket);
-            expect(node.items).toEqual(["1", "2", "3", "4"]);
+            expect(extractValues(node.items)).toEqual(["1", "2", "3", "4"]);
         });
 
         it('empty block', () => {
@@ -493,7 +503,7 @@ describe('parserUtils', () => {
         const value = map(sequence(
             keyword(Keywords._var),
             anyLiteral,
-        ), item => item.join('+'))(stream);
+        ), ([v1, v2]) => v1.value + "+" + v2.value)(stream);
         expect(value).toEqual('var+test');
     });
 

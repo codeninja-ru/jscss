@@ -10,5 +10,5 @@ export function isWithPosition(obj : any) : obj is ParsedSourceWithPosition {
     return obj.postion != undefined && obj.value != undefined;
 }
 
-export type TokenParser = (stream: TokenStream) => any;
+export type TokenParser<Result = any> = (stream: TokenStream) => Result;
 export type TokenParserArrayWithPosition = (stream: TokenStream) => ParsedSourceWithPosition[];

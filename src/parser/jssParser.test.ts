@@ -42,7 +42,7 @@ describe('parseJssScript()', () => {
                 {
                     type: NodeType.JssSelector,
                     items: [".className", " >", " a:hover"],
-                    position: {line: 7, col: 7},
+                    position: {line: 6, col: 1},
                 },
             ], items: [
                 {type: NodeType.Ignore, items: expect.anything()},
@@ -53,19 +53,22 @@ describe('parseJssScript()', () => {
                 {type: NodeType.JssDeclaration, prop: "font-family", value: "'Arial', sans-serif",
                  propPos: {line: 8, col: 5}, valuePos: {line: 8, col: 18}},
                 {type: NodeType.Ignore, items: expect.anything()},
-                {type: NodeType.JssDeclaration, prop: "background", value: "#fff"},
+                {type: NodeType.JssDeclaration, prop: "background", value: "#fff",
+                 propPos: {line: 10, col: 5}, valuePos: {line: 10, col: 17}},
                 {type: NodeType.Ignore, items: expect.anything()},
-                {type: NodeType.JssSpread, value: "extend(color)", position: {line: 7, col: 7}},
+                {type: NodeType.JssSpread, value: "extend(color)",
+                 valuePos: {line: 11, col: 8}},
                 {type: NodeType.Ignore, items: expect.anything()},
                 {type: NodeType.JssBlock, selectors: [
                     {
                         type: NodeType.JssSelector,
                         items: [".subClass", " +", " a:hover"],
-                        position: {line: 7, col: 7},
+                        position: {line: 13, col: 5},
                     },
                 ], items: [
                     {type: NodeType.Ignore, items: expect.anything()},
-                    {type: NodeType.JssDeclaration, prop: "color", value: "red"},
+                    {type: NodeType.JssDeclaration, prop: "color", value: "red",
+                    propPos: {line: 14, col: 9}, valuePos: {line: 14, col: 16}},
                     {type: NodeType.Ignore, items: expect.anything()},
                 ]},
                 {type: NodeType.Ignore, items: expect.anything()},
@@ -82,10 +85,12 @@ describe('parseJssScript()', () => {
                 {
                     type: NodeType.JssSelector,
                     items: ["${name}", " .className"],
+                    position: {line: 1, col: 1}
                 }
             ], items: [
             {type: NodeType.Ignore, items: expect.anything()},
-            {type: NodeType.JssDeclaration, prop: "color", value: "red"},
+                {type: NodeType.JssDeclaration, prop: "color", propPos: {line: 1, col: 22},
+                 value: "red", valuePos: {line: 1, col: 29}},
             {type: NodeType.Ignore, items: expect.anything()},
             ]}
         ]);
@@ -113,28 +118,45 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
         {
             type: NodeType.JssSelector,
             items: [".className"],
+            position: {line: 3, col: 1}
         }
     ], items: [
         {type: NodeType.Ignore, items: expect.anything()},
-        {type: NodeType.JssDeclaration, prop: "color", value: "${rgb(255,255,255)}"},
+        {type: NodeType.JssDeclaration, prop: "color", value: "${rgb(255,255,255)}",
+         propPos: {line: 4, col: 3}, valuePos: {line: 4, col: 10}},
         {type: NodeType.Ignore, items: expect.anything()},
     ]}
 ])
     });
 
     it('parses jss var declarations', () => {
-        const expectedItems = [
-            {type: NodeType.Ignore, items: expect.anything()},
-            {type: NodeType.JssDeclaration, prop: "display", value: "none"},
-            {type: NodeType.Ignore, items: expect.anything()},
-        ];
+        const expectedItems  = function(propCol : number, valueCol : number) {
+            return [
+                {type: NodeType.Ignore, items: expect.anything()},
+                {type: NodeType.JssDeclaration, prop: "display", value: "none",
+                 valuePos: { col: valueCol, line: 1},  propPos: { col: propCol, line: 1 }},
+                {type: NodeType.Ignore, items: expect.anything()},
+            ];
+        };
         parseCode(`const hidden = { display: none; }`).toEqual([
-            {type: NodeType.JssVarDeclaration, keyword: 'const', name: 'hidden', hasExport: false, items: expectedItems}
+            {type: NodeType.JssVarDeclaration, keyword: 'const', keywordPos: {line: 1, col: 1},
+             name: 'hidden', namePos: {line: 1, col: 7},
+             hasExport: false, items: expectedItems(18, 27)}
         ]);
-        parseCode(`let hidden = { display: none; }`).toEqual([{type: NodeType.JssVarDeclaration, name: 'hidden', keyword: 'let', hasExport: false, items: expectedItems}]);
-        parseCode(`var hidden = { display: none; }`).toEqual([{type: NodeType.JssVarDeclaration, name: 'hidden', keyword: 'var', hasExport: false, items: expectedItems}]);
-        parseCode(`export let hidden = { display: none; }`).toEqual([{type: NodeType.JssVarDeclaration, name: 'hidden', keyword: 'let', hasExport: true, items: expectedItems}]);
-        parseCode(`export var hidden = { display: none; }`).toEqual([{type: NodeType.JssVarDeclaration, name: 'hidden', keyword: 'var', hasExport: true, items: expectedItems}]);
-        parseCode(`export const hidden = { display: none; }`).toEqual([{type: NodeType.JssVarDeclaration, name: 'hidden', keyword: 'const', hasExport: true, items: expectedItems}]);
+        parseCode(`let hidden = { display: none; }`).toEqual([{type: NodeType.JssVarDeclaration, name: 'hidden', keyword: 'let',
+                                                               hasExport: false, items: expectedItems(16, 25),
+                                                               keywordPos: {line: 1, col: 1}, namePos: {line: 1, col:5}}]);
+        parseCode(`var hidden = { display: none; }`).toEqual([{type: NodeType.JssVarDeclaration, name: 'hidden', keyword: 'var',
+                                                               hasExport: false, items: expectedItems(16, 25),
+                                                               keywordPos: {line: 1, col: 1}, namePos: {line: 1, col:5}}]);
+        parseCode(`export let hidden = { display: none; }`).toEqual([{type: NodeType.JssVarDeclaration, name: 'hidden', keyword: 'let',
+                                                               hasExport: true, items: expectedItems(16 + 7, 25 + 7),
+                                                               keywordPos: {line: 1, col: 8}, namePos: {line: 1, col:12}, exportPos: {line: 1, col:1}}]);
+        parseCode(`export var hidden = { display: none; }`).toEqual([{type: NodeType.JssVarDeclaration, name: 'hidden', keyword: 'var',
+                                                               hasExport: true, items: expectedItems(23, 25 + 7),
+                                                               keywordPos: {line: 1, col: 8}, namePos: {line: 1, col:12}, exportPos: {line: 1, col:1}}]);
+        parseCode(`export const hidden = { display: none; }`).toEqual([{type: NodeType.JssVarDeclaration, name: 'hidden', keyword: 'const',
+                                                               hasExport: true, items: expectedItems(25, 27 + 7),
+                                                               keywordPos: {line: 1, col: 8}, namePos: {line: 1, col:14}, exportPos: {line: 1, col:1}}]);
     });
 });

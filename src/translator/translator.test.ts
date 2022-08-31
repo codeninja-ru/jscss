@@ -74,7 +74,7 @@ export _styles;`);
 ]);
     });
 
-    it('parses vars in selectors', () => {
+    fit('parses vars in selectors', () => {
         expect(evalCode(`const className = '.someClassName';
 $\{className\} .className2 {
 font-size: 10px; }`).toArray()).toEqual([

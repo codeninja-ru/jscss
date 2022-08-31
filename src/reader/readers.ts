@@ -82,6 +82,7 @@ export function makeStringReader(stream: InputStream, quatation: "'" | '"'): Rea
     const ESCAPE_SYMBOL = '\\';
     return function() {
         if (stream.peek() == quatation) {
+            const pos = stream.position();
             var result = stream.next();
             var isEscapeMode = false;
             while (!stream.isEof()) {
@@ -93,7 +94,7 @@ export function makeStringReader(stream: InputStream, quatation: "'" | '"'): Rea
                 if (!isEscapeMode && ch == quatation) {
                     return {
                         type: TokenType.String,
-                        position: stream.position(),
+                        position: pos,
                         value: result,
                     } as Token;
                 }

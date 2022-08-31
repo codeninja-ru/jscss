@@ -17,7 +17,7 @@ export interface TokenStream {
 
 export interface FlushableTokenStream extends TokenStream {
     flush() : void;
-    sourceFragment() : SourceFragment;
+    sourceFragment(fromPos? : number) : SourceFragment;
     currentTokenPosition() : Position;
 }
 
@@ -102,9 +102,9 @@ export class GoAheadTokenStream implements FlushableTokenStream {
         return this.parent.take(this.pos).position;
     }
 
-    sourceFragment() : SourceFragment {
+    sourceFragment(fromPos? : number) : SourceFragment {
         const tokens = [];
-        for (let i = this.startPos; i < this.pos; i++) {
+        for (let i = fromPos ? fromPos : this.startPos; i < this.pos; i++) {
             tokens.push(this.parent.take(i));
         }
 

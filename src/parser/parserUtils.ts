@@ -37,7 +37,8 @@ export function noSpacesHere(stream : TokenStream) : void {
     }
 }
 
-export function keyword(keyword: Keyword, peekFn : TokenStreamReader = peekAndSkipSpaces): TokenParser {
+export function keyword(keyword: Keyword,
+                        peekFn : TokenStreamReader = peekAndSkipSpaces): TokenParser<LiteralToken> {
     return function(stream: TokenStream) : LiteralToken {
         const token = peekFn(stream);
         if (token.type == TokenType.Literal && keyword.equal(token)) {
@@ -88,7 +89,7 @@ export function rawValue(stream : TokenStream | FlushableTokenStream) : SourceFr
     }
 }
 
-export function returnRawValueWithPosition(parser : TokenParser) : TokenParser {
+export function returnRawValueWithPosition(parser : TokenParser) : TokenParser<SourceFragment> {
     return function(stream: TokenStream) : SourceFragment {
         const childStream = new GoAheadTokenStream(stream);
         let result;
@@ -104,7 +105,7 @@ export function returnRawValueWithPosition(parser : TokenParser) : TokenParser {
     };
 }
 
-export function returnRawValue(parser : TokenParser) : TokenParser {
+export function returnRawValue(parser : TokenParser) : TokenParser<string> {
     return function(stream: TokenStream) : string {
         const childStream = new GoAheadTokenStream(stream);
         let result;
@@ -120,7 +121,9 @@ export function returnRawValue(parser : TokenParser) : TokenParser {
     };
 }
 
-export function list(parser: TokenParser, separator: TokenParser, canListBeEmpty : boolean = false) : TokenParser {
+export function list(parser: TokenParser,
+                     separator: TokenParser,
+                     canListBeEmpty : boolean = false) : TokenParser {
     return function(stream: TokenStream) : ReturnType<TokenParser> {
         let result = [];
         while (!stream.eof()) {
@@ -147,7 +150,8 @@ export type NamedTokenParserResult = {
     [name: string] : ReturnType<TokenParser>
 };
 
-export function sequenceName(name: string, ...parsers: TokenParser[]) : TokenParser {
+export function sequenceName(name: string,
+                             ...parsers: TokenParser[]) : TokenParser<NamedTokenParserResult> {
     return function(stream : TokenStream) : NamedTokenParserResult {
         return {
             [name]: sequence(...parsers)(stream),
@@ -155,7 +159,7 @@ export function sequenceName(name: string, ...parsers: TokenParser[]) : TokenPar
     };
 }
 
-export function sequence(...parsers: TokenParser[]) : TokenParser {
+export function sequence(...parsers: TokenParser[]) : TokenParser<any[]> {
     return function(stream: TokenStream) : ReturnType<TokenParser>[] {
         const parserStream = new GoAheadTokenStream(stream);
         const result = [];
@@ -183,14 +187,20 @@ export function sequenceWithPosition(...parsers: TokenParser[]) : TokenParserArr
         const result = [] as ParsedSourceWithPosition[];
         for (var i = 0; i < parsers.length; i++) {
             try {
+                const pos = parserStream.currentPosition();
                 const parsedResult = parsers[i](parserStream);
                 if (isToken(parsedResult)) {
                     result.push({
                         value: parsedResult.value,
                         position: parsedResult.position,
                     });
+                } else if (parsedResult === undefined) { // option() can return undefined for example
+                    result.push({
+                        value: undefined,
+                        position: {line: 0, col: 0},
+                    });
                 } else {
-                    const sourceFragment = new LeftTrimSourceFragment(parserStream.sourceFragment());
+                    const sourceFragment = new LeftTrimSourceFragment(parserStream.sourceFragment(pos));
                     result.push({
                         value: parsedResult,
                         position: sourceFragment.position,
@@ -304,7 +314,7 @@ export function optional(parser: TokenParser) : TokenParser {
 interface SymbolArray {
     [idx: string] : true;
 }
-export function oneOfSymbols(...chars: SyntaxSymbol[]) : TokenParser {
+export function oneOfSymbols(...chars: SyntaxSymbol[]) : TokenParser<SymbolToken> {
     let symbols = {} as SymbolArray;
     chars.forEach((ch) => symbols[ch.name] = true);
 
@@ -354,7 +364,8 @@ export function dollarSign(stream: TokenStream) : LiteralToken {
     throw new ParserError(`dollar ($) sign is expected here`, token);
 }
 
-export function symbol(ch: SyntaxSymbol, peekFn : TokenStreamReader = peekAndSkipSpaces) : TokenParser {
+export function symbol(ch: SyntaxSymbol,
+                       peekFn : TokenStreamReader = peekAndSkipSpaces) : TokenParser<SymbolToken> {
     return function(stream: TokenStream) : SymbolToken {
         const token = peekFn(stream);
         if (token.type == TokenType.Symbol && ch.equal(token)) {
@@ -449,8 +460,9 @@ export function loop(parser : TokenParser) : TokenParser {
             const result = optional(parser)(stream);
             if (result === undefined) {
                 break;
+            } else {
+                results.push(result);
             }
-            results.push(result);
         }
 
         return results;

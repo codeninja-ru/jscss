@@ -148,12 +148,12 @@ function jssVariableStatement(stream : TokenStream) : JssVarDeclarationNode {
     return {
         type: NodeType.JssVarDeclaration,
         keyword: decKeyword.value,
-        keywrodPos: decKeyword.position,
+        keywordPos: decKeyword.position,
         name: varName.value,
         namePos: varName.position,
         items: block.value.items,
-        hasExport: exportKeyword !== undefined,
-        exportPos: exportKeyword?.position,
+        hasExport: exportKeyword.value !== undefined,
+        ...(exportKeyword.value !== undefined ? { exportPos: exportKeyword.position } : {})
     };
 }
 

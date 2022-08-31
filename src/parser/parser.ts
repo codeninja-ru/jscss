@@ -242,15 +242,15 @@ function literal(stream : TokenStream) : void {
     )(stream);
 }
 
-function generatorExpression(stream : TokenStream) : void {
+function generatorExpression(stream : TokenStream) : any[] {
     return sequence(keyword(Keywords._function), symbol(Symbols.astersik), identifier, roundBracket, lazyBlock)(stream);
 }
 
-function asyncFunctionExpression(stream : TokenStream) : void {
+function asyncFunctionExpression(stream : TokenStream) : any[] {
     return sequence(keyword(Keywords._async), keyword(Keywords._function), identifier, roundBracket, lazyBlock)(stream);
 }
 
-function asyncGeneratorExpression(stream : TokenStream) : void {
+function asyncGeneratorExpression(stream : TokenStream) : any[] {
     return sequence(keyword(Keywords._async), keyword(Keywords._function), symbol(Symbols.dot), identifier, roundBracket, lazyBlock)(stream);
 }
 
@@ -317,12 +317,12 @@ function identifierName(stream : TokenStream) : LiteralToken {
 }
 
 export function identifier(stream: TokenStream) : string {
-    const bindingIdentifier = identifierName(stream).value;
-    if (bindingIdentifier in ReservedWords) {
+    const bindingIdentifier = identifierName(stream);
+    if (bindingIdentifier.value in ReservedWords) {
         throw new Error(`${bindingIdentifier} is a reseved word`);
     }
 
-    return bindingIdentifier;
+    return bindingIdentifier.value;
 }
 
 function bindingIdentifier(stream : TokenStream) : Node {

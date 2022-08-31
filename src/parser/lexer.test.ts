@@ -35,6 +35,7 @@ const CSS_BLOCK_CONTENT = `
     font-size: \${getSize()}px;
     color: white;
     background: #fff;
+    font-family: 'Arial', sans-serif;
     .childClassName {
         color: red;
     }
@@ -87,6 +88,8 @@ describe('parseStream()', () => {
             makeLiteralToken('color'), col(), space(), makeLiteralToken('white'), semcol(),
             anySpace(),
             makeLiteralToken('background'), col(), space(), makeSymbolToken('#'), makeLiteralToken('fff'), semcol(),
+            anySpace(),
+            makeLiteralToken('font-family'), col(), space(), makeStringToken("'Arial'"), comma, space(), makeLiteralToken('sans-serif'), semcol(),
             anySpace(),
             makeSymbolToken('.'), makeLiteralToken('childClassName'), space(), makeLazyBlockToken(expect.anything()),
             anySpace(),
