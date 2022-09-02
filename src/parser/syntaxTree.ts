@@ -120,7 +120,7 @@ export interface CssBlockNode extends Node {
 }
 
 export type JssBlockItemNode = CssDeclarationNode | JssDeclarationNode | IgnoreNode | JssBlockNode | JssSpreadNode;
-export interface JssBlockNode extends Node {
+export interface JssBlockNode extends Node, SourceMappedNode {
     type: NodeType.JssBlock,
     readonly selectors: JssSelectorNode[],
     readonly items: JssBlockItemNode[],

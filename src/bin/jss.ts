@@ -37,7 +37,11 @@ if (infilepath == outfilepath) {
 }
 
 const inStr = fs.readFileSync(infilepath).toString() ;
-const outStr = translator(parseJssScript(ArrayTokenStream.fromString(inStr)));
+const outStr = translator(
+    parseJssScript(ArrayTokenStream.fromString(inStr)),
+    path.basename(infilepath),
+    path.basename(outfilepath)
+);
 
 console.log(outStr);
 console.log(evalCode(outStr.value));

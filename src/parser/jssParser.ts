@@ -172,6 +172,7 @@ export function rulesetStatement(stream : TokenStream) : JssBlockNode {
     return {
         type: NodeType.JssBlock,
         selectors,
+        position: selectors[0].position,
         items: cssBlock.items,
     };
 }

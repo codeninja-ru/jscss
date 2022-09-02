@@ -44,7 +44,9 @@ describe('parseJssScript()', () => {
                     items: [".className", " >", " a:hover"],
                     position: {line: 6, col: 1},
                 },
-            ], items: [
+            ],
+             position: {line: 6, col: 1},
+             items: [
                 {type: NodeType.Ignore, items: expect.anything()},
                 {type: NodeType.JssDeclaration,
                  prop: "color", propPos: {line: 7, col: 5},
@@ -70,7 +72,9 @@ describe('parseJssScript()', () => {
                     {type: NodeType.JssDeclaration, prop: "color", value: "red",
                     propPos: {line: 14, col: 9}, valuePos: {line: 14, col: 16}},
                     {type: NodeType.Ignore, items: expect.anything()},
-                ]},
+                ],
+                 position: {line: 13, col: 5},
+                },
                 {type: NodeType.Ignore, items: expect.anything()},
                 ]
             }
@@ -92,7 +96,9 @@ describe('parseJssScript()', () => {
                 {type: NodeType.JssDeclaration, prop: "color", propPos: {line: 1, col: 22},
                  value: "red", valuePos: {line: 1, col: 29}},
             {type: NodeType.Ignore, items: expect.anything()},
-            ]}
+            ],
+              position: {line: 1, col: 1}
+            }
         ]);
     });
 
@@ -125,7 +131,9 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
         {type: NodeType.JssDeclaration, prop: "color", value: "${rgb(255,255,255)}",
          propPos: {line: 4, col: 3}, valuePos: {line: 4, col: 10}},
         {type: NodeType.Ignore, items: expect.anything()},
-    ]}
+    ],
+      position: {line: 3, col: 1}
+    }
 ])
     });
 

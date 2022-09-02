@@ -1,5 +1,6 @@
 import { CssDeclarationNode, CssImportNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssNode, JssSelectorNode, JssSpreadNode, JssVarDeclarationNode, NodeType, SyntaxTree } from 'parser/syntaxTree';
 import { SourceNode } from 'source-map';
+import { SourceMappingUrl } from './sourceMappingUrl';
 
 const EXPORT_VAR_NAME = '_styles';
 
@@ -12,12 +13,12 @@ export interface GeneratedCode {
     sourceMap: string;
 }
 
-function cssSelectors2js(selectors : JssSelectorNode[]) : SourceNode {
+function cssSelectors2js(selectors : JssSelectorNode[], fileName : string) : SourceNode {
     const chunks = ['`'] as (string | SourceNode)[];
     selectors.forEach((item, key) => {
         chunks.push(new SourceNode(item.position.line,
                                       item.position.col,
-                                      null,
+                                      fileName,
                                       item.items.map(quoteEscape).join('')
                                      ));
         if (key < selectors.length - 1) {
@@ -45,58 +46,58 @@ function tag(strings : TemplateStringsArray, ...params : TemplateParams) : Sourc
     return new SourceNode(null, null, null, result);
 }
 
-function cssDeclration2SourceNode(item : CssDeclarationNode) : SourceNode {
+function cssDeclration2SourceNode(item : CssDeclarationNode, fileName : string) : SourceNode {
     const prop = new SourceNode(item.propPos.line,
                                 item.propPos.col,
-                                null,
+                                fileName,
                                 quoteEscape(item.prop));
     const value = new SourceNode(item.valuePos.line,
                                  item.valuePos.col,
-                                 null,
+                                 fileName,
                                  quoteEscape(item.value) + item.prio ? " " + item.prio : "");
     const prio = item.prioPos ? new SourceNode(item.prioPos.line,
                                                item.prioPos.col,
-                                               null,
+                                               fileName,
                                                item.prio) : null;
     return tag`self.push("${prop}", "${value}${prio ? " " : ""}${prio ? prio : ""}");\n`;
 }
 
-function jssDeclaration2SourceNode(item : JssDeclarationNode) : SourceNode {
+function jssDeclaration2SourceNode(item : JssDeclarationNode, fileName : string) : SourceNode {
     //NOTE we do not parse content of the blocks here so an syntax error in the block can break the final code
 
     const prop = new SourceNode(item.propPos.line,
                                 item.propPos.col,
-                                null,
+                                fileName,
                                 quoteEscape(item.prop));
     const value = new SourceNode(item.valuePos.line,
                                  item.valuePos.col,
-                                 null,
+                                 fileName,
                                  item.value);
     return tag`self.push(\`${prop}\`, \`${value}\`);\n`;
 }
 
-function jssSpread2SourceNode(item : JssSpreadNode) : SourceNode {
+function jssSpread2SourceNode(item : JssSpreadNode, fileName : string) : SourceNode {
     const spread = new SourceNode(item.valuePos.line,
                                   item.valuePos.col,
-                                  null,
+                                  fileName,
                                   item.value);
     return tag`self.extend(${spread});\n`;
 }
 
-function declarations2js(blockList : JssBlockItemNode[], bindName = 'self') : SourceNode {
+function declarations2js(blockList : JssBlockItemNode[], fileName : string, bindName = 'self') : SourceNode {
     const code = blockList
         .map((item) => {
             switch(item.type) {
                 case NodeType.CssDeclaration:
-                    return cssDeclration2SourceNode(item);
+                    return cssDeclration2SourceNode(item, fileName);
                 case NodeType.JssDeclaration:
-                    return jssDeclaration2SourceNode(item);
+                    return jssDeclaration2SourceNode(item, fileName);
                 case NodeType.Ignore:
                     return '';
                 case NodeType.JssBlock:
-                    return tag`self.addChild(${jssBlock2js(item, bindName)})`;
+                    return tag`self.addChild(${jssBlock2js(item, fileName, bindName)})`;
                 case NodeType.JssSpread:
-                    return jssSpread2SourceNode(item);
+                    return jssSpread2SourceNode(item, fileName);
                 default:
                     throw new Error(`unsupported block item ${JSON.stringify(item)}`);
             }
@@ -107,97 +108,97 @@ function declarations2js(blockList : JssBlockItemNode[], bindName = 'self') : So
                           code as SourceNode[]);
 }
 
-function jssBlock2js(node : JssBlockNode, bindName = 'self') : SourceNode {
+function jssBlock2js(node : JssBlockNode, fileName: string, bindName = 'self') : SourceNode {
     return tag`(function() {
-var self = new JssStyleBlock(${cssSelectors2js(node.selectors)});
-${declarations2js(node.items)}
+var self = new JssStyleBlock(${cssSelectors2js(node.selectors, fileName)});
+${declarations2js(node.items, fileName)}
 return self;
 }).bind(${bindName})()`;
 }
 
-function jssVarBlock2js(node : JssVarDeclarationNode, bindName = 'caller') : SourceNode {
+function jssVarBlock2js(node : JssVarDeclarationNode, fileName : string, bindName = 'caller') : SourceNode {
     const keyword = new SourceNode(node.keywordPos.line,
                                    node.keywordPos.col,
-                                   null,
+                                   fileName,
                                    node.keyword);
     const varName = new SourceNode(node.namePos.line,
                                    node.namePos.col,
-                                   null,
+                                   fileName,
                                    node.name);
-    return new SourceNode(null,
-                          null,
-                          null,
+    return new SourceNode(node.exportPos !== undefined ? node.exportPos.line : node.keywordPos.line,
+                          node.exportPos !== undefined ? node.exportPos.col : node.keywordPos.col,
+                          fileName,
                           `${node.hasExport ? 'export ' : ''}${keyword} ${varName} = new (class extends JssBlockCaller {
 call(${bindName}) {
 var self = new JssBlock();
-${declarations2js(node.items, bindName)}
+(function() {
+${declarations2js(node.items, fileName, bindName)}
+}).bind(${bindName})();
 
 return self;
 }
 })();`);
 }
 
-function insertSourceCssImport(node : CssImportNode) : SourceNode {
+function insertSourceCssImport(node : CssImportNode, fileName : string) : SourceNode {
     return new SourceNode(
         node.position.line,
         node.position.col,
-        null,
+        fileName,
         `@import ${quoteEscape(node.path)};`);
 }
 
-function translateNode(node : JssNode) : SourceNode {
+function translateNode(node : JssNode, fileName : string) : SourceNode {
     switch(node.type) {
         case NodeType.Ignore:
             return new SourceNode();
         case NodeType.Raw:
             return new SourceNode(node.position.line,
                                   node.position.col,
-                                  null, //TODO add file name
-                                  node.value);
+                                  fileName,
+                                  [node.value, "\n"]);
         case NodeType.JssBlock:
-            return new SourceNode(null,
-                                  null,
-                                  null, //TODO add file name
-                                  `${EXPORT_VAR_NAME}.insertBlock(${jssBlock2js(node)});\n`);
+            return new SourceNode(node.position.line,
+                                  node.position.col,
+                                  fileName,
+                                  `${EXPORT_VAR_NAME}.insertBlock(${jssBlock2js(node, fileName)});\n`);
         case NodeType.JssSelector:
             return new SourceNode(node.position.line,
                                   node.position.col,
-                                  null,
+                                  fileName,
                                   node.items.join(','));
         case NodeType.CssImport:
-            return new SourceNode(null,
-                                 null,
-                                 null,
-                                 `${EXPORT_VAR_NAME}.insertCss("${insertSourceCssImport(node)}");\n`);
+            return new SourceNode(node.position.line,
+                                 node.position.col,
+                                 fileName,
+                                 `${EXPORT_VAR_NAME}.insertCss("${insertSourceCssImport(node, fileName)}");\n`);
         case NodeType.JssVarDeclaration:
-            return jssVarBlock2js(node);
+            return jssVarBlock2js(node, fileName);
         case NodeType.Comment:
         default:
             throw new Error(`unsupported node ${JSON.stringify(node)}`);
     }
 }
 
-export function translator(tree : SyntaxTree) : GeneratedCode {
-    const result = tree.map(translateNode);
-    console.log(tree);
-    console.log(result);
+export function translator(tree : SyntaxTree, sourceFileName : string, resultFileName : string) : GeneratedCode {
+    const result = tree.map((node) => translateNode(node, sourceFileName));
     const source = new SourceNode(null, null, null, [
         `// this code is autogenerated, do not edit it
 var ${EXPORT_VAR_NAME} = ${EXPORT_VAR_NAME} ? ${EXPORT_VAR_NAME} : new JssStylesheet();
-var self = null;\n`,
+var self = null;\n\n`,
         //...result,
-        result[0],
-        `${result.join('')}
-
-export ${EXPORT_VAR_NAME};`
+        ...result,
+        `\nexport ${EXPORT_VAR_NAME};`
     ]);
 
     const {code, map} = source.toStringWithSourceMap({
-        file: 'result.css', // TODO filename
+        file: resultFileName,
     });
 
+    const sourceMappingUrl = new SourceMappingUrl(map);
+
     return {
-        value: code,
+        value: code + '\n//# sourceMappingURL=' + sourceMappingUrl.toUrl(),
         sourceMap: map.toString(),
     };
 }
