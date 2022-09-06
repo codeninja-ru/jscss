@@ -25,17 +25,12 @@ export interface GeneratedCode {
 }
 
 function cssSelectors2js(selectors : JssSelectorNode[], fileName : string) : SourceNode {
-    const chunks = ['`'] as (string | SourceNode)[];
-    selectors.forEach((item, key) => {
-        chunks.push(makeSourceNode(item.position,
-                                      fileName,
-                                      item.items.map(quoteEscape).join('')
-                                     ));
-        if (key < selectors.length - 1) {
-            chunks.push(',');
-        }
+    const chunks = makeNullSourceNode('`');
+    selectors.forEach((item) => {
+        const selector = item.items.map(quoteEscape).join('');
+        chunks.add(makeSourceNode(item.position, fileName, selector));
     });
-    chunks.push('`');
+    chunks.add('`');
     return makeNullSourceNode(chunks);
 }
 
@@ -46,7 +41,16 @@ function tag(strings : TemplateStringsArray, ...params : TemplateParams) : Sourc
     for (var i = 0; i < strings.length; i++) {
         result.push(strings[i]);
         if (params[i]) {
-            result.push(params[i]);
+            if (typeof params[i] == 'string') {
+                result.push(params[i]);
+            } else {
+                const node = (params[i] as SourceNode);
+                if (node.line == null) {
+                    node.children.forEach((item) => result.push(item));
+                } else {
+                    result.push(params[i]);
+                }
+            }
         }
     }
 
@@ -115,15 +119,16 @@ return self;
 }
 
 function jssVarBlock2js(node : JssVarDeclarationNode, fileName : string, bindName = 'caller') : SourceNode {
+    const exportSourceNode = node.hasExport && node.exportPos ? makeSourceNode(node.exportPos,
+                                                             fileName,
+                                                                               'export ') : null;
     const keyword = makeSourceNode(node.keywordPos,
                                    fileName,
                                    node.keyword);
     const varName = makeSourceNode(node.namePos,
                                    fileName,
                                    node.name);
-    return makeSourceNode(node.exportPos !== undefined ? node.exportPos : node.keywordPos,
-                          fileName,
-                          `${node.hasExport ? 'export ' : ''}${keyword} ${varName} = new (class extends JssBlockCaller {
+    return tag`${exportSourceNode ? exportSourceNode : ''}${keyword} ${varName} = new (class extends JssBlockCaller {
 call(${bindName}) {
 var self = new JssBlock();
 (function() {
@@ -132,7 +137,7 @@ ${declarations2js(node.items, fileName, bindName)}
 
 return self;
 }
-})();`);
+})();`;
 }
 
 function insertSourceCssImport(node : CssImportNode, fileName : string) : SourceNode {
@@ -151,7 +156,7 @@ function translateNode(node : JssNode, fileName : string) : SourceNode {
                                   fileName,
                                   [node.value, "\n"]);
         case NodeType.JssBlock:
-            return makeNullSourceNode(`${EXPORT_VAR_NAME}.insertBlock(${jssBlock2js(node, fileName)});\n`);
+            return tag`${EXPORT_VAR_NAME}.insertBlock(${jssBlock2js(node, fileName)});\n`;
         case NodeType.JssSelector:
             return makeSourceNode(node.position,
                                   fileName,
@@ -159,7 +164,7 @@ function translateNode(node : JssNode, fileName : string) : SourceNode {
         case NodeType.CssImport:
             return makeSourceNode(node.position,
                                  fileName,
-                                 `${EXPORT_VAR_NAME}.insertCss("${insertSourceCssImport(node, fileName)}");\n`);
+                                 tag`${EXPORT_VAR_NAME}.insertCss("${insertSourceCssImport(node, fileName)}");\n`);
         case NodeType.JssVarDeclaration:
             return jssVarBlock2js(node, fileName);
         case NodeType.Comment:

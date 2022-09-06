@@ -9,7 +9,11 @@ import { evalCode } from './eval';
 const [,execname, infile, outfile] = argv;
 
 function printUsage() {
-console.log(`Usage: ${path.basename(execname)} [options] filename [outputfile]\n`);
+console.log(`Usage: ${path.basename(execname)} [options] filename [outputfile]
+
+options:
+ -js prints translated javascript
+`);
 }
 
 if (infile === undefined) {
@@ -43,5 +47,5 @@ const outStr = translator(
     path.basename(outfilepath)
 );
 
-console.log(outStr);
+console.log(outStr.value);
 console.log(evalCode(outStr.value));
