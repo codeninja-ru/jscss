@@ -185,7 +185,7 @@ var self = null;\n\n`,
     ]);
 
     const {code, map} = source.toStringWithSourceMap({
-        file: resultFileName,
+        file: sourceFileName,
     });
 
     const sourceMappingUrl = new SourceMappingUrl(map);

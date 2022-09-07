@@ -6,6 +6,9 @@ import { parseJssScript } from 'parser/jssParser';
 import { ArrayTokenStream } from 'parser/tokenStream';
 import { evalCode } from './eval';
 
+// --enable-source-maps doesn't work by unkown reason
+import 'source-map-support/register';
+
 const [,execname, infile, outfile] = argv;
 
 function printUsage() {
@@ -41,11 +44,13 @@ if (infilepath == outfilepath) {
 }
 
 const inStr = fs.readFileSync(infilepath).toString() ;
+const resultFileName = path.basename(outfilepath);
+const inputFileName = path.basename(infilepath);
 const outStr = translator(
     parseJssScript(ArrayTokenStream.fromString(inStr)),
-    path.basename(infilepath),
-    path.basename(outfilepath)
+    inputFileName,
+    resultFileName,
 );
 
-console.log(outStr.value);
-console.log(evalCode(outStr.value));
+console.log(outStr);
+console.log(evalCode(outStr.value, inputFileName));
