@@ -52,5 +52,8 @@ const outStr = translator(
     resultFileName,
 );
 
-console.log(outStr);
-console.log(evalCode(outStr.value, inputFileName));
+evalCode(outStr, inputFileName).then((result) => {
+    console.log(result.output);
+}).catch(() => {
+    process.exit(1);
+})
