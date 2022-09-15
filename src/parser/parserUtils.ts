@@ -92,14 +92,9 @@ export function rawValue(stream : TokenStream | FlushableTokenStream) : SourceFr
 export function returnRawValueWithPosition(parser : TokenParser) : TokenParser<SourceFragment> {
     return function(stream: TokenStream) : SourceFragment {
         const childStream = new GoAheadTokenStream(stream);
-        let result;
-        try {
-            parser(childStream);
-            result = new LeftTrimSourceFragment(childStream.sourceFragment());
-            childStream.flush();
-        } catch(e) {
-            throw e;
-        }
+        parser(childStream);
+        const result = new LeftTrimSourceFragment(childStream.sourceFragment());
+        childStream.flush();
 
         return result;
     };
@@ -108,14 +103,9 @@ export function returnRawValueWithPosition(parser : TokenParser) : TokenParser<S
 export function returnRawValue(parser : TokenParser) : TokenParser<string> {
     return function(stream: TokenStream) : string {
         const childStream = new GoAheadTokenStream(stream);
-        let result;
-        try {
-            parser(childStream);
-            result = childStream.sourceFragment();
-            childStream.flush();
-        } catch(e) {
-            throw e;
-        }
+        parser(childStream);
+        const result = childStream.sourceFragment();
+        childStream.flush();
 
         return result.value;
     };

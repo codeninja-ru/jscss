@@ -26,6 +26,7 @@ export const Symbols = {
     colon: new SyntaxSymbol(':'),
     semicolon: new SyntaxSymbol(';'),
     div: new SyntaxSymbol('/'),
+    backslash: new SyntaxSymbol('\\'),
     percent: new SyntaxSymbol('%'),
     numero: new SyntaxSymbol('#'),
 

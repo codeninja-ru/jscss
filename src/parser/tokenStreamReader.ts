@@ -1,4 +1,5 @@
 import { Token, TokenType } from "token";
+import { UnexpectedEndError } from "./parserError";
 import { TokenStream } from "./tokenStream";
 
 export type TokenStreamReader = (stream: TokenStream) => Token;
@@ -32,7 +33,7 @@ export function isSpaceOrComment(token : Token) : boolean {
 
 export function peekNextToken(stream : TokenStream) : Token {
     if (stream.eof()) {
-        throw new Error(`end of the file`);
+        throw new UnexpectedEndError(stream);
     }
 
     return stream.next();
@@ -48,7 +49,7 @@ export function peekAndSkipSpaces(stream: TokenStream) : Token {
         }
     }
 
-    throw new Error(`end of the file`);
+    throw new UnexpectedEndError(stream);
 }
 
 export function peekNoLineTerminatorHere(stream: TokenStream) : Token {
@@ -66,5 +67,5 @@ export function peekNoLineTerminatorHere(stream: TokenStream) : Token {
         }
     }
 
-    throw new Error(`end of the file`);
+    throw new UnexpectedEndError(stream);
 };

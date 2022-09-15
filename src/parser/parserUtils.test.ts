@@ -330,6 +330,12 @@ describe('parserUtils', () => {
         const node = symbol(Symbols.astersik2)(stream);
         expect(node.value).toEqual('**');
         expect(stream.currentPosition()).toEqual(1);
+
+        expect(symbol(Symbols.minus2)(ArrayTokenStream.fromString('--'))).toEqual({
+            type: TokenType.Symbol,
+            value: '--',
+            position: {line: 1, col: 1},
+        });
     });
 
     it('oneOfSymbols()', () => {
