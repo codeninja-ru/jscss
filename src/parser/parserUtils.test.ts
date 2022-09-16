@@ -153,6 +153,29 @@ describe('parserUtils', () => {
             expect(t).toThrowError('(1:5) : literal is expected');
         });
 
+        it('throws a correct error for an empty stream', () => {
+            expect(() => firstOf(
+                keyword(Keywords._var),
+                sequence(symbol(Symbols.minus), noSpacesHere, anyLiteral, anyLiteral),
+            )(ArrayTokenStream.fromString('-js'))).toThrowError('(1:2) : Unexpected end of the stream');
+
+            expect(() => firstOf(
+                keyword(Keywords._var),
+                sequence(optional(symbol(Symbols.minus)), noSpacesHere, anyLiteral, anyLiteral),
+            )(ArrayTokenStream.fromString('-js'))).toThrowError('(1:2) : Unexpected end of the stream');
+
+            expect(() => firstOf(
+                keyword(Keywords._var),
+                sequence(optional(symbol(Symbols.minus)), noSpacesHere, anyLiteral, anyLiteral),
+            )(ArrayTokenStream.fromString(''))).toThrowError('(0:0) : Unexpected end of the stream');
+
+            debugger;
+            expect(() => firstOf(
+                keyword(Keywords._var),
+                anyLiteral,
+            )(ArrayTokenStream.fromString(''))).toThrowError('(0:0) : Unexpected end of the stream');
+        });
+
 
     });
 

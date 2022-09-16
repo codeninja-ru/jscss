@@ -1,5 +1,5 @@
 import { Symbols } from "symbols";
-import { ParserError, UnexpectedEndError } from "./parserError";
+import { ParserError, SequenceError, UnexpectedEndError } from "./parserError";
 import { anyLiteral, anyString, firstOf, leftHandRecurciveRule, map, noSpacesHere, oneOfSymbols, optional, returnRawValue, sequence, symbol } from "./parserUtils";
 import { TokenParser } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
@@ -14,9 +14,10 @@ export enum ArgNodeType {
 
     // command modifiers
     Js,
-}
 
-export type CommandArgNode = InputAndOutputArgNode | HelpArgNode | NothginArgNode | VersionArgNode;
+    CommandError,
+}
+export type CommandArgNode = InputAndOutputArgNode | HelpArgNode | NothginArgNode | VersionArgNode | CommandErrorArgNode;
 
 interface ArgNode {
     readonly type: ArgNodeType;
@@ -39,6 +40,11 @@ export interface NothginArgNode extends ArgNode {
 
 export interface VersionArgNode extends ArgNode {
     readonly type: ArgNodeType.Version;
+}
+
+export interface CommandErrorArgNode extends ArgNode {
+    readonly type: ArgNodeType.CommandError;
+    readonly message: string;
 }
 
 /**
@@ -203,19 +209,43 @@ function nothing(stream : TokenStream) : NothginArgNode {
         };
     }
 
-    throw new Error('nothing is exprected');
+    throw new Error('nothing is expected');
 }
 
+function processError(e : Error) : CommandErrorArgNode {
+    if (e instanceof UnexpectedEndError) {
+        return {
+            type: ArgNodeType.CommandError,
+            message: 'invalid command'
+        };
+    } else if (e instanceof ParserError) {
+        return {
+            type: ArgNodeType.CommandError,
+            message: 'unrecognized command'
+        };
+    } else if (e instanceof SequenceError) {
+        return processError(e.cause);
+    } else {
+        return {
+            type: ArgNodeType.CommandError,
+            message: e.message,
+        };
+    }
+}
 
 export function parseArgsStatement(stream : TokenStream) : CommandArgNode {
-    const node = firstOf(
-        nothing,
-        helpOption,
-        versionOption,
-        readFileAndWrite,
-    )(stream);
+    try {
+        const node = firstOf(
+            nothing,
+            helpOption,
+            versionOption,
+            readFileAndWrite,
+        )(stream);
 
-    endOfTheSteam(stream);
+        endOfTheSteam(stream);
 
-    return node;
+        return node;
+    } catch(e) {
+        return processError(e);
+    }
 }

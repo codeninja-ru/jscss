@@ -28,9 +28,12 @@ export class BlockParserError extends Error {
  * error in the middle of the sequence
  * */
 export class SequenceError extends Error {
+    public cause: Error;
     constructor(error : ParserError) {
-        // @ts-ignore
-        super(error.message, {cause: error});
+        // Error.prototype.cause has been avaliable since ecma-262 (2022)
+        //super(error.message, {cause: error}); // TODO uncomment if switch to esnext
+        super(error.message);
+        this.cause = error;
     }
 }
 

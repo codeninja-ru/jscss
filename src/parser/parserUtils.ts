@@ -278,8 +278,12 @@ export function firstOf(...parsers: TokenParser[]) : TokenParser {
         if (sequenceErrors.length > 0) { //TODO the array is not needed here
             throw sequenceErrors[0];
         } else {
-            const token = stream.peek();
-            throw new ParserError(`unknown statement "${token.value}"`, token);
+            if (stream.eof()) {
+                throw new UnexpectedEndError(stream);
+            } else {
+                const token = stream.peek();
+                throw new ParserError(`unknown statement "${token.value}"`, token);
+            }
         }
     };
 }

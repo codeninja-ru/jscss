@@ -16,6 +16,6 @@ build: clean compile rollup
 test: build
 	$(JEST)
 
-debug:
+debug: build
 	@echo "open chrome://inspect"
 	node --inspect-brk $(JEST) --runInBand

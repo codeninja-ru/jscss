@@ -1,6 +1,8 @@
+#!/usr/bin/env node
+
 import { argLexer } from 'argLexer';
 import fs from 'fs';
-import { ArgNodeType, InputAndOutputArgNode, parseArgsStatement } from 'parser/argParser';
+import { ArgNodeType, CommandErrorArgNode, InputAndOutputArgNode, parseArgsStatement } from 'parser/argParser';
 import { parseJssScript } from 'parser/jssParser';
 import { ArrayTokenStream } from 'parser/tokenStream';
 import path from 'path';
@@ -27,8 +29,7 @@ options:
 
 function processInput(node : InputAndOutputArgNode) {
     if (!fs.existsSync(node.inputFile)) {
-        printUsage();
-        console.error(`filename ${node.inputFile} is not found`)
+        console.error(`\nfilename ${node.inputFile} is not found`)
         process.exit(1);
     }
 
@@ -76,6 +77,12 @@ function printVersion() {
     console.log('Version: 0.0');
 }
 
+function printCommandError(node : CommandErrorArgNode) {
+    console.log(node.message);
+    console.log('\nuse -h or --help to see the manual');
+    process.exit(1);
+}
+
 function processCmdCommand() {
     const node = parseArgsStatement(new ArrayTokenStream(argLexer(new ProcessArgsInputStream())))
 
@@ -85,6 +92,9 @@ function processCmdCommand() {
             break;
         case ArgNodeType.Version:
             printVersion();
+            break;
+        case ArgNodeType.CommandError:
+            printCommandError(node);
             break;
         case ArgNodeType.Help:
         case ArgNodeType.Nothing:

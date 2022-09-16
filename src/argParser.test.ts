@@ -19,8 +19,14 @@ describe('argParser', () => {
         expect(parse(" -h ")).toEqual({
             type: ArgNodeType.Help
         });
-        expect(() => parse(" -h wrong")).toThrowError('unrecognized input "wrong"');
-        expect(() => parse("--help wrong")).toThrowError('unrecognized input "wrong"');
+        expect(parse(" -h wrong")).toEqual({
+            type: ArgNodeType.CommandError,
+            message: 'unrecognized input "wrong"'
+        });
+        expect(parse("--help wrong")).toEqual({
+            type: ArgNodeType.CommandError,
+            message: 'unrecognized input "wrong"'
+        });
 
         expect(parse("/tmp/input.jss")).toEqual({
             type: ArgNodeType.InputAndOutput,
@@ -48,6 +54,11 @@ describe('argParser', () => {
             inputFile: "/tmp/input.jss",
             outputFile: "-",
             hasJsOption: false,
+        });
+
+        expect(parse("-js")).toEqual({
+            type: ArgNodeType.CommandError,
+            message: 'invalid command'
         });
 
         expect(parse("-js /tmp/input.jss /tmp/output.css")).toEqual({
