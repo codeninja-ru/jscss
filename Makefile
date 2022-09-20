@@ -7,6 +7,7 @@ clean:
 
 rollup:
 	$(ROLLUP) -c rollup.config.js
+	chmod +x ./build/jss.js
 
 compile:
 	./node_modules/typescript/bin/tsc

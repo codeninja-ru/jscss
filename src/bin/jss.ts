@@ -11,19 +11,26 @@ import { argv } from 'process';
 import 'source-map-support/register';
 import { ProcessArgsInputStream } from 'stream/input/ProcessArgsInputStream';
 import { translator } from 'translator/translator';
-import { evalCode } from './eval';
+import { evalCode, EvalStatucCode } from './eval';
 import { BasicStackTracePrinter, StackTrace } from './stackTrace';
 
 
 const [,execname] = argv;
 
 function printUsage() {
-console.log(`Usage: ${path.basename(execname)} [options] filename [outputfile]
+console.log(`Usage: ${path.basename(execname)} [options] <input.jss> [output.css]
+Complies JSS to CSS
+
+If input is set to '-', input is read from stdin
+If input is set to '-' and output is absent, input is read from stdin and output is written to stdout
+If output is set to '-', output is written to stdout
 
 options:
+ --sourcemap=[output.map.css] generates sourcemap
+ --inline-sourcemap generates inline sourcemap
+ -js prints translated javascript
  -h, --help this message
  -v, --version prints version
- -js prints translated javascript
 `);
 }
 
@@ -61,10 +68,17 @@ function processInput(node : InputAndOutputArgNode) {
         console.log(outStr.value);
     } else {
         evalCode(outStr, inputFileName).then((result) => {
-            if (node.outputFile == '-') {
-                console.log(result.output);
+            if (result.statusCode == EvalStatucCode.Success) {
+                if (node.outputFile == '-' || (node.inputFile == '-' && node.inputFile === undefined)) {
+                    console.log(result.output);
+                } else {
+                    console.log(outfilepath);
+                    //fs.writeFileSync(infilepath, result.output);
+                }
+            } else if (result.statusCode == EvalStatucCode.Error) {
+                process.exit(1);
             } else {
-                console.log(result.output);
+                console.error('unsupported EvalStatusCode');
             }
         }).catch(() => {
             process.exit(1);
