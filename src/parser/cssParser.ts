@@ -1,12 +1,68 @@
 // the spec is here https://www.w3.org/TR/CSS2/grammar.html#q25.0
+// updated grammar is here https://drafts.csswg.org/selectors-3/#grammar
 
 import { Keywords } from "keywords";
-import { Symbols } from "symbols";
-import { LiteralToken, TokenType } from "token";
-import { anyLiteral, anyString, block, commaList, firstOf, ignoreSpacesAndComments, keyword, list, loop, noSpacesHere, oneOfSymbols, optional, rawValue, regexpLiteral, returnRawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, squareBracket, strictLoop, symbol } from "./parserUtils";
+import { Symbols, SyntaxSymbol } from "symbols";
+import { LiteralToken, TokenType, Token } from "token";
+import { ParserError } from "./parserError";
+import { anyString, block, commaList, firstOf, ignoreSpacesAndComments, keyword, list, loop, noSpacesHere, oneOfSymbols, optional, rawValue, regexpLiteral, returnRawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, squareBracket, strictLoop, symbol } from "./parserUtils";
 import { CssBlockNode, CssCharsetNode, CssDeclarationNode, CssImportNode, CssMediaNode, CssSelectorNode, NodeType, StringNode } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
+import { peekAndSkipSpaces, peekNextToken } from "./tokenStreamReader";
+
+function containsOnly(str : string, symbol : SyntaxSymbol) : boolean {
+    if (str.length == 0) {
+        return false;
+    }
+    for (const ch of str) {
+        if (ch != symbol.name) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+function isCssToken(token : Token) : boolean {
+    return token.type == TokenType.Literal
+        || (token.type == TokenType.Symbol && containsOnly(token.value, Symbols.minus));
+}
+
+/**
+ * literal that can contain "-"
+ * */
+export function cssLiteral(stream: TokenStream) : LiteralToken {
+    let firstToken = peekAndSkipSpaces(stream);
+    let result = "";
+    if (isCssToken(firstToken)) {
+        result = firstToken.value;
+
+        while(!stream.eof()) {
+            const token = stream.peek();
+            if (isCssToken(token)) {
+                result += token.value;
+                stream.next();
+            } else {
+                break;
+            }
+
+        }
+    }
+
+    if (result == "") {
+        throw new ParserError(`css literal is expected`, firstToken);
+    } else {
+        if (result.includes('$')) {
+            throw new ParserError(`css literal can't containt $`, firstToken);
+        }
+        return {
+            type: TokenType.Literal,
+            value: result,
+            position: firstToken.position,
+        };
+    }
+}
 
 /**
  * implements:
@@ -101,7 +157,7 @@ function mediaList(stream : TokenStream) : LiteralToken[] {
 
 function ident(stream : TokenStream) : LiteralToken {
     //NOTE it can't be started with numbers, and content some chars, read the spec
-    return anyLiteral(stream);
+    return cssLiteral(stream);
 }
 
 /**
@@ -187,6 +243,27 @@ export function expr(stream : TokenStream) : void {
     )(stream);
 }
 
+const NUM_REG = /^[0-9]+$/;
+function percentage(stream : TokenStream) : string {
+    const num = optional(regexpLiteral(NUM_REG))(stream);
+    let dot;
+    if (num) {
+        dot = optional(symbol(Symbols.dot, peekNextToken))(stream);
+    } else {
+        dot = optional(symbol(Symbols.dot))(stream);
+    }
+    let num2;
+
+    if (dot) {
+        num2 = regexpLiteral(NUM_REG, peekNextToken);
+    }
+
+    symbol(Symbols.percent, peekNextToken)(stream);
+
+    return [num, dot, num2, '%'].filter(str => str != undefined).join('');
+}
+
+
 /**
  * implements:
  * term
@@ -198,18 +275,32 @@ export function expr(stream : TokenStream) : void {
  *
  * */
 function term(stream : TokenStream) : void {
-    sequence(
-        optional(unaryOperator),
-        firstOf(
-            // [ NUMBER S* | PERCENTAGE S* | LENGTH S* | EMS S* | EXS S* | ANGLE S* | TIME S* | FREQ S* ]
-            regexpLiteral(/^([0-9]+|[0-9]*\.[0-9]+)(\%|px|cm|mm|in|pt|pc|em|ex|deg|rad|grad|ms|s|hz|khz)?$/g),
-            anyString,
-            uri,
-            ident,
-            sequence(symbol(Symbols.numero), noSpacesHere, anyLiteral),
-            functionCallDoNothing,
-        )
 
+    firstOf(
+        // numbers
+        sequence(
+            optional(unaryOperator),
+            firstOf(
+                // PERCENTAGE
+                percentage,
+                // lengths
+                sequence(
+                    optional(
+                        sequence(
+                            optional(regexpLiteral(NUM_REG)),
+                            symbol(Symbols.dot),
+                        )
+                    ),
+                    regexpLiteral(/^[0-9]+(px|cm|mm|in|pt|pc|em|ex|deg|rad|grad|ms|s|hz|khz)?$/g),
+                )
+            )
+        ),
+        // the rest
+        anyString,
+        uri,
+        ident,
+        sequence(symbol(Symbols.numero), noSpacesHere, cssLiteral),
+        functionCallDoNothing,
     )(stream);
 }
 
@@ -306,7 +397,7 @@ export function hash(stream : TokenStream) : string {
         symbol(Symbols.numero),
         noSpacesHere,
         // nmchar		[_a-z0-9-]|{nonascii}|{escape} //TODO test out
-        anyLiteral
+        cssLiteral,
     ))(stream);
 }
 
@@ -324,14 +415,20 @@ export function attrib(stream : TokenStream) : string {
 
 /**
  * implements:
- * pseudo
-  : ':' [ IDENT | FUNCTION S* [IDENT S*]? ')' ]
+  pseudo
+  // '::' starts a pseudo-element, ':' a pseudo-class
+  // Exceptions: :first-line, :first-letter, :before and :after.
+  // Note that pseudo-elements are restricted to one per selector and
+  // occur only in the last simple_selector_sequence.
+  : ':' ':'? [ IDENT | functional_pseudo ]
   ;
+
  *
  * */
 export function pseudo(stream : TokenStream) : string {
     return returnRawValue(sequence(
         symbol(Symbols.colon),
+        optional(symbol(Symbols.colon, peekNextToken)),
         firstOf(
             ident,
             functionCallDoNothing,

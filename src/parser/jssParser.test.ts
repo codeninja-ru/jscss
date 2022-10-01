@@ -146,25 +146,88 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
                 {type: NodeType.Ignore, items: expect.anything()},
             ];
         };
-        parseCode(`const hidden = { display: none; }`).toEqual([
+        parseCode(`const hidden = new { display: none; }`).toEqual([
             {type: NodeType.JssVarDeclaration, keyword: 'const', keywordPos: {line: 1, col: 1},
              name: 'hidden', namePos: {line: 1, col: 7},
-             hasExport: false, items: expectedItems(18, 27)}
+             hasExport: false, items: expectedItems(22, 31)}
         ]);
-        parseCode(`let hidden = { display: none; }`).toEqual([{type: NodeType.JssVarDeclaration, name: 'hidden', keyword: 'let',
-                                                               hasExport: false, items: expectedItems(16, 25),
+        parseCode(`let hidden = new { display: none; }`).toEqual([{type: NodeType.JssVarDeclaration, name: 'hidden', keyword: 'let',
+                                                               hasExport: false, items: expectedItems(20, 29),
                                                                keywordPos: {line: 1, col: 1}, namePos: {line: 1, col:5}}]);
-        parseCode(`var hidden = { display: none; }`).toEqual([{type: NodeType.JssVarDeclaration, name: 'hidden', keyword: 'var',
-                                                               hasExport: false, items: expectedItems(16, 25),
+        parseCode(`var hidden = new { display: none; }`).toEqual([{type: NodeType.JssVarDeclaration, name: 'hidden', keyword: 'var',
+                                                               hasExport: false, items: expectedItems(20, 29),
                                                                keywordPos: {line: 1, col: 1}, namePos: {line: 1, col:5}}]);
-        parseCode(`export let hidden = { display: none; }`).toEqual([{type: NodeType.JssVarDeclaration, name: 'hidden', keyword: 'let',
-                                                               hasExport: true, items: expectedItems(16 + 7, 25 + 7),
+        parseCode(`export let hidden = new { display: none; }`).toEqual([{type: NodeType.JssVarDeclaration, name: 'hidden', keyword: 'let',
+                                                               hasExport: true, items: expectedItems(20 + 7, 29 + 7),
                                                                keywordPos: {line: 1, col: 8}, namePos: {line: 1, col:12}, exportPos: {line: 1, col:1}}]);
-        parseCode(`export var hidden = { display: none; }`).toEqual([{type: NodeType.JssVarDeclaration, name: 'hidden', keyword: 'var',
-                                                               hasExport: true, items: expectedItems(23, 25 + 7),
+        parseCode(`export var hidden = new { display: none; }`).toEqual([{type: NodeType.JssVarDeclaration, name: 'hidden', keyword: 'var',
+                                                               hasExport: true, items: expectedItems(27, 29 + 7),
                                                                keywordPos: {line: 1, col: 8}, namePos: {line: 1, col:12}, exportPos: {line: 1, col:1}}]);
-        parseCode(`export const hidden = { display: none; }`).toEqual([{type: NodeType.JssVarDeclaration, name: 'hidden', keyword: 'const',
-                                                               hasExport: true, items: expectedItems(25, 27 + 7),
+        parseCode(`export const hidden = new { display: none; }`).toEqual([{type: NodeType.JssVarDeclaration, name: 'hidden', keyword: 'const',
+                                                               hasExport: true, items: expectedItems(29, 31 + 7),
                                                                keywordPos: {line: 1, col: 8}, namePos: {line: 1, col:14}, exportPos: {line: 1, col:1}}]);
+
+        parseCode(`export const hidden = new { display: none }`).toEqual([{type: NodeType.JssVarDeclaration, name: 'hidden', keyword: 'const',
+                                                               hasExport: true, items: expectedItems(29, 31 + 7),
+                                                               keywordPos: {line: 1, col: 8}, namePos: {line: 1, col:14}, exportPos: {line: 1, col:1}}]);
+
+        parseCode(`export const hidden = new { "display": none }`).toEqual([{type: NodeType.JssVarDeclaration, name: 'hidden', keyword: 'const',
+                                                               hasExport: true, items: expectedItems(29, 40),
+                                                               keywordPos: {line: 1, col: 8}, namePos: {line: 1, col:14}, exportPos: {line: 1, col:1}}]);
+    });
+
+    it('parses without semicolons', () => {
+        parseCode(`.className { background: ${'white'} }`).toEqual([
+            { type: NodeType.JssBlock, selectors: [
+                {
+                    type: NodeType.JssSelector,
+                    items: [".className"],
+                    position: expect.anything(),
+                }
+            ], items: [
+                {type: NodeType.Ignore, items: expect.anything()},
+                {type: NodeType.JssDeclaration, prop: "background", value: "white",
+                 propPos: expect.anything(), valuePos: expect.anything()},
+                {type: NodeType.Ignore, items: expect.anything()},
+            ],
+              position: expect.anything(),
+            }
+        ]);
+        parseCode(`.className { background: #fff }`).toEqual([
+            { type: NodeType.JssBlock, selectors: [
+                {
+                    type: NodeType.JssSelector,
+                    items: [".className"],
+                    position: expect.anything(),
+                }
+            ], items: [
+                {type: NodeType.Ignore, items: expect.anything()},
+                {type: NodeType.JssDeclaration, prop: "background", value: "#fff",
+                 propPos: expect.anything(), valuePos: expect.anything()},
+                {type: NodeType.Ignore, items: expect.anything()},
+            ],
+              position: expect.anything(),
+            }
+        ]);
+    });
+
+    it('parses some complecated syntax', () => {
+        // some code from normalize.css
+        parseCode(`html { -webkit-text-size-adjust: 100%; /* 2 */ }`).toEqual([
+            { type: NodeType.JssBlock, selectors: [
+                {
+                    type: NodeType.JssSelector,
+                    items: ["html"],
+                    position: expect.anything(),
+                }
+            ], items: [
+                {type: NodeType.Ignore, items: expect.anything()},
+                {type: NodeType.JssDeclaration, prop: "-webkit-text-size-adjust", value: "100%",
+                 propPos: expect.anything(), valuePos: expect.anything()},
+                {type: NodeType.Ignore, items: expect.anything()},
+            ],
+              position: expect.anything(),
+            }
+        ]);
     });
 });

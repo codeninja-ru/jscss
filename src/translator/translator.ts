@@ -26,12 +26,12 @@ export interface GeneratedCode {
 }
 
 function cssSelectors2js(selectors : JssSelectorNode[], fileName : string) : SourceNode {
-    const chunks = makeNullSourceNode('`');
-    selectors.forEach((item) => {
+    const chunks = makeNullSourceNode('[');
+    chunks.add(selectors.map((item) => {
         const selector = item.items.map(quoteEscape).join('');
-        chunks.add(makeSourceNode(item.position, fileName, selector));
-    });
-    chunks.add('`');
+        return tag`\`${makeSourceNode(item.position, fileName, selector)}\``;
+    }).join(','));
+    chunks.add(']');
     return makeNullSourceNode(chunks);
 }
 

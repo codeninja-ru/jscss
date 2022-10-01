@@ -1,11 +1,5 @@
-import { SymbolToken } from "token";
-
 export class SyntaxSymbol {
     constructor(readonly name: string) {
-    }
-
-    equal(token: SymbolToken): boolean {
-        return token.value == this.name;
     }
 }
 

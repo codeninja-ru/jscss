@@ -1,10 +1,11 @@
 interface JssStyleArrayItem {
-    name: string,
+    name: JssSelectorName,
     value: JssStyleProp
 }
 
 type JssStyleArray = JssStyleArrayItem[];
 type JssStyleSheetArray = (JssStyleArrayItem | string)[];
+type JssSelectorName = string[] | string;
 
 export interface JssBlock {
     styles : JssStyleProp;
@@ -16,7 +17,7 @@ export interface JssBlock {
 }
 
 export interface JssStyleBlock extends JssBlock {
-    name: string;
+    name: JssSelectorName;
     toCss() : string;
     toArray() : JssStyleArray;
     __toString() : string;
@@ -182,7 +183,7 @@ export const JssBlock = (function() {
 })();
 
 export const JssStyleBlock = (function() {
-    const privateName = new WeakMap<JssStyleBlock, string>();
+    const privateName = new WeakMap<JssStyleBlock, JssSelectorName>();
 
     function sprintObject(value : any) {
         var result = "";
@@ -195,12 +196,12 @@ export const JssStyleBlock = (function() {
     }
 
     class JssStyleBlock extends JssBlock implements JssStyleBlock {
-        constructor(name : string) {
+        constructor(name : JssSelectorName) {
             super();
             privateName.set(this, name);
         }
 
-        get name() : string {
+        get name() : JssSelectorName {
             return getPrivate(this, privateName);
         }
 

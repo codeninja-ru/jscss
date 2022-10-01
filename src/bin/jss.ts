@@ -72,8 +72,7 @@ function processInput(node : InputAndOutputArgNode) {
                 if (node.outputFile == '-' || (node.inputFile == '-' && node.inputFile === undefined)) {
                     console.log(result.output);
                 } else {
-                    console.log(outfilepath);
-                    //fs.writeFileSync(infilepath, result.output);
+                    fs.writeFileSync(outfilepath, result.output);
                 }
             } else if (result.statusCode == EvalStatucCode.Error) {
                 process.exit(1);

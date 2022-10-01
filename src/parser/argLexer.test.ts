@@ -13,7 +13,8 @@ describe('argLexer()', () => {
             {type: TokenType.Literal, value: 'h', position: expect.anything()}
         ]);
         expect(getTokens('--help')).toEqual([
-            {type: TokenType.Symbol, value: '--', position: expect.anything()},
+            {type: TokenType.Symbol, value: '-', position: expect.anything()},
+            {type: TokenType.Symbol, value: '-', position: expect.anything()},
             {type: TokenType.Literal, value: 'help', position: expect.anything()}
         ]);
         expect(getTokens('-js /tmp/file_name.jss output.css')).toEqual([

@@ -1,5 +1,5 @@
 import { StringInputStream } from "stream/input";
-import { declaration, parseCssStyleSheet, rulesetStatement, selector, simpleSelector } from "./cssParser";
+import { cssLiteral, declaration, parseCssStyleSheet, rulesetStatement, selector, simpleSelector } from "./cssParser";
 import { lexer } from "./lexer";
 import { BlockType, CssBlockItemNode, CssBlockNode, CssSelectorNode, NodeType } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
@@ -173,6 +173,8 @@ describe('CSS Parser', () => {
         testParser(rulesetStatement, 'div {}');
         testParser(rulesetStatement, 'div { }');
         testParser(rulesetStatement, 'div { color: white; }');
+        testParser(rulesetStatement, 'div,a {}');
+        testParser(rulesetStatement, 'div::test,[test]::-test {}');
     });
 
     it('delcaration()', () => {
@@ -182,7 +184,31 @@ describe('CSS Parser', () => {
         testParser(declaration, 'background-image: url(/bg.jpg)');
         testParser(declaration, 'font-color: white');
         testParser(declaration, 'font-color: #fff');
+        testParser(declaration, 'width: 100%');
+        testParser(declaration, 'width: 10.10%');
+        testParser(declaration, 'width: 0.10%');
+        testParser(declaration, 'width: .10%');
+        testParser(declaration, 'width: -.10%');
+        testParser(declaration, 'width: -10.10%');
+        testParser(declaration, 'width: 10px');
+        testParser(declaration, 'width: 10em');
+        testParser(declaration, 'width: -10em');
+        testParser(declaration, 'width: -.10em');
+        testParser(declaration, 'width: 10.0em');
+        testParser(declaration, 'width: .5em');
         testParser(declaration, 'color: white !important;');
+    });
+
+    it('cssLiteral()', () => {
+        expect(cssLiteral(ArrayTokenStream.fromString('test')).value).toEqual('test');
+        expect(cssLiteral(ArrayTokenStream.fromString(' test')).value).toEqual('test');
+        expect(cssLiteral(ArrayTokenStream.fromString('-test-name')).value).toEqual('-test-name');
+        expect(cssLiteral(ArrayTokenStream.fromString('--test-name')).value).toEqual('--test-name');
+        expect(cssLiteral(ArrayTokenStream.fromString('testName')).value).toEqual('testName');
+        expect(cssLiteral(ArrayTokenStream.fromString('className#id')).value).toEqual('className');
+        expect(() => cssLiteral(ArrayTokenStream.fromString('$testName'))).toThrowError('');
+        expect(() => cssLiteral(ArrayTokenStream.fromString('   '))).toThrowError('');
+        expect(() => cssLiteral(ArrayTokenStream.fromString('.className#id'))).toThrowError('');
     });
 
 });

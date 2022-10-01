@@ -4,7 +4,7 @@ import { Symbols } from "symbols";
 import { LiteralToken, TokenType } from "token";
 import { lexer } from "./lexer";
 import { BlockParserError, ParserError, SequenceError } from "./parserError";
-import { anyLiteral, anyString, block, cannotStartWith, commaList, firstOf, ignoreSpacesAndComments, keyword, longestOf, map, noLineTerminatorHere, noSpacesHere, oneOfSymbols, optional, sequence, symbol } from "./parserUtils";
+import { anyLiteral, anyString, block, cannotStartWith, commaList, firstOf, ignoreSpacesAndComments, keyword, longestOf, map, noLineTerminatorHere, noSpacesHere, oneOfSymbols, optional, regexpLiteral, sequence, symbol } from "./parserUtils";
 import { BlockType, NodeType } from "./syntaxTree";
 import { ArrayTokenStream, TokenStream } from "./tokenStream";
 
@@ -27,9 +27,14 @@ describe('parserUtils', () => {
 
     it('anyLiteral()', () => {
         expect(anyLiteral(ArrayTokenStream.fromString('test')).value).toEqual('test');
-        expect(anyLiteral(ArrayTokenStream.fromString('test-name')).value).toEqual('test-name');
+        expect(anyLiteral(ArrayTokenStream.fromString('test-name')).value).toEqual('test');
         expect(anyLiteral(ArrayTokenStream.fromString('testName')).value).toEqual('testName');
     });
+
+    it('regexpLiteral()', () => {
+        expect(regexpLiteral(/^[0-9]+/)(ArrayTokenStream.fromString('10'))).toEqual('10');
+    });
+
 
     describe('commaList()', () => {
         it('correct simple rule', () => {
@@ -169,11 +174,82 @@ describe('parserUtils', () => {
                 sequence(optional(symbol(Symbols.minus)), noSpacesHere, anyLiteral, anyLiteral),
             )(ArrayTokenStream.fromString(''))).toThrowError('(0:0) : Unexpected end of the stream');
 
-            debugger;
             expect(() => firstOf(
                 keyword(Keywords._var),
                 anyLiteral,
             )(ArrayTokenStream.fromString(''))).toThrowError('(0:0) : Unexpected end of the stream');
+        });
+
+
+    });
+
+    describe('symbol()', () => {
+        it('parses one char symbols', () => {
+            expect(symbol(Symbols.plus)(ArrayTokenStream.fromString('+test'))).toEqual({
+                type: TokenType.Symbol,
+                position: {col: 1, line: 1},
+                value: '+'
+            });
+            expect(symbol(Symbols.plus)(ArrayTokenStream.fromString('++test'))).toEqual({
+                type: TokenType.Symbol,
+                position: {col: 1, line: 1},
+                value: '+'
+            });
+
+            expect(() => symbol(Symbols.plus)(ArrayTokenStream.fromString('-test'))).toThrowError('(1:1) : + is expected');
+        });
+
+        it('parses several char symbols', () => {
+            expect(symbol(Symbols.plus2)(ArrayTokenStream.fromString('++-test'))).toEqual({
+                type: TokenType.Symbol,
+                position: {col: 1, line: 1},
+                value: '++'
+            });
+
+            expect(() => symbol(Symbols.plus2)(ArrayTokenStream.fromString('-test'))).toThrowError('(1:1) : ++ is expected');
+            expect(() => symbol(Symbols.plus2)(ArrayTokenStream.fromString('+test'))).toThrowError('(1:1) : ++ is expected');
+        });
+
+    });
+
+    describe('oneOfSymboles()', () => {
+        it('parses set of symbols', () => {
+            expect(oneOfSymbols(Symbols.plus, Symbols.astersik, Symbols.div)(ArrayTokenStream.fromString('*test'))).toEqual({
+                type: TokenType.Symbol,
+                position: {col: 1, line: 1},
+                value: '*'
+            });
+
+            expect(() => oneOfSymbols(Symbols.plus, Symbols.astersik, Symbols.div)(ArrayTokenStream.fromString('test'))).toThrowError('(1:1) : one of +, *, / is expected');
+        });
+
+        it('parses set of symbols with different length and take the longest symbols first', () => {
+            debugger;
+            expect(oneOfSymbols(Symbols.eq, Symbols.eq2, Symbols.eq3)(ArrayTokenStream.fromString('==test'))).toEqual({
+                type: TokenType.Symbol,
+                position: {col: 1, line: 1},
+                value: '=='
+            });
+
+            expect(oneOfSymbols(Symbols.eq, Symbols.eq2, Symbols.eq3)(ArrayTokenStream.fromString('===+test'))).toEqual({
+                type: TokenType.Symbol,
+                position: {col: 1, line: 1},
+                value: '==='
+            });
+
+            expect(oneOfSymbols(Symbols.eq, Symbols.eq3)(ArrayTokenStream.fromString('===+test'))).toEqual({
+                type: TokenType.Symbol,
+                position: {col: 1, line: 1},
+                value: '==='
+            });
+
+            expect(oneOfSymbols(Symbols.eq, Symbols.eq2, Symbols.eq3)(ArrayTokenStream.fromString('=+-test'))).toEqual({
+                type: TokenType.Symbol,
+                position: {col: 1, line: 1},
+                value: '='
+            });
+
+            expect(() => oneOfSymbols(Symbols.plus, Symbols.eq2, Symbols.eq3)(ArrayTokenStream.fromString('test'))).toThrowError('(1:1) : one of ===, ==, + is expected');
         });
 
 
@@ -352,7 +428,7 @@ describe('parserUtils', () => {
         const stream = new ArrayTokenStream(tokens);
         const node = symbol(Symbols.astersik2)(stream);
         expect(node.value).toEqual('**');
-        expect(stream.currentPosition()).toEqual(1);
+        expect(stream.currentPosition()).toEqual(2);
 
         expect(symbol(Symbols.minus2)(ArrayTokenStream.fromString('--'))).toEqual({
             type: TokenType.Symbol,
@@ -371,7 +447,7 @@ describe('parserUtils', () => {
             Symbols.astersik2
         )(stream);
         expect(node.value).toEqual('**');
-        expect(stream.currentPosition()).toEqual(1);
+        expect(stream.currentPosition()).toEqual(2);
     });
 
     describe('noLineTerminatorHere()', () => {
@@ -473,7 +549,7 @@ describe('parserUtils', () => {
                     TokenType.SquareBrackets,
                     commaList(anyLiteral, true)
                 )(stream);
-            }).toThrowError('(1:2) : unexpected token " ### "');
+            }).toThrowError('(1:2) : unexpected token " # "');
         });
 
     });

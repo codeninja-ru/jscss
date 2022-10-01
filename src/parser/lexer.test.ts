@@ -10,8 +10,12 @@ const spnspn = makeSpaceToken("\n\n");
 const lodash = makeLiteralToken('_');
 const frm = makeLiteralToken('from');
 const smcl = makeSymbolToken(';');
+const dot = makeSymbolToken('.');
 const comma = makeCommaToken();
-
+const semcol = () => makeSymbolToken(';');
+const col = () => makeSymbolToken(':');
+const minus = () => makeSymbolToken('-');
+const space = () => makeSpaceToken(' ');
 
 const SIMPLE_CSS = `
 // this is a comment
@@ -68,28 +72,25 @@ describe('parseStream()', () => {
     test('content of the css block', () => {
         const tokens = lexer(new StringInputStream(CSS_BLOCK_CONTENT));
         const anySpace = () => { return {type: TokenType.Space, value: expect.anything(), position: expect.anything()} };
-        const semcol = () => makeSymbolToken(';');
-        const col = () => makeSymbolToken(':');
-        const space = () => makeSpaceToken(' ');
         expect(tokens).toEqual([
             {type: TokenType.Space, value: "\n    ", position: {line: 1, col: 1}},
             { type: TokenType.Comment, position: {line: 2, col: 5}, value: '// all this should be valid jscss' },
             anySpace(),
-            makeSymbolToken('...'), makeLiteralToken('classNameBase'), makeSymbolToken('.'), makeLiteralToken('prop'), semcol(),
+            dot, dot, dot, makeLiteralToken('classNameBase'), makeSymbolToken('.'), makeLiteralToken('prop'), semcol(),
             anySpace(),
-            makeSymbolToken('...'), makeLiteralToken('classNameBase'), makeRoundBracketsToken('(x)'), semcol(),
+            dot, dot, dot, makeLiteralToken('classNameBase'), makeRoundBracketsToken('(x)'), semcol(),
             anySpace(),
             makeSquareBracketsToken('[generateProp]'), col(), space(), makeLiteralToken('bold'), semcol(),
             anySpace(),
-            makeLiteralToken('font-weight'), col(), space(), makeLiteralToken('$'), makeLazyBlockToken("{test ? 'bold' : 'normal'\}"), semcol(),
+            makeLiteralToken('font'), minus(), makeLiteralToken('weight'), col(), space(), makeLiteralToken('$'), makeLazyBlockToken("{test ? 'bold' : 'normal'\}"), semcol(),
             anySpace(),
-            makeLiteralToken('font-size'), col(), space(), makeLiteralToken('$'), makeLazyBlockToken('{getSize()}'), makeLiteralToken('px'), semcol(),
+            makeLiteralToken('font'), minus(), makeLiteralToken('size'), col(), space(), makeLiteralToken('$'), makeLazyBlockToken('{getSize()}'), makeLiteralToken('px'), semcol(),
             anySpace(),
             makeLiteralToken('color'), col(), space(), makeLiteralToken('white'), semcol(),
             anySpace(),
             makeLiteralToken('background'), col(), space(), makeSymbolToken('#'), makeLiteralToken('fff'), semcol(),
             anySpace(),
-            makeLiteralToken('font-family'), col(), space(), makeStringToken("'Arial'"), comma, space(), makeLiteralToken('sans-serif'), semcol(),
+            makeLiteralToken('font'), minus(), makeLiteralToken('family'), col(), space(), makeStringToken("'Arial'"), comma, space(), makeLiteralToken('sans'), minus(), makeLiteralToken('serif'), semcol(),
             anySpace(),
             makeSymbolToken('.'), makeLiteralToken('childClassName'), space(), makeLazyBlockToken(expect.anything()),
             anySpace(),
@@ -154,7 +155,7 @@ function process(css) {
     test('simple condition', () => {
         const tokens = lexer(new StringInputStream(`1 != 2 ? yes : no`));
         expect(tokens).toEqual([
-            makeLiteralToken('1'), sp, makeSymbolToken('!='), sp,
+            makeLiteralToken('1'), sp, makeSymbolToken('!'), makeSymbolToken('='), sp,
             makeLiteralToken('2'), sp, makeSymbolToken('?'), sp,
             makeLiteralToken('yes'), sp, makeSymbolToken(':'), sp,
             makeLiteralToken('no')
@@ -183,7 +184,7 @@ function process(css) {
     test('semicolon', () => {
         const tokens = lexer(new StringInputStream(`++;--`));
         expect(tokens).toEqual([
-            makeSymbolToken('++'), smcl, makeSymbolToken('--'),
+            makeSymbolToken('+'), makeSymbolToken('+'), smcl, makeSymbolToken('-'), makeSymbolToken('-')
         ]);
     });
 
@@ -217,5 +218,17 @@ function process(css) {
             { type: TokenType.SquareBrackets, value: '[hi]', position: {line: 1, col: 1} },
         ]);
     });
+
+    test('css sizes', () => {
+        const tokens = lexer(new StringInputStream(`10% 10px 0.1em`));
+        expect(tokens).toEqual([
+            makeLiteralToken('10'), makeSymbolToken('%'),
+            makeSpaceToken(),
+            makeLiteralToken('10px'),
+            makeSpaceToken(),
+            makeLiteralToken('0'), makeSymbolToken('.'), makeLiteralToken('1em'),
+        ]);
+    });
+
 
 });

@@ -1,9 +1,9 @@
 import { Keywords } from "keywords";
 import { Symbols } from "symbols";
 import { LiteralToken, TokenType } from "token";
-import { attrib, combinator, cssCharset, hash, importStatement, pageStatement, pseudo } from "./cssParser";
-import { assignmentExpression, identifier, moduleItem, parseComment, propertyName } from "./parser";
-import { anyLiteral, anyString, block, comma, commaList, dollarSign, firstOf, ignoreSpacesAndComments, keyword, lazyBlock, leftHandRecurciveRule, loop, noSpacesHere, oneOfSymbols, optional, returnRawValue, returnRawValueWithPosition, semicolon, sequence, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
+import { attrib, combinator, cssCharset, cssLiteral, hash, importStatement, pageStatement, pseudo } from "./cssParser";
+import { assignmentExpression, identifier, moduleItem, numericLiteral, parseComment } from "./parser";
+import { anyString, block, comma, commaList, dollarSign, firstOf, ignoreSpacesAndComments, keyword, lazyBlock, leftHandRecurciveRule, loop, noLineTerminatorHere, noSpacesHere, oneOfSymbols, optional, returnRawValue, returnRawValueWithPosition, semicolon, sequence, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
 import { BlockNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssMediaNode, JssSelectorNode, JssSpreadNode, JssVarDeclarationNode, NodeType, SyntaxTree } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
@@ -24,16 +24,30 @@ function jssSpreadDefinition(stream : TokenStream) : JssSpreadNode {
     };
 }
 
+/**
+ * can contain and be started with '-'
+ * */
+export function jssPropertyName(stream : TokenStream) : void {
+    return firstOf(
+        // LiteralPropertyName
+        cssLiteral,
+        anyString,
+        numericLiteral,
+        // ComputedPropertyName[?Yield, ?Await]
+        block(TokenType.SquareBrackets, assignmentExpression)
+    )(stream);
+}
+
 function jsProperyDefinition(stream : TokenStream) : JssDeclarationNode {
     //sequence(propertyName, symbol(Symbols.colon), assignmentExpression), // clear js assigment
     //sequence(propertyName, symbol(Symbols.colon), expr, optional(prioStatement)), // clear css
     const [propName,,value] = sequence(
-        propertyName,
+        jssPropertyName,
         symbol(Symbols.colon),
         returnRawValueWithPosition(loop(
             firstOf(
                 templatePlaceholder, // template string ${}
-                anyLiteral, // NOTE: anyLiteral includes $, it may cause troubles in a wrong order
+                cssLiteral,
                 anyString,
 
                 oneOfSymbols(
@@ -48,11 +62,13 @@ function jsProperyDefinition(stream : TokenStream) : JssDeclarationNode {
                 ),
                 comma,
             )
-        )))(stream);
+        ))
+    )(stream);
 
     return {
         type: NodeType.JssDeclaration,
-        prop: propName.value,
+        //TODO string in properyName should be fobiddne
+        prop: propName.type == TokenType.String ? propName.value.slice(1, propName.value.length - 1) : propName.value,
         propPos: propName.position,
         value: value.value,
         valuePos: value.position,
@@ -65,7 +81,7 @@ function jssPropertyDefinition(stream : TokenStream) : (JssDeclarationNode | Jss
         jssSpreadDefinition,
     )(stream);
 
-    semicolon(stream);
+    optional(semicolon)(stream);
 
     return result;
 }
@@ -74,7 +90,7 @@ function jssIdent(stream : TokenStream) : string {
     return returnRawValue(leftHandRecurciveRule(
         firstOf(
             templatePlaceholder,
-            anyLiteral,//NOTE it can't be started with numbers, and content some chars, read the spec
+            cssLiteral,//NOTE it can't be started with numbers, and content some chars, read the spec
         ),
         sequence(noSpacesHere, jssIdent),
     ))(stream);
@@ -123,13 +139,13 @@ export function selector(stream : TokenStream) : JssSelectorNode {
 
 /**
  * implements:
- * const varName = {
+ * const varName = new {
  *   someCss: rule;
  * }
  *
  * */
 function jssVariableStatement(stream : TokenStream) : JssVarDeclarationNode {
-    const [exportKeyword, decKeyword, varName,,block] = sequenceWithPosition(
+    const [exportKeyword, decKeyword, varName,,,,block] = sequenceWithPosition(
         optional(keyword(Keywords._export)),
         firstOf(
             keyword(Keywords._const),
@@ -138,6 +154,8 @@ function jssVariableStatement(stream : TokenStream) : JssVarDeclarationNode {
         ),
         identifier,
         symbol(Symbols.eq),
+        keyword(Keywords._new),
+        noLineTerminatorHere,
         jssBlockStatement,
     )(stream);
 

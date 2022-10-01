@@ -34,6 +34,13 @@ describe('class JssStyleBlock', () => {
 }`);
     });
 
+    it('allows to uses an array of selectors', () => {
+        const block = new JssStyleBlock(['.className1', '.className2']);
+        expect(block.toCss()).toEqual('.className1,.className2 { }');
+        expect(block.name).toEqual(['.className1', '.className2']);
+    });
+
+
     it('cannot contain itself', () => {
         const block1 = new JssStyleBlock('.className1');
         expect(() => {

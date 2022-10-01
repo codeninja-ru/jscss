@@ -954,7 +954,9 @@ export function moduleItem(stream : TokenStream) : ReturnType<TokenParser> {
 export function propertyName(stream : TokenStream) : void {
     return firstOf(
         // LiteralPropertyName
-        firstOf(identifierName, anyString, numericLiteral),
+        identifierName,
+        anyString,
+        numericLiteral,
         // ComputedPropertyName[?Yield, ?Await]
         block(TokenType.SquareBrackets, assignmentExpression)
     )(stream);

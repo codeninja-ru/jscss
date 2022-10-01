@@ -159,7 +159,7 @@ function takeWhile(stream: InputStream, fn: (ch: string) => boolean): [string, P
 
 }
 
-const JS_SYMBOLS = ".=<>-*+&|^@?:#!";
+const JS_SYMBOLS = ".=<>-*+&|^@%?:#!";
 
 export function readSymbol(stream : InputStream, allowedSymbols = JS_SYMBOLS) : [string, Position?] {
     var symbolsFn = (ch: string) => {
@@ -171,14 +171,15 @@ export function readSymbol(stream : InputStream, allowedSymbols = JS_SYMBOLS) : 
 
 export function makeSymbolReader(stream: InputStream, allowedSymbols = JS_SYMBOLS): Reader {
     return function() {
-        var [result, pos] = readSymbol(stream, allowedSymbols);
-
-        if (result.length > 0) {
+        var ch = stream.peek();
+        if (allowedSymbols.includes(ch)) {
+            const pos = stream.position();
+            stream.next();
             return {
                 type: TokenType.Symbol,
                 position: pos,
-                value: result
-            } as Token;
+                value: ch
+            } as SymbolToken;
         }
 
         return null;

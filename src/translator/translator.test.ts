@@ -114,7 +114,15 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
     });
 
     it('can extend class by ... (3 dots) operator', () => {
-        expect(evalCode(`const mixin = { "color": "red" };
+        expect(evalCode(`const mixin = new { color: red };
+.childClass {
+  font-size: 10px;
+  ...mixin;
+}`).toArray()).toEqual([
+    {name: ".childClass", value: {color: "red", "font-size": "10px"}}
+]);
+
+        expect(evalCode(`const mixin = new { "color": red };
 .childClass {
   font-size: 10px;
   ...mixin;
@@ -137,7 +145,7 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
     });
 
     it('can handle jss varables', () => {
-        expect(evalCode(`const hidden = { display: none; };
+        expect(evalCode(`const hidden = new { display: none; };
 .className {
     font-size: 10px;
     ...hidden;
@@ -148,7 +156,7 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
     });
 
     it('can handle jss variables with child nodes, and ${this} is refered to the parent class', () => {
-        expect(evalCode(`const clearfix = {
+        expect(evalCode(`const clearfix = new {
     display: block;
     name: $\{this.name\};
     $\{this.name\}:after {
@@ -174,5 +182,18 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
     });
 
 
+    it('parses some complecated syntax', () => {
+        expect(evalCode(`const a = 1; const b = 2; const c = a+b; _styles = c;`)).toEqual(3);
+        expect(evalCode(`const a = 1; const b = 2; const c = b-a; _styles = c;`)).toEqual(1);
+
+        expect(evalCode(`html { -webkit-text-size-adjust: 100%; /* 2 */ }`).toArray()).toEqual([
+            {name: "html", value: {"-webkit-text-size-adjust": "100%"}},
+        ]);
+
+        expect(evalCode(`button::-moz-focus-inner,[type="button"]::-moz-focus-inner{padding: 0;}`).toArray()).toEqual([
+            'todo'
+        ]);
+
+    });
 
 });

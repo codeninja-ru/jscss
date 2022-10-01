@@ -37,9 +37,6 @@ export function lexer(stream: InputStream) {
                 }
             }
         }
-    } catch (error) {
-        console.error(error);
-        throw error;
     } finally {
         out.close();
     }

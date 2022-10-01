@@ -1,6 +1,6 @@
 import { StringInputStream } from "stream/input";
 import { TokenType } from "token";
-import { makeBracketsReader, makeRegExpReader, makeStringReader, makeTemplateStringReader } from "./readers";
+import { makeBracketsReader, makeRegExpReader, makeStringReader, makeSymbolReader, makeTemplateStringReader } from "./readers";
 
 describe('makeStringReader()', () => {
     test('correct strings', () => {
@@ -69,6 +69,15 @@ describe('makeRegExpReader', () => {
             reader();
         }).toThrowError('unexpected end of the regexp (1:14)');
     });
+});
 
-
+describe('makeSymbolReader()', () => {
+    it('parses symbols', () => {
+        const reader = makeSymbolReader(new StringInputStream("+test"));
+        expect(reader()).toEqual({
+            type: TokenType.Symbol,
+            position: {col: 1, line: 1},
+            value: '+',
+        });
+    });
 });

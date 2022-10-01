@@ -76,7 +76,7 @@ describe('parsers', () => {
             const node = parseJsVarStatement(stream);
             expect(node.type).toEqual(NodeType.VarStatement);
             expect(stream.sourceFragment().value).toEqual('let fn = (test) => {};');
-            expect(stream.currentPosition()).toEqual(12);
+            expect(stream.currentPosition()).toEqual(13);
         });
     });
 });

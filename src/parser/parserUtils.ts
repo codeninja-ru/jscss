@@ -8,7 +8,7 @@ import { LeftTrimSourceFragment, SourceFragment } from "./sourceFragment";
 import { BlockNode, BlockType, IgnoreNode, LazyNode, NodeType } from "./syntaxTree";
 import { ParsedSourceWithPosition, TokenParser, TokenParserArrayWithPosition } from "./tokenParser";
 import { ArrayTokenStream, FlushableTokenStream, GoAheadTokenStream, TokenStream } from "./tokenStream";
-import { isSpaceOrComment, peekAndSkipSpaces, TokenStreamReader } from "./tokenStreamReader";
+import { isSpaceOrComment, peekAndSkipSpaces, peekNextToken, TokenStreamReader } from "./tokenStreamReader";
 
 export function noLineTerminatorHere(stream : TokenStream) : void {
     while(!stream.eof()) {
@@ -305,20 +305,57 @@ export function optional(parser: TokenParser) : TokenParser {
     };
 }
 
-interface SymbolArray {
-    [idx: string] : true;
-}
 export function oneOfSymbols(...chars: SyntaxSymbol[]) : TokenParser<SymbolToken> {
-    let symbols = {} as SymbolArray;
-    chars.forEach((ch) => symbols[ch.name] = true);
+
+    const sortedChars = chars.sort((a, b) => b.name.length - a.name.length);
+    let groupByLength = [] as SyntaxSymbol[][];
+    sortedChars.forEach((item) => {
+        const len = item.name.length;
+        const array = groupByLength[len] ? groupByLength[len] : [];
+        array.push(item);
+        groupByLength[len] = array;
+    });
+
+    groupByLength = groupByLength.reverse();
 
     return function(stream: TokenStream) : SymbolToken {
-        const token = peekAndSkipSpaces(stream);
-        if (token.type == TokenType.Symbol && token.value in symbols) {
-            return token;
+        const firstToken = peekAndSkipSpaces(stream);
+
+        if (firstToken.type != TokenType.Symbol) {
+            throw new ParserError(`one of ${chars.map((item) => item.name).join(', ')} is expected`, firstToken);
         }
 
-        throw new ParserError(`one of ${chars} is expected`, token);
+        for (const group of groupByLength) {
+            const len = group[0].name.length;
+            let acc = firstToken.value;
+            const groupStream = new GoAheadTokenStream(stream);
+            for (let i = 1; i < Number(len); i++) {
+                if (groupStream.eof()) {
+                    break;
+                }
+                const token = peekNextToken(groupStream);
+                if (token.type == TokenType.Symbol) {
+                    acc += token.value;
+                } else {
+                    break;
+                }
+            }
+
+            if (acc.length == len) {
+                for (const item of group) {
+                    if (item.name == acc) {
+                        groupStream.flush();
+                        return {
+                            type: TokenType.Symbol,
+                            position: firstToken.position,
+                            value: acc
+                        };
+                    }
+                }
+            }
+        }
+
+        throw new ParserError(`one of ${chars.map((item) => item.name).join(', ')} is expected`, firstToken);
     };
 }
 
@@ -362,8 +399,22 @@ export function symbol(ch: SyntaxSymbol,
                        peekFn : TokenStreamReader = peekAndSkipSpaces) : TokenParser<SymbolToken> {
     return function(stream: TokenStream) : SymbolToken {
         const token = peekFn(stream);
-        if (token.type == TokenType.Symbol && ch.equal(token)) {
-            return token;
+
+        if (token.type == TokenType.Symbol && token.value == ch.name[0]) {
+            for (let i = 1; i < ch.name.length; i++) {
+                const nextToken = peekNextToken(stream);
+
+                if (!(nextToken.type == TokenType.Symbol
+                    && nextToken.value == ch.name[i])) {
+                    throw new ParserError(`${ch.name} is expected`, token);
+                }
+            }
+
+            return {
+                type: TokenType.Symbol,
+                position: token.position,
+                value: ch.name,
+            };
         }
 
         throw new ParserError(`${ch.name} is expected`, token);
