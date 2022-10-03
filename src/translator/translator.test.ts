@@ -49,7 +49,7 @@ var self = null;
 _styles.insertCss("@import 'main.css';");
 const bgColor = '#fff';
 _styles.insertBlock((function() {
-var self = new JssStyleBlock(\`.className\`);
+var self = new JssStyleBlock([\`.className\`]);
 self.push(\`color\`, \`red\`);
 self.push(\`background\`, \`$\{bgColor\}\`);
 
@@ -191,7 +191,9 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
         ]);
 
         expect(evalCode(`button::-moz-focus-inner,[type="button"]::-moz-focus-inner{padding: 0;}`).toArray()).toEqual([
-            'todo'
+            {name: `button::-moz-focus-inner, [type="button"]::-moz-focus-inner`, value: {
+                padding: "0",
+            }}
         ]);
 
     });

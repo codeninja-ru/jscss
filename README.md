@@ -111,10 +111,10 @@ or in case of a list of selectors
 ``` javascript
 .menu1, .menu2 {
   font-size: 12px;
-  ${this.name[0]}.menu__item {
+  ${this.selectors[0]}.menu__item {
       color: 10px;
   }
-  ${this.name[2]}.menu__item {
+  ${this.selectors[2]}.menu__item {
       color: 12px;
   }
 }
