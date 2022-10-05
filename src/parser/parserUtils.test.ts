@@ -224,7 +224,6 @@ describe('parserUtils', () => {
         });
 
         it('parses set of symbols with different length and take the longest symbols first', () => {
-            debugger;
             expect(oneOfSymbols(Symbols.eq, Symbols.eq2, Symbols.eq3)(ArrayTokenStream.fromString('==test'))).toEqual({
                 type: TokenType.Symbol,
                 position: {col: 1, line: 1},

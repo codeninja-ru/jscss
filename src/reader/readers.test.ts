@@ -1,6 +1,6 @@
 import { StringInputStream } from "stream/input";
 import { TokenType } from "token";
-import { makeBracketsReader, makeRegExpReader, makeStringReader, makeSymbolReader, makeTemplateStringReader } from "./readers";
+import { makeBracketsReader, makeStringReader, makeSymbolReader, makeTemplateStringReader } from "./readers";
 
 describe('makeStringReader()', () => {
     test('correct strings', () => {
@@ -40,35 +40,6 @@ describe('makeTemplateStringReader', () => {
         expect(makeTemplateStringReader(stream)()).toEqual({ type: TokenType.TemplateString, value: '`hello, \\`${userName}\\``', position: expect.anything()  });
     });
 
-});
-
-describe('makeRegExpReader', () => {
-    test('empty', () => {
-        const reader = makeRegExpReader(new StringInputStream("    "));
-        expect(reader()).toBeNull();
-    });
-
-    test('regexp', () => {
-        const reader = makeRegExpReader(new StringInputStream(/[a-z]*\/(.?)/gi + ""));
-        expect(reader()).toEqual({
-            type: TokenType.SlashBrackets,
-            position: expect.anything(),
-            value: "/[a-z]*\\/(.?)/"
-        });
-    });
-
-    test('ignores comments', () => {
-        const reader = makeRegExpReader(new StringInputStream("//[a-z]*\/'(*?)/gi"));
-        expect(reader()).toBeNull();
-    });
-
-    test('throws error', () => {
-        const reader = makeRegExpReader(new StringInputStream("/[a-z]*\\/'(*?"));
-        //thows error
-        expect(() => {
-            reader();
-        }).toThrowError('unexpected end of the regexp (1:14)');
-    });
 });
 
 describe('makeSymbolReader()', () => {

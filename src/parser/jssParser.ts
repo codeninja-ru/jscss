@@ -1,18 +1,21 @@
-import { Keywords } from "keywords";
+import { Keywords, ReservedWords } from "keywords";
 import { Symbols } from "symbols";
 import { LiteralToken, TokenType } from "token";
 import { attrib, combinator, cssCharset, cssLiteral, hash, importStatement, pageStatement, pseudo } from "./cssParser";
 import { assignmentExpression, identifier, moduleItem, numericLiteral, parseComment } from "./parser";
-import { anyString, block, comma, commaList, dollarSign, firstOf, ignoreSpacesAndComments, keyword, lazyBlock, leftHandRecurciveRule, loop, noLineTerminatorHere, noSpacesHere, oneOfSymbols, optional, returnRawValue, returnRawValueWithPosition, semicolon, sequence, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
+import { SequenceError, SyntaxRuleError } from "./parserError";
+import { anyBlock, anyString, block, comma, commaList, dollarSign, firstOf, ignoreSpacesAndComments, keyword, lazyBlock, LazyBlockParser, leftHandRecurciveRule, loop, noLineTerminatorHere, noSpacesHere, oneOfSymbols, optional, returnRawValue, returnRawValueWithPosition, semicolon, sequence, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
 import { BlockNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssMediaNode, JssSelectorNode, JssSpreadNode, JssVarDeclarationNode, NodeType, SyntaxTree } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
+import { peekNextToken } from "./tokenStreamReader";
 
 export function parseJssScript(stream : TokenStream) : SyntaxTree {
+    optional(skipShebang)(stream);
     return strictLoop(jssStatement)(stream);
 }
 
-const templatePlaceholder = sequence(dollarSign, noSpacesHere, lazyBlock); // template string ${}
+const templatePlaceholder = sequence(dollarSign, noSpacesHere, anyBlock); // template string ${}
 
 function jssSpreadDefinition(stream : TokenStream) : JssSpreadNode {
     const [, value] = sequence(symbol(Symbols.dot3), returnRawValueWithPosition(assignmentExpression))(stream);
@@ -160,7 +163,9 @@ function jssVariableStatement(stream : TokenStream) : JssVarDeclarationNode {
     )(stream);
 
     if (varName.value in {"self" : 1, "_styles" : 1, "JssStylesheet" : 1, "JssStyleBlock" : 1, "JssBlock": 1}) {
-        throw new Error(`${varName} is a reseved word`);
+        throw new SequenceError(
+            new SyntaxRuleError(`${varName.value} is a reseved word`, varName.position),
+        );
     }
 
     return {
@@ -169,14 +174,14 @@ function jssVariableStatement(stream : TokenStream) : JssVarDeclarationNode {
         keywordPos: decKeyword.position,
         name: varName.value,
         namePos: varName.position,
-        items: block.value.items,
+        items: block.value.parse().items,
         hasExport: exportKeyword.value !== undefined,
         ...(exportKeyword.value !== undefined ? { exportPos: exportKeyword.position } : {})
     };
 }
 
-function jssBlockStatement(stream : TokenStream) : BlockNode<JssBlockItemNode> {
-    return block(TokenType.LazyBlock, strictLoop(firstOf(
+function jssBlockStatement(stream : TokenStream) : LazyBlockParser<BlockNode<JssBlockItemNode>> {
+    return lazyBlock(TokenType.LazyBlock, strictLoop(firstOf(
         ignoreSpacesAndComments,
         jssPropertyDefinition,
         rulesetStatement,
@@ -184,14 +189,24 @@ function jssBlockStatement(stream : TokenStream) : BlockNode<JssBlockItemNode> {
 }
 
 export function rulesetStatement(stream : TokenStream) : JssBlockNode {
-    const selectors = commaList(selector)(stream);
+    const selectors = commaList(selector)(stream) as JssSelectorNode[];
     const cssBlock = jssBlockStatement(stream);
+
+    if (selectors.length == 1) {
+        const firstSelector = selectors[0].items[0];
+
+        if (firstSelector in ReservedWords) {
+            throw new SequenceError(
+                new SyntaxRuleError(`"${firstSelector}" is a reseved word, it's not allowed as a selector`, selectors[0].position)
+            );
+        }
+    }
 
     return {
         type: NodeType.JssBlock,
         selectors,
         position: selectors[0].position,
-        items: cssBlock.items,
+        items: cssBlock.parse().items,
     };
 }
 
@@ -201,8 +216,7 @@ function jssMediaList(stream : TokenStream) : LiteralToken[] {
 
 export function jssMediaStatement(stream : TokenStream) : JssMediaNode {
     const [at,,,] = sequence(
-        symbol(Symbols.at),
-        noSpacesHere,
+        symbol(Symbols.at, peekNextToken),
         keyword(Keywords.cssMedia),
     )(stream);
 
@@ -241,9 +255,28 @@ export function stylesheetItem(stream : TokenStream) : ReturnType<TokenParser> {
  * */
 function jssStatement(stream : TokenStream) : ReturnType<TokenParser> {
     return firstOf(
+        //TODO optimaze the list of statements (it's possible to take sub funstions and put the rules here)
         ignoreSpacesAndComments, //TODO it's duplicated in stylesheeiItem
         stylesheetItem,
         moduleItem,
         parseComment,
     )(stream);
+}
+
+/**
+ * implements:
+ * shebang:
+ *  # (any token that is not line terminator)
+ *
+ * */
+function skipShebang(stream : TokenStream) : void {
+    symbol(Symbols.numero)(stream);
+
+    while(!stream.eof()) {
+        const token = stream.next();
+
+        if (token.type == TokenType.Space && token.value.indexOf('\n') != -1) {
+            break;
+        }
+    }
 }

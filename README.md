@@ -1,4 +1,4 @@
-# JavaScript + CSS
+# JavaScript + CSS = Jss
 
 Jss is a preprocessor for Css that allow mix css and javascript grammar. Jss generates CSS so the output is CSS.
 
@@ -114,7 +114,7 @@ or in case of a list of selectors
   ${this.selectors[0]}.menu__item {
       color: 10px;
   }
-  ${this.selectors[2]}.menu__item {
+  ${this.selectors[1]}.menu__item {
       color: 12px;
   }
 }

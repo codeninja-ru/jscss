@@ -1,9 +1,37 @@
 import { InputStream, readToEnd, TillEndOfLineStream } from "stream/input";
+import { Position } from "stream/position";
 import { Token, TokenType } from "token";
-import { makeRegExpReader, Reader, readSymbol } from "./readers";
+import { Reader, readSymbol } from "./readers";
+
+const ESCAPE_SYMBOL = '\\';
 
 export function makeCommentAndRegexpReader(stream: InputStream): Reader {
-    const regexpReader = makeRegExpReader(stream);
+    function parseRegexp(start : string, pos: Position) {
+        let result = '/' + start;
+        let isEscapeMode = false;
+        while (!stream.isEof()) {
+            var ch = stream.next();
+            if (ch == '\n') {
+                break;
+            }
+            result += ch;
+            if (!isEscapeMode && ch == '/') {
+                if (result.length > 2) { // regexp can't be empty (//)
+                    return {
+                        type: TokenType.SlashBrackets,
+                        position: pos,
+                        value: result,
+                    } as Token;
+                } else {
+                    return null;
+                }
+            }
+            isEscapeMode = ch == ESCAPE_SYMBOL;
+        }
+
+        throw stream.formatError('unexpected end of the regexp');
+    }
+
     return function() {
         if (stream.peek() == '/') {
             const pos = stream.position();
@@ -30,7 +58,7 @@ export function makeCommentAndRegexpReader(stream: InputStream): Reader {
                     value: '/' + ch + comment
                 } as Token;
             } else {
-                return regexpReader();
+                return parseRegexp(ch, pos);
             }
         }
         return null;

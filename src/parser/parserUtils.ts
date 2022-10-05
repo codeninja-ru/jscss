@@ -260,6 +260,7 @@ export function longestOf(...parsers: TokenParser[]) : TokenParser {
 export function firstOf(...parsers: TokenParser[]) : TokenParser {
     return function(stream: TokenStream) : ReturnType<TokenParser> {
         let sequenceErrors = [];
+        let blockErrors = [];
         for (let i = 0; i < parsers.length; i++) {
             try {
                 let parserStream = new GoAheadTokenStream(stream);
@@ -268,14 +269,16 @@ export function firstOf(...parsers: TokenParser[]) : TokenParser {
                 return result;
             } catch( e ) {
                 if (e instanceof BlockParserError) {
-                    throw e;
+                    blockErrors.push(e);
                 } else if (e instanceof SequenceError){
                     sequenceErrors.push(e);
                 }
             }
         }
 
-        if (sequenceErrors.length > 0) { //TODO the array is not needed here
+        if (blockErrors.length > 0) {
+            throw blockErrors[0];
+        } else if (sequenceErrors.length > 0) { //TODO the array is not needed here
             throw sequenceErrors[0];
         } else {
             if (stream.eof()) {
@@ -423,7 +426,7 @@ export function symbol(ch: SyntaxSymbol,
 
 export const semicolon = symbol(Symbols.semicolon);
 
-export function lazyBlock(stream: TokenStream) : LazyNode {
+export function anyBlock(stream: TokenStream) : LazyNode {
     const token = peekAndSkipSpaces(stream);
     if (token.type == TokenType.Block || token.type == TokenType.LazyBlock) {
         return {
@@ -515,6 +518,54 @@ export function loop(parser : TokenParser) : TokenParser {
     };
 }
 
+export interface LazyBlockParser<R> {
+    parse() : R;
+}
+
+export function lazyBlock(expectedTokenType : OneOfBlockTokenType, parser : TokenParser) : TokenParser {
+    function getBlockType(token : Token) : BlockType {
+       switch(token.value[0]) {
+            case '(':
+            return BlockType.RoundBracket;
+            case '[':
+            return BlockType.SquareBracket;
+            case '{':
+            return BlockType.CurlyBracket;
+            default:
+            throw new ParserError(`bracket type ${token.value[0]} is unsupported`, token);
+        }
+    }
+    return function(stream : TokenStream) : LazyBlockParser<ReturnType<TokenParser>> {
+        const token = peekAndSkipSpaces(stream);
+        if (token.type == expectedTokenType) {
+            return new class implements LazyBlockParser<ReturnType<TokenParser>> {
+                parse() : ReturnType<TokenParser> {
+                    const tokens = lexer(SubStringInputStream.fromBlockToken(token));
+                    const tokenStream = new ArrayTokenStream(tokens, token.position);
+                    const blockType = getBlockType(token);
+                    let result;
+                    try {
+                        result = parser(tokenStream);
+                    } catch (e) {
+                        throw new BlockParserError(e);
+                    }
+                    if (!tokenStream.eof()) {
+                        throw new ParserError(`unexpected token " ${tokenStream.peek().value} "`, tokenStream.peek());
+                    }
+                    return {
+                        type: NodeType.Block,
+                        blockType: blockType,
+                        items: result,
+                    } as BlockNode;
+                }
+            };
+        }
+
+        throw new ParserError(`block is expected`, token);
+    };
+}
+
+//TODO block can by rewritten using lazyBlock
 type OneOfBlockTokenType = TokenType.Block | TokenType.LazyBlock | TokenType.RoundBrackets | TokenType.SquareBrackets | TokenType.SlashBrackets;
 export function block(expectedTokenType : OneOfBlockTokenType, parser : TokenParser) : TokenParser {
     function getBlockType(token : Token) : BlockType {

@@ -20,7 +20,7 @@ export interface StyleBlock extends Block {
     name: string;
     toCss() : string;
     toArray() : StyleArray;
-    __toString() : string;
+    toString() : string;
 }
 
 export class JssBlockCaller {
@@ -33,7 +33,7 @@ export interface StyleSheet {
     insertBlock(block : StyleBlock) : void;
     insertCss(cssCode : string) : void;
     toCss() : string;
-    __toString() : string;
+    toString() : string;
     toArray() : StyleSheetArray;
 }
 
@@ -104,7 +104,7 @@ export class JssStyleSheet implements StyleSheet {
         return result;
     }
 
-    __toString() {
+    toString() {
         return this.toCss();
     }
 }
@@ -238,7 +238,7 @@ export class JssStyleBlock extends JssBlock implements StyleBlock {
         return result.join("\n\n");
     }
 
-    __toString() : string {
+    toString() : string {
         return this.toCss();
     }
 }

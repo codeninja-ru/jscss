@@ -230,4 +230,32 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
             }
         ]);
     });
+
+    it('skips #!/bin/sh', () => {
+        parseCode(`#!/bin/sh\nalert();`).toEqual([
+            {type: NodeType.Raw, position: {col: 1, line: 2}, value: "alert();"},
+        ]);
+    });
+
+    it('does not allow reserved words in selectors', () => {
+        expect(() => parseCode('import { display: none; }')).toThrowError(`(1:1) : "import" is a reseved word, it's not allowed as a selector`);
+    });
+
+    xit('does not allow reserved words in selectors (todo)', () => {
+        //TODO we do not parse block of classes yet, so it cannot be tested right now, jss thins is's a valid js class
+        expect(() => parseCode('class { display: none; }')).toThrow(`(1:1) : "class" is a reseved word, it's not allowed as a selector`);
+        expect(() => parseCode('class TestClass { display: none; }')).toThrow(`(1:1) : "class" is a reseved word, it's not allowed as a selector`);
+    });
+
+
+    it('parses imports', () => {
+        parseCode(`import { test } from 'reader/comment';
+import * as _ from '/reader/readers';`).toEqual([
+    {type: NodeType.Raw, position: {col: 1, line: 1}, value: "import { test } from 'reader/comment';"},
+    {type: NodeType.Ignore, items: expect.anything(),},
+    {type: NodeType.Raw, position: {col: 1, line: 2}, value: "import * as _ from '/reader/readers';"},
+]);
+    });
+
+
 });

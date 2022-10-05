@@ -1,7 +1,7 @@
 import { Keywords, ReservedWords } from "keywords";
 import { AssignmentOperator, Symbols } from "symbols";
 import { LiteralToken, TokenType } from "token";
-import { anyLiteral, anyString, anyTempateStringLiteral, block, cannotStartWith, comma, commaList, firstOf, keyword, lazyBlock, leftHandRecurciveRule, longestOf, loop, noLineTerminatorHere, oneOfSymbols, optional, rawValue, regexpLiteral, roundBracket, sequence, squareBracket, strictLoop, symbol } from "./parserUtils";
+import { anyLiteral, anyString, anyTempateStringLiteral, block, cannotStartWith, comma, commaList, firstOf, keyword, anyBlock, leftHandRecurciveRule, longestOf, loop, noLineTerminatorHere, oneOfSymbols, optional, rawValue, regexpLiteral, roundBracket, sequence, squareBracket, strictLoop, symbol } from "./parserUtils";
 import { CommentNode, IfNode, JsModuleNode, JsRawNode, JssScriptNode, MultiNode, Node, NodeType, SyntaxTree, VarDeclaraionNode } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { GoAheadTokenStream, TokenStream } from "./tokenStream";
@@ -20,7 +20,7 @@ function functionExpression(stream: TokenStream) : Node {
     keyword(Keywords._function)(stream);
     optional(identifier)(stream);
     roundBracket(stream);
-    lazyBlock(stream);
+    anyBlock(stream);
 
     return {
         type: NodeType.FunctionExpression
@@ -169,7 +169,7 @@ const classExpression = classDeclaration;
 function classTail(stream : TokenStream) : void {
     // ClassHeritage[?Yield, ?Await]opt { ClassBody[?Yield, ?Await]opt }
     optional(classHeritage)(stream);
-    lazyBlock(stream);
+    anyBlock(stream);
 }
 
 function nonDecimalIntergerLiteral(stream : TokenStream) : void {
@@ -243,15 +243,15 @@ function literal(stream : TokenStream) : void {
 }
 
 function generatorExpression(stream : TokenStream) : any[] {
-    return sequence(keyword(Keywords._function), symbol(Symbols.astersik), identifier, roundBracket, lazyBlock)(stream);
+    return sequence(keyword(Keywords._function), symbol(Symbols.astersik), identifier, roundBracket, anyBlock)(stream);
 }
 
 function asyncFunctionExpression(stream : TokenStream) : any[] {
-    return sequence(keyword(Keywords._async), keyword(Keywords._function), identifier, roundBracket, lazyBlock)(stream);
+    return sequence(keyword(Keywords._async), keyword(Keywords._function), identifier, roundBracket, anyBlock)(stream);
 }
 
 function asyncGeneratorExpression(stream : TokenStream) : any[] {
-    return sequence(keyword(Keywords._async), keyword(Keywords._function), symbol(Symbols.dot), identifier, roundBracket, lazyBlock)(stream);
+    return sequence(keyword(Keywords._async), keyword(Keywords._function), symbol(Symbols.dot), identifier, roundBracket, anyBlock)(stream);
 }
 
 function primaryExpression(stream: TokenStream) : void {
@@ -265,7 +265,7 @@ function primaryExpression(stream: TokenStream) : void {
         // ArrayLiteral[?Yield, ?Await]
         squareBracket,
         // ObjectLiteral[?Yield, ?Await]
-        lazyBlock,
+        anyBlock,
         // FunctionExpression
         functionExpression,
         // ClassExpression[?Yield, ?Await]
@@ -342,7 +342,7 @@ function variableDeclaration(stream : TokenStream) : VarDeclaraionNode {
         bindingIdentifier,
         // BindingPatten
         squareBracket, //TODO we do not parse and do not validate the content yet
-        lazyBlock, //TODO we do not parse and do not validate the content yet
+        anyBlock, //TODO we do not parse and do not validate the content yet
     )(stream);
 
     // Initializer
@@ -577,7 +577,7 @@ function arrowFunction(stream : TokenStream) : void {
     // ArrowParameters[?Yield, ?Await] [no LineTerminator here] => ConciseBody[?In]
     firstOf(bindingIdentifier, roundBracket)(stream);
     symbol(Symbols.arrow)(stream);
-    firstOf(lazyBlock, assignmentExpression)(stream);
+    firstOf(anyBlock, assignmentExpression)(stream);
 }
 
 function asyncArrowFunction(stream : TokenStream) : void {
@@ -585,7 +585,7 @@ function asyncArrowFunction(stream : TokenStream) : void {
     keyword(Keywords._async)(stream);
     bindingIdentifier(stream);
     symbol(Symbols.arrow)(stream);
-    firstOf(lazyBlock, assignmentExpression)(stream);
+    firstOf(anyBlock, assignmentExpression)(stream);
 }
 
 export function assignmentExpression(stream : TokenStream) : Node {
@@ -637,7 +637,7 @@ export function expression(stream : TokenStream) : MultiNode {
 function expressionStatement(stream : TokenStream) : Node {
     //[lookahead ∉ { {, function, async [no LineTerminator here] function, class, let [ }] Expression[+In, ?Yield, ?Await] ;
     cannotStartWith(
-        lazyBlock,
+        anyBlock,
         keyword(Keywords._function),
         sequence(keyword(Keywords._async), keyword(Keywords._function, peekNoLineTerminatorHere)),
         keyword(Keywords._class),
@@ -700,7 +700,7 @@ function breakableStatement(stream : TokenStream) : void {
             ),
         ),
         // SwitchStatement[?Yield, ?Await, ?Return]
-        sequence(keyword(Keywords._case), lazyBlock)
+        sequence(keyword(Keywords._case), anyBlock)
     )(stream);
 }
 
@@ -765,23 +765,23 @@ function throwStatement(stream : TokenStream) : void {
 
 function tryStatement(stream : TokenStream) : void {
     keyword(Keywords._try)(stream);
-    lazyBlock(stream);
+    anyBlock(stream);
     optional(sequence(
         keyword(Keywords._catch),
         optional(roundBracket),
-        lazyBlock,
+        anyBlock,
     ))(stream);
     optional(sequence(
         keyword(Keywords._finally),
         optional(roundBracket),
-        lazyBlock,
+        anyBlock,
     ))(stream);
 }
 
 export function parseJsStatement(stream : TokenStream) : JsRawNode {
     longestOf(
         // BlockStatement[?Yield, ?Await, ?Return]
-        lazyBlock,
+        anyBlock,
         // VariableStatement[?Yield, ?Await]
         parseJsVarStatement,
         // EmptyStatement
@@ -875,12 +875,12 @@ function importDeclaration(stream : TokenStream) : JsRawNode {
                 // NameSpaceImport
                 nameSpaceImport,
                 // NamedImports
-                lazyBlock,
+                anyBlock,
                 // ImportedDefaultBinding , NameSpaceImport
                 // ImportedDefaultBinding , NamedImports
                 sequence(bindingIdentifier, comma, firstOf(
                     nameSpaceImport,
-                    lazyBlock
+                    anyBlock
                 )),
             ),
             keyword(Keywords._from),
@@ -905,7 +905,7 @@ function exportFromClause(stream : TokenStream) : void {
             identifierName,
         ),
         // NamedExports
-        lazyBlock,
+        anyBlock,
     )(stream);
 }
 
@@ -915,7 +915,7 @@ function exportDeclaration(stream : TokenStream) : JsRawNode {
         // export ExportFromClause FromClause ;
         sequence(exportFromClause, keyword(Keywords._from), anyString, symbol(Symbols.semicolon)),
         // export NamedExports ;
-        sequence(lazyBlock, symbol(Symbols.semicolon)),
+        sequence(anyBlock, symbol(Symbols.semicolon)),
         // export VariableStatement[~Yield, ~Await]
         parseJsVarStatement,
         // export Declaration[~Yield, ~Await]

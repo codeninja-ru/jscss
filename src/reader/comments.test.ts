@@ -94,4 +94,34 @@ describe('makeCssCommentReader()', () => {
         const reader = makeCssCommentReader(new StringInputStream("    "));
         expect(reader()).toBeNull();
     });
+
+    describe('regexp', () => {
+        test('shebang looks like a regexp', () => {
+            const reader = makeCommentAndRegexpReader(new StringInputStream("/bin/sh"));
+            expect(reader()).toEqual({
+                type: TokenType.SlashBrackets,
+                position: expect.anything(),
+                value: "/bin/"
+            });
+        });
+
+        test('regexp', () => {
+            const reader = makeCommentAndRegexpReader(new StringInputStream(/[a-z]*\/(.?)/gi + ""));
+            expect(reader()).toEqual({
+                type: TokenType.SlashBrackets,
+                position: expect.anything(),
+                value: "/[a-z]*\\/(.?)/"
+            });
+        });
+
+        test('throws error', () => {
+            const reader = makeCommentAndRegexpReader(new StringInputStream("/[a-z]*\\/'(*?"));
+            //thows error
+            expect(() => {
+                reader();
+            }).toThrowError('unexpected end of the regexp (1:14)');
+        });
+
+
+    });
 });

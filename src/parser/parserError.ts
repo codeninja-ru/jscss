@@ -12,6 +12,12 @@ export class ParserError extends Error {
     }
 }
 
+export class SyntaxRuleError extends Error {
+    constructor(message : string, position : Position) {
+        super(formatError(position, message));
+    }
+}
+
 /**
  * this error indicates that this error should be hight priority
  * somethime there is an error insede a block (round brackets for example),
@@ -29,7 +35,7 @@ export class BlockParserError extends Error {
  * */
 export class SequenceError extends Error {
     public cause: Error;
-    constructor(error : ParserError) {
+    constructor(error : ParserError | SyntaxRuleError) {
         // Error.prototype.cause has been avaliable since ecma-262 (2022)
         //super(error.message, {cause: error}); // TODO uncomment if switch to esnext
         super(error.message);
