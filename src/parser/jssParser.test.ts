@@ -235,6 +235,9 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
         parseCode(`#!/bin/sh\nalert();`).toEqual([
             {type: NodeType.Raw, position: {col: 1, line: 2}, value: "alert();"},
         ]);
+        parseCode(`#!/usr/bin/env node\nalert();`).toEqual([
+            {type: NodeType.Raw, position: {col: 1, line: 2}, value: "alert();"},
+        ]);
     });
 
     it('does not allow reserved words in selectors', () => {

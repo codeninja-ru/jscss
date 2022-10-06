@@ -109,7 +109,7 @@ function path(stream : TokenStream) : string {
             anyString,
             leftHandRecurciveRule(
                 firstOf(
-                    oneOfSymbols(Symbols.backslash, Symbols.div),
+                    oneOfSymbols(Symbols.backslash, Symbols.div, Symbols.dot),
                     anyLiteral,
                 ),
                 sequence(

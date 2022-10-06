@@ -34,6 +34,13 @@ describe('argParser', () => {
             hasJsOption: false,
         });
 
+        expect(parse("./tmp/input.jss C:/test/test.css")).toEqual({
+            type: ArgNodeType.InputAndOutput,
+            inputFile: "./tmp/input.jss",
+            outputFile: "C:/test/test.css",
+            hasJsOption: false,
+        });
+
         expect(parse(" ")).toEqual({
             type: ArgNodeType.Nothing,
         });
