@@ -566,7 +566,7 @@ export function lazyBlock(expectedTokenType : OneOfBlockTokenType, parser : Toke
 }
 
 //TODO block can by rewritten using lazyBlock
-type OneOfBlockTokenType = TokenType.Block | TokenType.LazyBlock | TokenType.RoundBrackets | TokenType.SquareBrackets | TokenType.SlashBrackets;
+type OneOfBlockTokenType = TokenType.Block | TokenType.LazyBlock | TokenType.RoundBrackets | TokenType.SquareBrackets ;
 export function block(expectedTokenType : OneOfBlockTokenType, parser : TokenParser) : TokenParser {
     function getBlockType(token : Token) : BlockType {
        switch(token.value[0]) {

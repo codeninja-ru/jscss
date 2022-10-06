@@ -137,6 +137,13 @@ console.log('hi');
         testParserFunction(parseJsScript, "x = a == b ? 1 : 2");
     });
 
+    it('regexps', () => {
+        testParserFunction(parseJsScript, "var a = /(.)*[a-z]/gi;");
+        testParserFunction(parseJsScript, "/(.)*[a-z]/;");
+        testParserFunction(parseJsScript, /\/\/\/\\*[a-z]\\/gi.toString());
+        expect(() => parseJsScript(ArrayTokenStream.fromString('/'))).toThrowError('(1:2) : unexpected end');
+    });
+
     it('string', () => {
         testParserFunction(parseJsScript, "var a = 'test';");
         testParserFunction(parseJsScript, "var a = 'test \\n test';");

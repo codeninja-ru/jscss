@@ -6,9 +6,12 @@ describe('makeStringReader()', () => {
     test('correct strings', () => {
         const reader1 = makeStringReader(new StringInputStream(`'test string \\'' next`), "'");
         const reader2 = makeStringReader(new StringInputStream('"test string \\"" next'), '"');
+        const reader3 = makeStringReader(new StringInputStream(`".=<>-*+&|^@%?:#!\\\\"`), '"');
 
         expect(reader1()).toEqual({ "type": TokenType.String, "value": "'test string \\''", position: {line: 1, col: 1}});
         expect(reader2()).toEqual({ "type": TokenType.String, "value": "\"test string \\\"\"", position: {line: 1, col: 1}});
+        expect(reader3()).toEqual({ "type": TokenType.String, "value": "todo", position: {line: 1, col: 1}});
+
     });
 
     test('incorect strings', () => {
@@ -16,9 +19,10 @@ describe('makeStringReader()', () => {
         const readerNotOpened = makeStringReader(new StringInputStream("test string '"), "'");
         const readerLineBreaked = makeStringReader(new StringInputStream("'test \n string'"), "'");
 
-        expect(() => readerNotClosed()).toThrow('unexpected end of the string (1:14)');
-        expect(() => readerLineBreaked()).toThrow('unexpected end of the string (2:1)');
+        expect(() => readerNotClosed()).toThrow('(1:14) : unexpected end of the string');
+        expect(() => readerLineBreaked()).toThrow('(2:1) : unexpected end of the string');
         expect(readerNotOpened()).toBeNull();
+
     });
 });
 

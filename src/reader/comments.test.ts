@@ -1,10 +1,10 @@
 import { StringInputStream } from "stream/input";
 import { TokenType } from "token";
-import { makeCommentAndRegexpReader, makeCssCommentReader } from "./comment";
+import { makeCommentReader, makeCssCommentReader } from "./comment";
 
 describe('makeCommentReader()', () => {
     test('single line comment', () => {
-        const reader = makeCommentAndRegexpReader(new StringInputStream("// this is a comment \n\nnew line"));
+        const reader = makeCommentReader(new StringInputStream("// this is a comment \n\nnew line"));
         expect(reader()).toEqual({
             type: TokenType.Comment,
             position: {line: 1, col: 1},
@@ -13,7 +13,7 @@ describe('makeCommentReader()', () => {
     });
 
     test('multiline comment', () => {
-        const reader = makeCommentAndRegexpReader(new StringInputStream("/* this is a comment \n\nnew line :-* */"));
+        const reader = makeCommentReader(new StringInputStream("/* this is a comment \n\nnew line :-* */"));
         expect(reader()).toEqual({
             type: TokenType.MultilineComment,
             position: {line: 1, col: 1},
@@ -22,7 +22,7 @@ describe('makeCommentReader()', () => {
     });
 
     test('multiline comment, do not read forward', () => {
-        const reader = makeCommentAndRegexpReader(new StringInputStream("/* this is a comment \n\nnew line :-* */do_not_read"));
+        const reader = makeCommentReader(new StringInputStream("/* this is a comment \n\nnew line :-* */do_not_read"));
         expect(reader()).toEqual({
             type: TokenType.MultilineComment,
             position: {line: 1, col: 1},
@@ -31,7 +31,7 @@ describe('makeCommentReader()', () => {
     });
 
     test('multiline comment, do not read forward 2', () => {
-        const reader = makeCommentAndRegexpReader(new StringInputStream("/* test */no!"));
+        const reader = makeCommentReader(new StringInputStream("/* test */no!"));
         expect(reader()).toEqual({
             type: TokenType.MultilineComment,
             position: {line: 1, col: 1},
@@ -40,7 +40,7 @@ describe('makeCommentReader()', () => {
     });
 
     test('without the end', () => {
-        const reader = makeCommentAndRegexpReader(new StringInputStream("/* this is a comment"));
+        const reader = makeCommentReader(new StringInputStream("/* this is a comment"));
         expect(reader()).toEqual({
             type: TokenType.MultilineComment,
             position: {line: 1, col: 1},
@@ -50,7 +50,7 @@ describe('makeCommentReader()', () => {
 
 
     test('empty', () => {
-        const reader = makeCommentAndRegexpReader(new StringInputStream("    "));
+        const reader = makeCommentReader(new StringInputStream("    "));
         expect(reader()).toBeNull();
     });
 });
@@ -95,33 +95,4 @@ describe('makeCssCommentReader()', () => {
         expect(reader()).toBeNull();
     });
 
-    describe('regexp', () => {
-        test('shebang looks like a regexp', () => {
-            const reader = makeCommentAndRegexpReader(new StringInputStream("/bin/sh"));
-            expect(reader()).toEqual({
-                type: TokenType.SlashBrackets,
-                position: expect.anything(),
-                value: "/bin/"
-            });
-        });
-
-        test('regexp', () => {
-            const reader = makeCommentAndRegexpReader(new StringInputStream(/[a-z]*\/(.?)/gi + ""));
-            expect(reader()).toEqual({
-                type: TokenType.SlashBrackets,
-                position: expect.anything(),
-                value: "/[a-z]*\\/(.?)/"
-            });
-        });
-
-        test('throws error', () => {
-            const reader = makeCommentAndRegexpReader(new StringInputStream("/[a-z]*\\/'(*?"));
-            //thows error
-            expect(() => {
-                reader();
-            }).toThrowError('unexpected end of the regexp (1:14)');
-        });
-
-
-    });
 });

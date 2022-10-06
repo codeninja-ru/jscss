@@ -233,8 +233,9 @@ function process(css) {
     test('shebang', () => {
         const tokens = lexer(new StringInputStream(`#!/bin/sh`));
         expect(tokens).toEqual([
-            makeSymbolToken('#'), makeSymbolToken('!'),
-            { type: TokenType.SlashBrackets, position: {col: 3, line: 1}, value: '/bin/' },
+            makeSymbolToken('#'), makeSymbolToken('!'), makeSymbolToken('/'),
+            makeLiteralToken('bin'),
+            makeSymbolToken('/'),
             makeLiteralToken('sh')
         ])
     });

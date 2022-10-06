@@ -1,6 +1,7 @@
 import { Keywords, ReservedWords } from "keywords";
 import { AssignmentOperator, Symbols } from "symbols";
 import { LiteralToken, TokenType } from "token";
+import { ParserError, UnexpectedEndError } from "./parserError";
 import { anyLiteral, anyString, anyTempateStringLiteral, block, cannotStartWith, comma, commaList, firstOf, keyword, anyBlock, leftHandRecurciveRule, longestOf, loop, noLineTerminatorHere, oneOfSymbols, optional, rawValue, regexpLiteral, roundBracket, sequence, squareBracket, strictLoop, symbol } from "./parserUtils";
 import { CommentNode, IfNode, JsModuleNode, JsRawNode, JssScriptNode, MultiNode, Node, NodeType, SyntaxTree, VarDeclaraionNode } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
@@ -286,12 +287,32 @@ function primaryExpression(stream: TokenStream) : void {
 }
 
 function regularExpressionBody(stream: TokenStream) : string {
-    const token = peekAndSkipSpaces(stream);
-    if (token.type == TokenType.SlashBrackets) {
-        return token.value;
+    symbol(Symbols.div)(stream);
+
+    let result = '/';
+    let isEscapeMode = false;
+
+    while(!stream.eof()) {
+        const token = stream.next();
+
+        if (token.type == TokenType.Symbol) {
+            result += token.value;
+            if (Symbols.div.equal(token) && !isEscapeMode) {
+                return result;
+            } else if (Symbols.backslash.equal(token)) {
+                isEscapeMode = !isEscapeMode;
+            } else {
+                isEscapeMode = false;
+            }
+        } else if (token.type == TokenType.Space && token.value.indexOf('\n') !== -1) {
+            throw new ParserError(`unexpected end of the regexp`, token);
+        } else {
+            result += token.value;
+            isEscapeMode = false;
+        }
     }
 
-    throw new Error(`regular expression is expteced, but ${JSON.stringify(token)} was given`);
+    throw new UnexpectedEndError(stream, `the regexp has been ended unexpectedly`);
 }
 
 export function parseComment(stream: TokenStream) : CommentNode {

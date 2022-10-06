@@ -5,8 +5,7 @@ export type Token = SpaceToken | CommentToken | CssCommentToken |
     LiteralToken | LazyBlockToken |
     CommaToken | StringToken |
     SymbolToken | TemplateStringToken |
-    RoundBracketsToken | SquareBracketsToken |
-    SlashBracketsToken;
+    RoundBracketsToken | SquareBracketsToken;
 
 export enum TokenType {
     Space,
@@ -22,7 +21,6 @@ export enum TokenType {
     TemplateString,
     RoundBrackets,
     SquareBrackets,
-    SlashBrackets,
 }
 
 export interface WithPosition {
@@ -103,9 +101,4 @@ export interface SquareBracketsToken extends BaseToken {
     readonly value: string;
 }
 
-export interface SlashBracketsToken extends BaseToken {
-    type: TokenType.SlashBrackets,
-    readonly value: string;
-}
-
-export type OneOfBlockToken = BlockToken | LazyBlockToken | RoundBracketsToken | SquareBracketsToken | SlashBracketsToken;
+export type OneOfBlockToken = BlockToken | LazyBlockToken | RoundBracketsToken | SquareBracketsToken ;

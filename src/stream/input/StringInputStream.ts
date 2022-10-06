@@ -1,3 +1,4 @@
+import { SyntaxRuleError } from 'parser/parserError';
 import { Position } from 'stream/position';
 import { InputStream } from './InputStream';
 
@@ -31,7 +32,7 @@ export class StringInputStream implements InputStream {
     }
 
     formatError(msg: string): Error {
-        return new Error(msg + " (" + this.line + ":" + this.col + ")");
+        return new SyntaxRuleError(msg, {line: this.line, col: this.col});
     }
 
     readUntil(str: string) : string {

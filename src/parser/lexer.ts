@@ -1,4 +1,4 @@
-import { makeCommentAndRegexpReader, makeCssCommentReader } from 'reader/comment';
+import { makeCommentReader, makeCssCommentReader } from 'reader/comment';
 import { makeBlockReader, makeBracketsReader, makeCommaReader, makeLiteralReader, makeSemicolonReader, makeSpaceReader, makeStringReader, makeSymbolReader, makeTemplateStringReader, makeUnexpectedReader, Reader } from 'reader/readers';
 import { InputStream } from 'stream/input';
 import { StringOutputStream } from 'stream/output';
@@ -15,7 +15,7 @@ export function lexer(stream: InputStream) {
         makeSymbolReader(stream),
         makeLiteralReader(stream),
         makeBlockReader(stream),
-        makeCommentAndRegexpReader(stream),
+        makeCommentReader(stream),
         makeStringReader(stream, "'"),
         makeStringReader(stream, '"'),
         makeTemplateStringReader(stream),
