@@ -1,4 +1,4 @@
-import { SyntaxRuleError } from 'parser/parserError';
+import { LexerError } from 'parser/parserError';
 import { Position } from 'stream/position';
 import { InputStream } from './InputStream';
 
@@ -17,7 +17,7 @@ export class StringInputStream implements InputStream {
     next(): string {
         var ch = this.input.charAt(this.pos++);
         if (ch == '') {
-            throw this.formatError('reading beyond the end of the stream');
+            throw new LexerError('reading beyond the end of the stream', this)
         }
         if (ch == "\n") this.line++, this.col = 1; else this.col++;
         return ch;
@@ -29,10 +29,6 @@ export class StringInputStream implements InputStream {
 
     isEof(): boolean {
         return this.peek() == '';
-    }
-
-    formatError(msg: string): Error {
-        return new SyntaxRuleError(msg, {line: this.line, col: this.col});
     }
 
     readUntil(str: string) : string {

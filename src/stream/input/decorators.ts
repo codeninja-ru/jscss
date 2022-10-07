@@ -1,5 +1,6 @@
 import { InputStream } from './InputStream';
 import { AbstractInputStreamDecorator } from './AbstractInputStreamDecorator';
+import { LexerError } from 'parser/parserError';
 
 export function readToEnd(input: InputStream): string {
     var result = '';
@@ -44,7 +45,7 @@ export class BlockInputStream extends AbstractInputStreamDecorator {
         super(stream);
         
         if (!BlockInputStream.isBlockStart(this.peek())) {
-            throw this.formatError('start of the block is expected');
+            throw new LexerError('start of the block is expected', stream);
         }
     }
 
@@ -62,7 +63,7 @@ export class BlockInputStream extends AbstractInputStreamDecorator {
         }
 
         if (this.level < 0) {
-            throw this.formatError(`curly brackets do not match`);
+            throw new LexerError(`curly brackets do not match`, this);
         }
 
         return ch;
@@ -98,7 +99,7 @@ export class MultilineCommentStream extends AbstractInputStreamDecorator {
     
     next(): string {
         if (this.isEof()) {
-            throw this.formatError('the end of the multiline block');
+            throw new LexerError('the end of the multiline block', this);
         }
 
         return this._next();
@@ -147,7 +148,7 @@ export class StringValueStream extends AbstractInputStreamDecorator {
             return true;
         }
         if (this.stream.isEof()) {
-            throw this.formatError('unexpected end of the string');
+            throw new LexerError('unexpected end of the string', this);
         }
 
         return false;

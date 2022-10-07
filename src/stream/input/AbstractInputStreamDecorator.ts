@@ -20,10 +20,6 @@ export abstract class AbstractInputStreamDecorator implements InputStream {
         return this.stream.peek();
     }
 
-    formatError(msg: string): Error {
-        return this.stream.formatError(msg);
-    }
-
     abstract isEof(): boolean;
 
     position() : Position {

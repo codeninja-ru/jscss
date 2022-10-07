@@ -1,3 +1,4 @@
+import { InputStream } from "stream/input";
 import { Position } from "stream/position";
 import { Token, TokenType } from "token";
 import { TokenStream } from "./tokenStream";
@@ -15,6 +16,12 @@ export class ParserError extends Error {
 export class SyntaxRuleError extends Error {
     constructor(message : string, position : Position) {
         super(formatError(position, message));
+    }
+}
+
+export class LexerError extends Error {
+    constructor(message : string, stream : InputStream) {
+        super(formatError(stream.position(), message));
     }
 }
 

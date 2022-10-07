@@ -1,3 +1,4 @@
+import { LexerError } from "parser/parserError";
 import { InputStream, readToEnd, TillEndOfLineStream } from "stream/input";
 import { Token, TokenType } from "token";
 import { Reader, readSymbol } from "./readers";
@@ -9,7 +10,7 @@ export function makeCommentReader(stream: InputStream): Reader {
             stream.next();
 
             if (stream.isEof()) {
-                throw stream.formatError('unexpected end');
+                throw new LexerError('unexpected end', stream);
             }
 
             var ch = stream.peek();
@@ -45,12 +46,12 @@ export function makeCommentReader(stream: InputStream): Reader {
 function expectNextSymbol(stream : InputStream, ch : string) {
     if (stream.peek() == ch) {
         if (stream.isEof()) {
-            throw stream.formatError('unexpected end of the comment block');
+            throw new LexerError('unexpected end of the comment block', stream);
         }
         stream.next();
 
     } else {
-        throw stream.formatError(`unexpected symbol "${stream.peek()}", did you mean "<!--" ?, JSX is not supported`);
+        throw new LexerError(`unexpected symbol "${stream.peek()}", did you mean "<!--" ?, JSX is not supported`, stream);
     }
 }
 

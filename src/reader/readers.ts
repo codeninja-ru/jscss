@@ -1,3 +1,4 @@
+import { LexerError } from "parser/parserError";
 import { BlockInputStream, InputStream, KindOfSpaceInputStream, LiteralInputStream, readToEnd } from "stream/input";
 import { Position } from "stream/position";
 import { CommaToken, SpaceToken, SymbolToken, Token, TokenType } from "token";
@@ -98,10 +99,14 @@ export function makeStringReader(stream: InputStream, quatation: "'" | '"'): Rea
                         value: result,
                     } as Token;
                 }
-                isEscapeMode = ch == ESCAPE_SYMBOL;
+                if (ch == ESCAPE_SYMBOL) {
+                    isEscapeMode = !isEscapeMode;
+                } else {
+                    isEscapeMode = false;
+                }
             }
 
-            throw stream.formatError('unexpected end of the string');
+            throw new LexerError('unexpected end of the string', stream);
         }
 
         return null;
@@ -173,7 +178,7 @@ export function makeBracketsReader(stream: InputStream, startBracket: '(' | '[',
                     } as Token;
                 }
             }
-            throw stream.formatError('brackets does not match');
+            throw new LexerError('brackets does not match', stream);
         }
 
         return null;
@@ -202,7 +207,7 @@ export function makeTemplateStringReader(stream: InputStream): Reader {
                 }
             }
 
-            throw stream.formatError('unexpected end of the string');
+            throw new LexerError('unexpected end of the string', stream);
         }
 
         return null;
@@ -218,6 +223,6 @@ export function makeTemplateStringReader(stream: InputStream): Reader {
 export function makeUnexpectedReader(stream: InputStream): Reader {
     return function() {
         var ch = stream.peek();
-        throw stream.formatError(`unexpected symbol '${ch}' code: ${ch.charCodeAt(0)}`);
+        throw new LexerError(`unexpected symbol '${ch}' code: ${ch.charCodeAt(0)}`, stream);
     }
 }

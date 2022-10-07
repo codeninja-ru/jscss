@@ -28,17 +28,17 @@ describe('class StringInputStream', () => {
 
     test('readUntil()', () => {
         let input = new StringInputStream('test 123_qwerty');
-        expect(input.formatError('error')).toEqual(new Error('(1:1) : error'));
+        expect(input.position()).toEqual({line: 1, col: 1});
         expect(input.readUntil('123')).toEqual('test 123');
         expect(input.readUntil('123')).toEqual('_qwerty')
         expect(input.readUntil('test')).toEqual('');
-        expect(input.formatError('error')).toEqual(new Error('(1:1) : error'));
+        expect(input.position()).toEqual({line: 1, col: 1});
 
         input = new StringInputStream('test 123\nqwerty');
         expect(input.readUntil('123')).toEqual('test 123');
         expect(input.readUntil('qwerty')).toEqual('\nqwerty');
         expect(input.readUntil('qwerty')).toEqual('');
-        expect(input.formatError('error')).toEqual(new Error('(2:1) : error'));
+        expect(input.position()).toEqual({line: 2, col: 1});
 
         input = new StringInputStream('/* test */no');
         input.next();

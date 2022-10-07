@@ -10,7 +10,7 @@ describe('makeStringReader()', () => {
 
         expect(reader1()).toEqual({ "type": TokenType.String, "value": "'test string \\''", position: {line: 1, col: 1}});
         expect(reader2()).toEqual({ "type": TokenType.String, "value": "\"test string \\\"\"", position: {line: 1, col: 1}});
-        expect(reader3()).toEqual({ "type": TokenType.String, "value": "todo", position: {line: 1, col: 1}});
+        expect(reader3()).toEqual({ "type": TokenType.String, "value": `".=<>-*+&|^@%?:#!\\\\"`, position: {line: 1, col: 1}});
 
     });
 
