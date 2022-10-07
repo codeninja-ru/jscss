@@ -1,7 +1,7 @@
 import { SourceMapConsumer } from "source-map";
 import { Position } from "stream/position";
 
-class StackLine {
+export class StackLine {
     constructor(readonly moduleName : string | undefined,
                 readonly filePath : string | undefined,
                 readonly position: Position | undefined) {
@@ -52,17 +52,19 @@ class StackLine {
             return new StackLine(emptyLine[1], undefined, undefined);
         }
 
-        throw new Error(`unsupported stack line " ${stackLine} "`)
+        throw new Error(`unsupported stack line " ${stackLine} "`);
     }
 }
 
 export interface StackTrace {
+    readonly name: string;
     readonly errorMessage : string;
     readonly stack : StackLine[];
 }
 
 export class StackTrace implements StackTrace {
-    constructor(readonly errorMessage : string,
+    constructor(readonly name : string,
+                readonly errorMessage : string,
                 readonly stack : StackLine[]) {
         Object.defineProperties(this, {
             errorMessage: {
@@ -70,16 +72,11 @@ export class StackTrace implements StackTrace {
             },
             stack: {
                 writable: false,
+            },
+            name: {
+                writable: false,
             }
         });
-    }
-
-    static fromString(errorMessage : string) : StackTrace {
-        const stack = errorMessage.split('\n');
-        const message = stack[0];
-        const stackList = stack.slice(1).map((line) => StackLine.formStackLine(line));
-
-        return new StackTrace(message, stackList);
     }
 
     static fromError(error : Error) : StackTrace {
@@ -87,7 +84,10 @@ export class StackTrace implements StackTrace {
             throw new Error('Error.stack is undefined');
         }
 
-        return StackTrace.fromString(error.stack);
+        const stack = error.stack.replace(error.message, '').split('\n');
+        const stackList = stack.slice(1).map((line) => StackLine.formStackLine(line));
+
+        return new StackTrace(error.name, error.message, stackList);
     }
 }
 
@@ -96,9 +96,9 @@ export interface StackTracePrinter {
 }
 
 export class BasicStackTracePrinter implements StackTracePrinter {
-    print(strackTrace : StackTrace) : void {
-        console.log(strackTrace.errorMessage);
-        strackTrace.stack.forEach((line) => {
+    print(stackTrace : StackTrace) : void {
+        console.log(stackTrace.name + ': ' + stackTrace.errorMessage);
+        stackTrace.stack.forEach((line) => {
             console.log(`     at ${line.toString()}`);
         });
     }
@@ -112,6 +112,10 @@ export class SourceMappedStackTrace implements StackTrace {
 
     get errorMessage() : string {
         return this.stackTrack.errorMessage;
+    }
+
+    get name() : string {
+        return this.stackTrack.name;
     }
 
     get stack() : StackLine[] {
@@ -141,13 +145,17 @@ export class SourceMappedStackTrace implements StackTrace {
 }
 
 export class VmScriptStrackTrace implements StackTrace {
-    protected constructor(readonly errorMessage : string,
-                readonly stack : StackLine[]) {
+    protected constructor(readonly name : string,
+                          readonly errorMessage : string,
+                          readonly stack : StackLine[]) {
         Object.defineProperties(this, {
             errorMessage: {
                 writable: false,
             },
             stack: {
+                writable: false,
+            },
+            name: {
                 writable: false,
             }
         });
@@ -163,6 +171,6 @@ export class VmScriptStrackTrace implements StackTrace {
             }
         });
 
-        return new VmScriptStrackTrace(stackTrace.errorMessage, stack.slice(0, internalStackIdx));
+        return new VmScriptStrackTrace(stackTrace.name, stackTrace.errorMessage, stack.slice(0, internalStackIdx));
     }
 }
