@@ -655,7 +655,7 @@ export function expression(stream : TokenStream) : MultiNode {
     };
 }
 
-function expressionStatement(stream : TokenStream) : Node {
+export function expressionStatement(stream : TokenStream) : Node {
     //[lookahead ∉ { {, function, async [no LineTerminator here] function, class, let [ }] Expression[+In, ?Yield, ?Await] ;
     cannotStartWith(
         anyBlock,
@@ -663,7 +663,6 @@ function expressionStatement(stream : TokenStream) : Node {
         sequence(keyword(Keywords._async), keyword(Keywords._function, peekNoLineTerminatorHere)),
         keyword(Keywords._class),
         keyword(Keywords._let),
-        roundBracket,
     )(stream);
 
     const expr = expression(stream);

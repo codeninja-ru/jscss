@@ -259,10 +259,4 @@ import * as _ from '/reader/readers';`).toEqual([
     {type: NodeType.Raw, position: {col: 1, line: 2}, value: "import * as _ from '/reader/readers';"},
 ]);
     });
-
-    it('parses IIFE pattern', () => {
-        parseCode(`(function (TokenType) {
-    TokenType[TokenType["Space"] = 0] = "Space";
-})(TokenType || (TokenType = {}));`).toEqual('todo');
-    });
 });
