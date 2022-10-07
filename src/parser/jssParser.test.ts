@@ -260,5 +260,9 @@ import * as _ from '/reader/readers';`).toEqual([
 ]);
     });
 
-
+    it('parses IIFE pattern', () => {
+        parseCode(`(function (TokenType) {
+    TokenType[TokenType["Space"] = 0] = "Space";
+})(TokenType || (TokenType = {}));`).toEqual('todo');
+    });
 });

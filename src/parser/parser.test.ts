@@ -168,6 +168,12 @@ console.log('hi');
         testParserFunction(parseJsScript, "--i + foo");
     });
 
+    it('parses IIFE pattern', () => {
+        testParserFunction(parseJsScript, `(function (TokenType) {
+    TokenType[TokenType["Space"] = 0] = "Space";
+})(TokenType || (TokenType = {}));`);
+    });
+
 });
 
 describe('parseJsModule()', () => {
@@ -181,5 +187,4 @@ export const varName = name1;
 export default class {};`);
 
     });
-
 });

@@ -148,8 +148,8 @@ export function selector(stream : TokenStream) : JssSelectorNode {
  *
  * */
 function jssVariableStatement(stream : TokenStream) : JssVarDeclarationNode {
-    const [exportKeyword, decKeyword, varName,,,,block] = sequenceWithPosition(
-        optional(keyword(Keywords._export)),
+    const exportKeyword = optional(keyword(Keywords._export))(stream);
+    const [decKeyword, varName,,,,block] = sequenceWithPosition(
         firstOf(
             keyword(Keywords._const),
             keyword(Keywords._let),
@@ -175,8 +175,8 @@ function jssVariableStatement(stream : TokenStream) : JssVarDeclarationNode {
         name: varName.value,
         namePos: varName.position,
         items: block.value.parse().items,
-        hasExport: exportKeyword.value !== undefined,
-        ...(exportKeyword.value !== undefined ? { exportPos: exportKeyword.position } : {})
+        hasExport: exportKeyword !== undefined,
+        ...(exportKeyword !== undefined ? { exportPos: exportKeyword.position } : {})
     };
 }
 
