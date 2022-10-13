@@ -144,11 +144,11 @@ function optionalExpression(stream: TokenStream) : void {
 }
 
 function leftHandSideExpression(stream: TokenStream) : void {
-    longestOf(
-        // NewExpression[?Yield, ?Await]
-        newExpression,
+    firstOf( //NOTE I changed the order of operation since newExpression and callExpression can start with MemeberEpxression, but callExprssion has a recursion so it's large. changeing the order we don't need to use largeOf
         //CallExpression[?Yield, ?Await]
         callExpression,
+        // NewExpression[?Yield, ?Await]
+        newExpression,
         //OptionalExpression
         optionalExpression,
     )(stream);
@@ -569,7 +569,7 @@ function coalesceExpression(stream : TokenStream) : void {
 }
 
 function shortCircuitExpression(stream : TokenStream) : void {
-    return longestOf(
+    return firstOf(
         // LogicalORExpression[?In, ?Yield, ?Await]
         logicalOrExpression,
         // CoalesceExpression[?In, ?Yield, ?Await]

@@ -15,16 +15,18 @@ TODO
 ### Installation
 TODO
 
+npm install jsslang
+
 ### Variables
 
-You can use the javascript syntex for varables
+You can use the javascript syntax for variables
 
 ``` javascript
 const color = '#fff';
 const baseSize = 10;
 
 .className {
-  color: ${color}
+  color: ${color};
   size: ${baseSize + 2}px;
 }
 ```
@@ -37,6 +39,26 @@ Output:
   size: 12px;
 }
 ```
+
+You can build in classes for sizes. For examples:
+
+``` javascript
+const size = new Px(10);
+
+.className {
+  color: #fff;
+  size: ${size};
+}
+```
+
+Output:
+``` css
+.className {
+  color: #fff;
+  size: 10px;
+}
+```
+
 
 ### Mixins
 

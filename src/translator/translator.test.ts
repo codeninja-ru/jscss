@@ -1,9 +1,7 @@
 import { parseJssScript } from "parser/jssParser";
 import { ArrayTokenStream } from "parser/tokenStream";
+import { evalTestCode } from "testUtils";
 import { translator } from "./translator";
-// @ts-ignore
-import vm from "vm";
-import { JssBlock, JssBlockCaller, JssStyleBlock, JssStyleSheet } from "./lib/core";
 
 const CSS = `@import 'main.css';
 
@@ -13,28 +11,6 @@ const bgColor = '#fff';
   color: red;
   background: $\{bgColor\};
 }`;
-
-function evalCode(css : string) {
-    const sourceCode = translator(parseJssScript(ArrayTokenStream.fromString(css)),
-                                 'result.jss',
-                                 'result.css');
-    const context = {
-        'JssStylesheet': JssStyleSheet,
-        'JssStyleBlock': JssStyleBlock,
-        'JssBlock' : JssBlock,
-        'JssBlockCaller' : JssBlockCaller,
-    };
-    try {
-        const script = new vm.Script(sourceCode.value.replace('export _styles', '_styles'));
-        vm.createContext(context);
-        return script.runInContext(context);
-    } catch(e) {
-        console.log(sourceCode);
-        console.error(e);
-        throw e;
-    }
-}
-
 
 describe('translator()', () => {
     it('translates simple css', () => {
@@ -59,7 +35,7 @@ return self;
 export _styles;`);
         expect(result.value).toMatch(/\/\/# sourceMappingURL=data:application\/json;charset=utf\-8;base64,[\w\+]+=*$/);
 
-        expect(evalCode(CSS).toCss()).toEqual(`@import 'main.css';
+        expect(evalTestCode(CSS).toCss()).toEqual(`@import 'main.css';
 
 .className {
     color: red;
@@ -68,7 +44,7 @@ export _styles;`);
     });
 
     it('parses nested classes', () => {
-        expect(evalCode(`.className1 .className2 {
+        expect(evalTestCode(`.className1 .className2 {
   font-size: 10px;
 
   .className3 {
@@ -81,7 +57,7 @@ export _styles;`);
     });
 
     it('parses vars in selectors', () => {
-        expect(evalCode(`const className = '.someClassName';
+        expect(evalTestCode(`const className = '.someClassName';
 $\{className\} .className2 {
 font-size: 10px; }`).toArray()).toEqual([
     {name: '.someClassName .className2', value: { "font-size": "10px" }},
@@ -89,7 +65,7 @@ font-size: 10px; }`).toArray()).toEqual([
     });
 
     it('can access parents objects by this keyword', () => {
-        expect(evalCode(`.className1 .className2 {
+        expect(evalTestCode(`.className1 .className2 {
   font-size: 10px;
 
   $\{this.name\}.className3 {
@@ -102,7 +78,7 @@ font-size: 10px; }`).toArray()).toEqual([
     });
 
     it('can call functions', () => {
-        expect(evalCode(`
+        expect(evalTestCode(`
 function pad2(n) { return n.length > 1 ? n : "0" + n; }
 function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) + pad2(b.toString(16)); }
 .className {
@@ -114,7 +90,7 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
     });
 
     it('can extend class by ... (3 dots) operator', () => {
-        expect(evalCode(`const mixin = new { color: red };
+        expect(evalTestCode(`const mixin = new { color: red };
 .childClass {
   font-size: 10px;
   ...mixin;
@@ -122,7 +98,7 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
     {name: ".childClass", value: {color: "red", "font-size": "10px"}}
 ]);
 
-        expect(evalCode(`const mixin = new { "color": red };
+        expect(evalTestCode(`const mixin = new { "color": red };
 .childClass {
   font-size: 10px;
   ...mixin;
@@ -132,7 +108,7 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
     });
 
     it('can handle ...this.style', () => {
-        expect(evalCode(`.parent {
+        expect(evalTestCode(`.parent {
     font-size: 10px;
     color: red;
     .child {
@@ -145,7 +121,7 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
     });
 
     it('can handle jss varables', () => {
-        expect(evalCode(`const hidden = new { display: none; };
+        expect(evalTestCode(`const hidden = new { display: none; };
 .className {
     font-size: 10px;
     ...hidden;
@@ -156,7 +132,7 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
     });
 
     it('can handle jss variables with child nodes, and ${this} is refered to the parent class', () => {
-        expect(evalCode(`const clearfix = new {
+        expect(evalTestCode(`const clearfix = new {
     display: block;
     name: $\{this.name\};
     $\{this.name\}:after {
@@ -183,14 +159,14 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
 
 
     it('parses some complecated syntax', () => {
-        expect(evalCode(`const a = 1; const b = 2; const c = a+b; _styles = c;`)).toEqual(3);
-        expect(evalCode(`const a = 1; const b = 2; const c = b-a; _styles = c;`)).toEqual(1);
+        expect(evalTestCode(`const a = 1; const b = 2; const c = a+b; _styles = c;`)).toEqual(3);
+        expect(evalTestCode(`const a = 1; const b = 2; const c = b-a; _styles = c;`)).toEqual(1);
 
-        expect(evalCode(`html { -webkit-text-size-adjust: 100%; /* 2 */ }`).toArray()).toEqual([
+        expect(evalTestCode(`html { -webkit-text-size-adjust: 100%; /* 2 */ }`).toArray()).toEqual([
             {name: "html", value: {"-webkit-text-size-adjust": "100%"}},
         ]);
 
-        expect(evalCode(`button::-moz-focus-inner,[type="button"]::-moz-focus-inner{padding: 0;}`).toArray()).toEqual([
+        expect(evalTestCode(`button::-moz-focus-inner,[type="button"]::-moz-focus-inner{padding: 0;}`).toArray()).toEqual([
             {name: `button::-moz-focus-inner, [type="button"]::-moz-focus-inner`, value: {
                 padding: "0",
             }}

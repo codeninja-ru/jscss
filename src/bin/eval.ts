@@ -4,6 +4,7 @@ import Module from 'module';
 import { BasicStackTracePrinter, SourceMappedStackTrace, StackTrace, VmScriptStrackTrace } from "./stackTrace";
 import { SourceMapConsumer } from "source-map";
 import { GeneratedCode } from "translator/translator";
+import { Px, Em, Percent } from "translator/lib/dimentions/dimention";
 
 export enum EvalStatucCode {
     Success,
@@ -26,6 +27,10 @@ export function evalCode(sourceCode : GeneratedCode,
         'require' : contectModule.require.bind(contectModule),
         'module' : contectModule,
         'exports' : contectModule.exports,
+
+        'Px' : Px,
+        'Em' : Em,
+        'Percent' : Percent,
     };
 
     try {
