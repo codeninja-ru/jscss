@@ -158,8 +158,8 @@ Output:
 px, em, % - variables and operations
 
 ``` javascript
-const size = 3px; // converts to new CssSize(3px)
-const size = 1px + 2px; // converts to CssSize.plus(new CssSize(1px) + new CssSize(3px))
+const size = 3px; // converts to new Px(3);
+const size = 1px + 2px; // converts to Px.valueOf(1).plus(Px.valueOf(2));
 
 const color = #777; // converts to new CssColor('#777');
 ```

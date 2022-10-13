@@ -15,6 +15,8 @@ describe('Px', () => {
         expect(px1.equal(new Px(9))).toBeFalsy();
         expect(px1.equal(new Em(10))).toBeFalsy();
 
+        expect(Px.valueOf(999) + '').toEqual('999px');
+
         // @ts-ignore
         expect(() => px1.minus(new Em(5)).toString()).toThrowError();
     });
@@ -32,4 +34,14 @@ describe('Percent', () => {
         const em1 = new Percent(10);
         expect(em1.toString()).toEqual('10%');
     });
+});
+
+describe('fromString()', () => {
+    it('parse dimentions', () => {
+        expect(Px.fromString('10px').toString()).toEqual('10px');
+        expect(Em.fromString('10px').toString()).toEqual('10px');
+        expect(Px.fromString('10em').toString()).toEqual('10em');
+        expect(Px.fromString('10%').toString()).toEqual('10%');
+    });
+
 });

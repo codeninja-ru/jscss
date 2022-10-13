@@ -25,12 +25,20 @@ interface PercentDimention extends Dimention<'%'>{
     minus(value : this | number) : this;
 }
 
-type Class<T> = {new (value : number) : T};
+type Class<T> = {
+    new (value : number) : T;
+    valueOf(value : Number) : T;
+    fromString(value : string) : OneOfDimentions;
+};
 
 export function createClass<S extends Suffix>(suffix : S) : Class<Dimention<S>> {
     return class BasicDemention implements Dimention<S> {
         readonly suffix = suffix;
         constructor(readonly value : number) {
+        }
+
+        static valueOf(value : number) {
+            return new BasicDemention(value);
         }
 
         toString() : string {
@@ -66,9 +74,40 @@ export function createClass<S extends Suffix>(suffix : S) : Class<Dimention<S>> 
 
             return false;
         }
+
+        static fromString(str : string) : Dimention<any> {
+            return fromString(str);
+        }
+    }
+}
+
+type OneOfDimentions = (PxDimention | EmDimention | PercentDimention);
+function fromString<T>(str : string) : OneOfDimentions {
+    const regExp = /^(([\+\-]*\d*\.*\d+[eE])?([\+\-]*\d*\.*\d+))(px|cm|mm|in|pt|pc|em|ex|deg|rad|grad|ms|s|hz|khz|%)$/i;
+    const match = str.match(regExp);
+    if (match) {
+        console.log(match);
+        const numeric = match[1];
+        const suffix = match[4];
+
+        switch (suffix) {
+            case 'px':
+                return new Px(Number.parseFloat(numeric));
+            case 'em':
+                return new Em(Number.parseFloat(numeric));
+            case '%':
+                return new Percent(Number.parseFloat(numeric));
+            default:
+                throw new Error('unsupported suffix ' + suffix);
+
+        }
+    } else {
+        throw new Error('cannot parse ' + str);
     }
 }
 
 export const Px = createClass('px') as Class<PxDimention>;
 export const Em = createClass('em') as Class<EmDimention>;
 export const Percent = createClass('%') as Class<PercentDimention>;
+
+//TODO unit convertion
