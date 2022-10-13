@@ -50,4 +50,60 @@ const baseSize = 10;
         });
 
     });
+
+    describe('funcitons', () => {
+            const css = evalTestCode(`
+function pad2(n) { return n.length > 1 ? n : "0" + n; }
+function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) + pad2(b.toString(16)); }
+
+.className {
+  background: \${rgb(123,123,123)};
+}`).toCss();
+            expect(css).toEqual(`.className {
+    background: #7b7b7b;
+}`);
+    });
+
+    describe('Nesting', () => {
+        it('can nest rules', () => {
+            const css = evalTestCode(`.menu {
+  font-size: 12px;
+  \${this.name}.menu__item {
+      color: 10px;
+  }
+}`).toCss();
+            expect(css).toEqual(`.menu {
+    font-size: 12px;
+}
+
+.menu.menu__item {
+    color: 10px;
+}`);
+        });
+
+        it('can nest list of selectors', () => {
+            const css = evalTestCode(`.menu1, .menu2 {
+  font-size: 12px;
+  \${this.selectors[0]}.menu__item {
+      color: 10px;
+  }
+  \${this.selectors[1]}.menu__item {
+      color: 12px;
+  }
+}`).toCss();
+            expect(css).toEqual(`.menu1, .menu2 {
+    font-size: 12px;
+}
+
+.menu1.menu__item {
+    color: 10px;
+}
+
+.menu2.menu__item {
+    color: 12px;
+}`);
+        });
+
+
+    });
 });

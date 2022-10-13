@@ -103,9 +103,6 @@ Output:
 }
 ```
 
-
-
-
 ### Nesting
 
 ``` javascript
@@ -142,6 +139,20 @@ or in case of a list of selectors
 }
 ```
 
+Output:
+``` css
+.menu1, .menu2 {
+    font-size: 12px;
+}
+
+.menu1.menu__item {
+    color: 10px;
+}
+
+.menu2.menu__item {
+    color: 12px;
+}
+```
 
 # TODO
 px, em, % - variables and operations

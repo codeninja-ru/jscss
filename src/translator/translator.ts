@@ -101,7 +101,7 @@ function declarations2js(blockList : JssBlockItemNode[], fileName : string, bind
                 case NodeType.Ignore:
                     return '';
                 case NodeType.JssBlock:
-                    return tag`self.addChild(${jssBlock2js(item, fileName, bindName)})`;
+                    return tag`self.addChild(${jssBlock2js(item, fileName, bindName)});`;
                 case NodeType.JssSpread:
                     return jssSpread2SourceNode(item, fileName);
                 default:
