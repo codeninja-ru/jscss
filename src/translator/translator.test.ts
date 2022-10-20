@@ -174,4 +174,14 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
 
     });
 
+    it('parses media queries', () => {
+        debugger;
+        expect(evalTestCode(`@media only screen and (max-width: 600px) {
+  body {
+    background-color: lightblue;
+  }
+}`).toArray()).toEqual([
+
+        ]);
+    });
 });

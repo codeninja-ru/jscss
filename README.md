@@ -180,3 +180,27 @@ media-queries
   }
 }
 ```
+
+Output
+``` css
+.component {
+    width: 300px;
+}
+
+@media (min-width: 768px) {
+    .component {
+        width: 600px;
+    }
+    @media  (min-resolution: 192dpi) {
+        .component {
+            background-image: url(/img/retina2x.png);
+        }
+    }
+}
+
+@media (min-width: 1280px) {
+    .component {
+        width: 800px;
+    }
+}
+```

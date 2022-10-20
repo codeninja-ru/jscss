@@ -8,7 +8,6 @@ import { anyBlock, anyString, block, comma, commaList, dollarSign, firstOf, igno
 import { BlockNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssMediaNode, JssSelectorNode, JssSpreadNode, JssVarDeclarationNode, NodeType, SyntaxTree } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
-import { peekNextToken } from "./tokenStreamReader";
 
 export function parseJssScript(stream : TokenStream) : SyntaxTree {
     optional(skipShebang)(stream);
@@ -215,10 +214,7 @@ function jssMediaList(stream : TokenStream) : LiteralToken[] {
 }
 
 export function jssMediaStatement(stream : TokenStream) : JssMediaNode {
-    const [at,,,] = sequence(
-        symbol(Symbols.at, peekNextToken),
-        keyword(Keywords.cssMedia),
-    )(stream);
+    const start = keyword(Keywords.cssMedia)(stream);
 
     const mediaListItems = jssMediaList(stream).map((token : LiteralToken) => token.value);
     const rules = block(TokenType.LazyBlock, strictLoop(
@@ -231,20 +227,44 @@ export function jssMediaStatement(stream : TokenStream) : JssMediaNode {
     return {
         type: NodeType.JssMedia,
         mediaList: mediaListItems,
-        position: at.position,
+        position: start.position,
         items: rules,
     };
 }
 
+/**
+ * all rules that stat with @
+ * */
+function startsWithDog(stream : TokenStream) : any {
+    const dog = symbol(Symbols.at)(stream);
+    noSpacesHere(stream);
+    try {
+        let result = firstOf(
+            cssCharset,
+            importStatement,
+            jssMediaStatement,
+            pageStatement,
+        )(stream);
+
+        if (result.rawValue) {
+            result.rawValue = '@' + result.rawValue;
+        }
+
+        if (result.position) {
+            result.position = dog.position;
+        }
+
+        return result;
+    } catch (e) {
+        throw new SequenceError(e);
+    }
+}
+
 export function stylesheetItem(stream : TokenStream) : ReturnType<TokenParser> {
-    //TODO everything that starts with @ can be optimized by combining together
     return firstOf(
-        cssCharset,
-        importStatement,
         rulesetStatement,
-        jssMediaStatement,
-        pageStatement,
         jssVariableStatement,
+        startsWithDog,
     )(stream);
 }
 

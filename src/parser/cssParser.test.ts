@@ -211,4 +211,15 @@ describe('CSS Parser', () => {
         expect(() => cssLiteral(ArrayTokenStream.fromString('.className#id'))).toThrowError('');
     });
 
+    it('parses media queries', () => {
+        expect(parseCssStyleSheet(ArrayTokenStream.fromString(`@media only screen and (max-width: 600px) {
+  body {
+    background-color: lightblue;
+  }
+}`))).toEqual([
+
+        ]);
+    });
+
+
 });

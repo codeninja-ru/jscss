@@ -66,4 +66,9 @@ export const Keywords = {
     cssMedia: new Keyword('media'),
     cssPage: new Keyword('page'),
     cssImportant: new Keyword('important'),
+    cssNot: new Keyword('not'),
+    cssOnly: new Keyword('only'),
+    cssAnd: new Keyword('and'),
+    cssDpi: new Keyword('dpi'),
+    cssDpcm: new Keyword('dpcm'),
 }

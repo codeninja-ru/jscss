@@ -1,12 +1,13 @@
 // the spec is here https://www.w3.org/TR/CSS2/grammar.html#q25.0
 // updated grammar is here https://drafts.csswg.org/selectors-3/#grammar
+// https://www.w3.org/TR/mediaqueries-3/#syntax
 
 import { Keywords } from "keywords";
 import { Symbols, SyntaxSymbol } from "symbols";
-import { LiteralToken, TokenType, Token } from "token";
+import { LiteralToken, Token, TokenType } from "token";
 import { ParserError } from "./parserError";
-import { anyString, block, commaList, firstOf, ignoreSpacesAndComments, keyword, list, loop, noSpacesHere, oneOfSymbols, optional, rawValue, regexpLiteral, returnRawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, squareBracket, strictLoop, symbol } from "./parserUtils";
-import { CssBlockNode, CssCharsetNode, CssDeclarationNode, CssImportNode, CssMediaNode, CssSelectorNode, NodeType, StringNode } from "./syntaxTree";
+import { anyString, block, commaList, firstOf, ignoreSpacesAndComments, keyword, leftHandRecurciveRule, list, loop, noSpacesHere, oneOfSymbols, optional, rawValue, regexpLiteral, returnRawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, squareBracket, strictLoop, symbol } from "./parserUtils";
+import { BlockNode, CssBlockNode, CssCharsetNode, CssDeclarationNode, CssImportNode, CssMediaNode, CssSelectorNode, NodeType, StringNode } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
 import { peekAndSkipSpaces, peekNextToken } from "./tokenStreamReader";
@@ -70,7 +71,7 @@ export function cssLiteral(stream: TokenStream) : LiteralToken {
  *
  * */
 export function cssCharset(stream : TokenStream) : CssCharsetNode {
-    sequence(symbol(Symbols.at), noSpacesHere, keyword(Keywords.cssCharset), anyString, semicolon)(stream);
+    sequence(keyword(Keywords.cssCharset), anyString, semicolon)(stream);
 
     const source = rawValue(stream);
     return {
@@ -78,6 +79,30 @@ export function cssCharset(stream : TokenStream) : CssCharsetNode {
         rawValue: source.value,
         position: source.position,
     };
+}
+
+/**
+ * all rules that stat with @
+ * */
+function startsWithDog(stream : TokenStream) : void {
+    const dog = symbol(Symbols.at)(stream);
+    noSpacesHere(stream);
+    let result = firstOf(
+        cssCharset,
+        importStatement,
+        mediaStatement,
+        pageStatement,
+    )(stream);
+
+    if (result.rawValue) {
+        result.rawValue = '@' + result.rawValue;
+    }
+
+    if (result.position) {
+        result.position = dog.position;
+    }
+
+    return result;
 }
 
 
@@ -91,14 +116,10 @@ export function cssCharset(stream : TokenStream) : CssCharsetNode {
  *
  * */
 export function stylesheetItem(stream : TokenStream) : ReturnType<TokenParser> {
-    //TODO everything that starts with @ can be optimized by combining together
     return firstOf(
         ignoreSpacesAndComments,
-        cssCharset,
-        importStatement,
         rulesetStatement,
-        mediaStatement,
-        pageStatement,
+        startsWithDog, //NOTE all rules started with @, we optimize the parsing and avoid dealing with the error in the sequences
     )(stream);
 }
 
@@ -114,15 +135,13 @@ export function parseCssStyleSheet(stream : TokenStream) : ReturnType<TokenParse
   ;
  * */
 export function importStatement(stream : TokenStream) : CssImportNode {
-    const [,,,path,,] = sequence(
-        symbol(Symbols.at),
-        noSpacesHere,
+    const [,path,,] = sequence(
         keyword(Keywords._import),
         firstOf(
             anyString,
             uri,
         ),
-        optional(mediaList),
+        optional(mediaQueryList),
         semicolon,
     )(stream);
 
@@ -147,12 +166,96 @@ function uri(stream : TokenStream) : void {
 
 /**
  * implements:
- * media_list
-  : medium [ COMMA S* medium]*
-  ;
+ * media_query_list
+ *  : S* [media_query [ ',' S* media_query ]* ]?
+ *  ;
+ * @see https://www.w3.org/TR/mediaqueries-3/#syntax
+ * The media_query_list production defined below replaces the media_list production from CSS2. [CSS21]
  * */
-function mediaList(stream : TokenStream) : LiteralToken[] {
-    return commaList(ident)(stream);
+function mediaQueryList(stream : TokenStream) : any[] {
+    return commaList(mediaQuery)(stream);
+}
+
+/**
+ * implements:
+ *
+ * media_query
+ *  : [ONLY | NOT]? S* media_type S* [ AND S* expression ]*
+ *  | expression [ AND S* expression ]*
+ *  ;
+ * */
+function mediaQuery(stream : TokenStream) : any {
+    return firstOf(
+        //  : [ONLY | NOT]? S* media_type S* [ AND S* expression ]*
+        leftHandRecurciveRule(
+            returnRawValue(
+                sequence(
+                    optional(
+                        firstOf(keyword(Keywords.cssOnly), keyword(Keywords.cssNot))
+                    ),
+                    mediaType,
+                ),
+            ),
+            returnRawValue(
+                sequence(
+                    keyword(Keywords.cssAnd),
+                    expression,
+                )
+            )
+        ),
+        //  | expression [ AND S* expression ]*
+        leftHandRecurciveRule(
+            expression,
+            returnRawValue(
+                sequence(
+                    keyword(Keywords.cssAnd),
+                    expression,
+                )
+            )
+        )
+    )(stream);
+}
+
+/**
+ * implements:
+ * media_type
+ *  : IDENT
+ *  ;
+ * */
+function mediaType(stream : TokenStream) : LiteralToken {
+    return ident(stream);
+}
+
+/**
+ * implements:
+ *
+ * expression
+ *  : '(' S* media_feature S* [ ':' S* expr ]? ')' S*
+ *  ;
+ *
+ * */
+function expression(stream : TokenStream) : BlockNode {
+    return block(TokenType.RoundBrackets, sequence(
+        mediaFeature,
+        optional(
+            sequence(
+                symbol(Symbols.semicolon),
+                expr,
+            )
+        )
+    ))(stream);
+}
+
+/**
+ * implements:
+ *
+ * media_feature
+ *  : IDENT
+ *  ;
+ *
+ * */
+function mediaFeature(stream : TokenStream) : LiteralToken {
+    return ident(stream);
 }
 
 function ident(stream : TokenStream) : LiteralToken {
@@ -452,15 +555,11 @@ function functionCallDoNothing(stream : TokenStream) : ReturnType<TokenParser> {
  *
  * */
 export function mediaStatement(stream : TokenStream) : CssMediaNode {
-    sequence(
-        symbol(Symbols.at),
-        noSpacesHere,
-        keyword(Keywords.cssMedia),
-    )(stream);
+    keyword(Keywords.cssMedia)(stream);
 
-    const mediaListItems = mediaList(stream).map((token : LiteralToken) => token.value);
+    const mediaListItems = mediaQueryList(stream).map((token : LiteralToken) => token.value);
     const rules = block(TokenType.LazyBlock, strictLoop(
-        firstOf(ignoreSpacesAndComments, rulesetStatement)
+        firstOf(ignoreSpacesAndComments, rulesetStatement, mediaStatement)
     ))(stream);
 
     return {
@@ -480,8 +579,6 @@ export function mediaStatement(stream : TokenStream) : CssMediaNode {
  * */
 export function pageStatement(stream : TokenStream) : void {
     sequence(
-        symbol(Symbols.at),
-        noSpacesHere,
         keyword(Keywords.cssPage),
         optional(pseudoPage),
         block(TokenType.LazyBlock, list(

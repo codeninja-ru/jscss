@@ -28,7 +28,6 @@ interface PercentDimention extends Dimention<'%'>{
 type Class<T> = {
     new (value : number) : T;
     valueOf(value : Number) : T;
-    fromString(value : string) : OneOfDimentions;
 };
 
 export function createClass<S extends Suffix>(suffix : S) : Class<Dimention<S>> {
@@ -74,19 +73,15 @@ export function createClass<S extends Suffix>(suffix : S) : Class<Dimention<S>> 
 
             return false;
         }
-
-        static fromString(str : string) : Dimention<any> {
-            return fromString(str);
-        }
     }
 }
 
 type OneOfDimentions = (PxDimention | EmDimention | PercentDimention);
-function fromString<T>(str : string) : OneOfDimentions {
+
+export function fromString<T>(str : string) : OneOfDimentions {
     const regExp = /^(([\+\-]*\d*\.*\d+[eE])?([\+\-]*\d*\.*\d+))(px|cm|mm|in|pt|pc|em|ex|deg|rad|grad|ms|s|hz|khz|%)$/i;
     const match = str.match(regExp);
     if (match) {
-        console.log(match);
         const numeric = match[1];
         const suffix = match[4];
 
