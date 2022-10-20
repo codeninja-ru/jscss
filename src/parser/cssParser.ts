@@ -394,7 +394,7 @@ function term(stream : TokenStream) : void {
                             symbol(Symbols.dot),
                         )
                     ),
-                    regexpLiteral(/^[0-9]+(px|cm|mm|in|pt|pc|em|ex|deg|rad|grad|ms|s|hz|khz)?$/g),
+                    regexpLiteral(/^[0-9]+(px|cm|mm|in|pt|pc|em|ex|deg|rad|grad|ms|s|hz|khz|dpi|dpcm)?$/g),
                 )
             )
         ),

@@ -69,6 +69,4 @@ export const Keywords = {
     cssNot: new Keyword('not'),
     cssOnly: new Keyword('only'),
     cssAnd: new Keyword('and'),
-    cssDpi: new Keyword('dpi'),
-    cssDpcm: new Keyword('dpcm'),
 }
