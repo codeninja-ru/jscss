@@ -1,6 +1,14 @@
+function isStyleArrayItem(value : any) : value is StyleArrayItem {
+    return value && value.name && value.value;
+}
+
 interface StyleArrayItem {
     name: string,
     value: StyleProp
+}
+
+function isMediaArrayItem(value : any) : value is MediaArrayItem {
+    return value && value.name && value.children;
 }
 
 interface MediaArrayItem {
@@ -168,7 +176,6 @@ export class JssBlock implements Block {
         getPrivate(this, privateChildren).push(value);
     }
 
-    //TODO parse syntax like this .extend({'.className': new JssStyleBlock(...)})
     extend(value : ExtendedStyleProp | JssBlockCaller) : void {
         if (value instanceof JssBlockCaller) {
             const blockInstance = value.call(this);
@@ -217,14 +224,49 @@ export class JssBlock implements Block {
 
 const privateSelectors = new WeakMap<Block, string[]>();
 
-function sprintObject(value : any) {
+function sprintObject(value : any, indent = 1) {
     var result = "";
 
+    const spaces = indentString(indent);
     for (const key in value) {
-        result += `    ${key}: ${value[key]};\n`;
+        result += `${spaces}${key}: ${value[key]};\n`;
     }
 
     return result;
+}
+
+const INDENT_SPACES = '    ';
+function indentString(num = 1) : string {
+    let result = '';
+
+    for (var i = 0; i < num; i++) {
+        result += INDENT_SPACES;
+    }
+
+    return result;
+}
+
+function sprintCssValue(name : string, value : StyleProp, indent = 0) : string {
+    if (isEmpty(value)) {
+        return `${indentString(indent)}${name} { }`;
+    } else {
+        return `${indentString(indent)}${name} {\n${sprintObject(value, indent + 1)}${indentString(indent)}}`;
+    }
+}
+
+function sprintMediaValue(name : string, children : StyleArray, indent = 0) : string {
+    function print(value : StyleArrayItem | MediaArrayItem) {
+        if (isStyleArrayItem(value)) {
+            return sprintCssValue(value.name, value.value, indent + 1);
+        } else {
+            return sprintMediaValue(value.name, value.children, indent + 1);
+        }
+    }
+    if (isEmpty(children)) {
+        return `${indentString(indent)}${name} { }`;
+    } else {
+        return `${indentString(indent)}${name} {\n${children.map(print).join('\n\n')}\n${indentString(indent)}}`;
+    }
 }
 
 export class JssStyleBlock extends JssBlock implements StyleBlock {
@@ -274,11 +316,7 @@ export class JssStyleBlock extends JssBlock implements StyleBlock {
         const value = getPrivate(this, privateValue);
         const result = [] as string[];
 
-        if (isEmpty(value)) {
-            result.push(`${name} { }`);
-        } else {
-            result.push(`${name} {\n${sprintObject(value)}}`);
-        }
+        result.push(sprintCssValue(name, value));
 
         if (children.length > 0) {
             for (const child of children) {
@@ -368,27 +406,17 @@ export class JssMediaQueryBlock extends JssBlock implements MediaQueryBlock {
     }
 
     toCss() : string {
-        const children = getPrivate(this, privateChildren);
-        const value = getPrivate(this, privateValue);
         const result = [] as string[];
-
-        if (this.isEmpty()) {
-            result.push(`@media ${this.mediaList} { }`);
-        } else {
-            if (isEmpty(value)) {
-                result.push(`@media ${this.mediaList} {${children.map(item => item.toCss().trimRight())}}`);
+        const values = this.toArray();
+        values.forEach((item) => {
+            if (isStyleArrayItem(item)) {
+                result.push(sprintCssValue(item.name, item.value))
+            } else if (isMediaArrayItem(item)) {
+                result.push(sprintMediaValue(item.name, item.children));
             } else {
-                const parent = findStyleParent(this);
-                if (parent == null) {
-                    throw new Error(`@media has inner values and doesn't have a parent class`);
-                } else {
-                    const innerValues = sprintObject(value);
-                    const childrenString = children.map(item => item.toCss().trimRight()).join('\n');
-
-                    result.push(`@media ${this.mediaList} {\n${parent.name} {\n${innerValues}}\n${childrenString}}`);
-                }
+                throw new Error(`unsupported ArrayItem type ${item}`)
             }
-        }
+        });
 
         return result.join("\n\n");
     }

@@ -192,9 +192,11 @@ describe('MediaQueryBlock', () => {
             'width': '600px',
         }));
 
-        expect(media.toCss()).toEqual(`@media (min-width: 768px) {.component {
-    width: 600px;
-}}`);
+        expect(media.toCss()).toEqual(`@media (min-width: 768px) {
+    .component {
+        width: 600px;
+    }
+}`);
         expect(media.toArray()).toEqual([
             {name: "@media (min-width: 768px)", children: [
                 {name: '.component', value: {
@@ -213,15 +215,14 @@ describe('MediaQueryBlock', () => {
             width: '700px',
         }));
 
-        //TODO implement idents
         expect(block.toCss()).toEqual(`.component {
     width: 600px;
 }
 
 @media screen {
-.component {
-    width: 700px;
-}
+    .component {
+        width: 700px;
+    }
 }`);
         expect(block.toArray()).toEqual([
             {name: '.component', value: {
@@ -254,18 +255,22 @@ describe('MediaQueryBlock', () => {
         expect(block.toCss()).toEqual(`.className { }
 
 @media screen {
-.className {
-    width: 100px;
-}
-@media print {
-.className {
-    width: 200px;
-}
-@media (min-width: 700px) {
-.className {
-    width: 300px;
-}
-}}}`);
+    .className {
+        width: 100px;
+    }
+
+    @media print {
+        .className {
+            width: 200px;
+        }
+
+        @media (min-width: 700px) {
+            .className {
+                width: 300px;
+            }
+        }
+    }
+}`);
         expect(block.toArray()).toEqual([
             {name: ".className", value: {}},
             {name: '@media screen', children: [
@@ -305,5 +310,15 @@ describe('MediaQueryBlock', () => {
         expect(() => media.toCss()).toThrowError();
         expect(() => media.toArray()).toThrowError();
     });
+
+    it('prints empty @media', () => {
+        const media = new JssMediaQueryBlock('screen');
+
+        expect(media.toCss()).toEqual('@media screen { }');
+        expect(media.toArray()).toEqual([
+            {name: '@media screen', children: []},
+        ]);
+    });
+
 
 });
