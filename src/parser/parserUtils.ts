@@ -303,6 +303,9 @@ export function optional(parser: TokenParser) : TokenParser {
             parserStream.flush();
             return result;
         } catch(e) {
+            if (e instanceof BlockParserError) {
+                throw e;
+            }
             return undefined;
         }
     };

@@ -1,4 +1,4 @@
-import { JssBlock, JssBlockCaller, JssStyleBlock, JssStyleSheet } from './core';
+import { JssBlock, JssBlockCaller, JssMediaQueryBlock, JssStyleBlock, JssStyleSheet } from './core';
 
 describe('class JssStyleSheet', () => {
     it('prints css', () => {
@@ -33,6 +33,21 @@ describe('class JssStyleBlock', () => {
     font-size: 10px;
 }`);
     });
+
+    it('works with the simplified constructor', () => {
+        const block = new JssStyleBlock('.className', {
+            "color": "red",
+            "font-size": "10px"
+        });
+
+        expect(block.isEmpty()).toBeFalsy();
+        expect(block.styles).toEqual({ "color" : "red", "font-size" : "10px"});
+        expect(block.toCss()).toEqual(`.className {
+    color: red;
+    font-size: 10px;
+}`);
+    });
+
 
     it('allows to uses an array of selectors', () => {
         const block = new JssStyleBlock(['.className1', '.className2']);
@@ -113,6 +128,29 @@ describe('class JssStyleBlock', () => {
         });
     });
 
+    it('can be extended by sub blocks', () => {
+        const block = new JssStyleBlock(['p']);
+        block.push("font-size", "10px");
+        const subBlock = new JssStyleBlock('className1', {
+            width: '100%',
+        });
+        block.extend({
+            display: "block",
+            color: 'red',
+            className1: subBlock,
+        });
+
+        expect(block.styles).toEqual({
+            "font-size": "10px",
+            "display": "block",
+            "color": "red",
+        });
+        expect(block.children).toEqual([
+            subBlock,
+        ]);
+    });
+
+
     it('can be extended by block caller', () => {
         const block = new JssStyleBlock(['p']);
         block.push("font-size", "10px");
@@ -136,6 +174,136 @@ describe('class JssStyleBlock', () => {
             "color": "red",
         });
         expect(block.children).toEqual([child2]);
+    });
+});
+
+describe('MediaQueryBlock', () => {
+    it('prints an empty @media', () => {
+        const media = new JssMediaQueryBlock(['(min-width: 768px)']);
+        expect(media.toCss()).toEqual(`@media (min-width: 768px) { }`);
+        expect(media.toArray()).toEqual([
+            {name: "@media (min-width: 768px)", children: []}
+        ]);
+    });
+
+    it('prints css for @media { .component {} }', () => {
+        const media = new JssMediaQueryBlock(['(min-width: 768px)']);
+        media.addChild(new JssStyleBlock('.component', {
+            'width': '600px',
+        }));
+
+        expect(media.toCss()).toEqual(`@media (min-width: 768px) {.component {
+    width: 600px;
+}}`);
+        expect(media.toArray()).toEqual([
+            {name: "@media (min-width: 768px)", children: [
+                {name: '.component', value: {
+                    width: '600px',
+                }}
+            ]}
+        ]);
+    });
+
+    it('prints css for .component { @media {} }', () => {
+        const block = new JssStyleBlock('.component', {
+            width: '600px',
+        });
+
+        block.addChild(new JssMediaQueryBlock('screen', {
+            width: '700px',
+        }));
+
+        //TODO implement idents
+        expect(block.toCss()).toEqual(`.component {
+    width: 600px;
+}
+
+@media screen {
+.component {
+    width: 700px;
+}
+}`);
+        expect(block.toArray()).toEqual([
+            {name: '.component', value: {
+                width: '600px',
+            }},
+            {name: "@media screen", children: [
+                {name: '.component', value: {
+                    width: '700px',
+                }}
+            ]},
+        ]);
+    });
+
+    it('can handle nested @media', () => {
+        const block = new JssStyleBlock('.className');
+        const media1 = new JssMediaQueryBlock('screen', {
+            width: '100px',
+        });
+        const media2 = new JssMediaQueryBlock('print', {
+            width: '200px',
+        });
+        const media3 = new JssMediaQueryBlock('(min-width: 700px)', {
+            width: '300px',
+        });
+
+        block.addChild(media1);
+        media1.addChild(media2);
+        media2.addChild(media3);
+
+        expect(block.toCss()).toEqual(`.className { }
+
+@media screen {
+.className {
+    width: 100px;
+}
+@media print {
+.className {
+    width: 200px;
+}
+@media (min-width: 700px) {
+.className {
+    width: 300px;
+}
+}}}`);
+        expect(block.toArray()).toEqual([
+            {name: ".className", value: {}},
+            {name: '@media screen', children: [
+                {name: '.className', value: {width: '100px'}},
+                {name: '@media print', children: [
+                    {name: '.className', value: {width: '200px'}},
+                    {name: '@media (min-width: 700px)', children: [
+                        {name: '.className', value: {width: '300px'}},
+                    ]},
+                ]},
+            ]}
+        ]);
+    });
+
+
+    it('is not able to handle a @media without a parent blocks', () => {
+        const media = new JssMediaQueryBlock('screen', {
+            width: '100%',
+        });
+
+        expect(() => media.toCss()).toThrowError();
+        expect(() => media.toArray()).toThrowError();
+
+        media.addChild(new JssStyleBlock('.className', {
+            width: '10px',
+        }));
+
+        expect(() => media.toCss()).toThrowError();
+        expect(() => media.toArray()).toThrowError();
+    });
+
+    it('throws errors for incorrect usage', () => {
+        const media = new JssMediaQueryBlock('screen', {
+            width: '100%',
+        });
+
+        expect(() => media.toCss()).toThrowError();
+        expect(() => media.toArray()).toThrowError();
     });
 
 });

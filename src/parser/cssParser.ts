@@ -84,7 +84,7 @@ export function cssCharset(stream : TokenStream) : CssCharsetNode {
 /**
  * all rules that stat with @
  * */
-function startsWithDog(stream : TokenStream) : void {
+function startsWithDog(stream : TokenStream) : any {
     const dog = symbol(Symbols.at)(stream);
     noSpacesHere(stream);
     let result = firstOf(
@@ -172,7 +172,7 @@ function uri(stream : TokenStream) : void {
  * @see https://www.w3.org/TR/mediaqueries-3/#syntax
  * The media_query_list production defined below replaces the media_list production from CSS2. [CSS21]
  * */
-function mediaQueryList(stream : TokenStream) : any[] {
+export function mediaQueryList(stream : TokenStream) : any[] {
     return commaList(mediaQuery)(stream);
 }
 
@@ -187,32 +187,26 @@ function mediaQueryList(stream : TokenStream) : any[] {
 function mediaQuery(stream : TokenStream) : any {
     return firstOf(
         //  : [ONLY | NOT]? S* media_type S* [ AND S* expression ]*
-        leftHandRecurciveRule(
-            returnRawValue(
-                sequence(
-                    optional(
-                        firstOf(keyword(Keywords.cssOnly), keyword(Keywords.cssNot))
-                    ),
-                    mediaType,
+        returnRawValue(leftHandRecurciveRule(
+            sequence(
+                optional(
+                    firstOf(keyword(Keywords.cssOnly), keyword(Keywords.cssNot))
                 ),
+                mediaType,
             ),
-            returnRawValue(
-                sequence(
-                    keyword(Keywords.cssAnd),
-                    expression,
-                )
+            sequence(
+                keyword(Keywords.cssAnd),
+                expression,
             )
-        ),
+        )),
         //  | expression [ AND S* expression ]*
-        leftHandRecurciveRule(
+        returnRawValue(leftHandRecurciveRule(
             expression,
-            returnRawValue(
-                sequence(
-                    keyword(Keywords.cssAnd),
-                    expression,
-                )
+            sequence(
+                keyword(Keywords.cssAnd),
+                expression,
             )
-        )
+        ))
     )(stream);
 }
 
@@ -239,7 +233,7 @@ function expression(stream : TokenStream) : BlockNode {
         mediaFeature,
         optional(
             sequence(
-                symbol(Symbols.semicolon),
+                symbol(Symbols.colon),
                 expr,
             )
         )
@@ -557,7 +551,7 @@ function functionCallDoNothing(stream : TokenStream) : ReturnType<TokenParser> {
 export function mediaStatement(stream : TokenStream) : CssMediaNode {
     keyword(Keywords.cssMedia)(stream);
 
-    const mediaListItems = mediaQueryList(stream).map((token : LiteralToken) => token.value);
+    const mediaListItems = mediaQueryList(stream).map((item) => item.trim());
     const rules = block(TokenType.LazyBlock, strictLoop(
         firstOf(ignoreSpacesAndComments, rulesetStatement, mediaStatement)
     ))(stream);
@@ -565,7 +559,8 @@ export function mediaStatement(stream : TokenStream) : CssMediaNode {
     return {
         type: NodeType.CssMedia,
         mediaList: mediaListItems,
-        items: rules,
+        items: rules.items,
+        position: {line: 1, col: 1}, // NOTE: it's going to be fixed in the startsWithDog
     };
 }
 

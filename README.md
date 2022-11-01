@@ -204,3 +204,20 @@ Output
     }
 }
 ```
+
+css functions
+
+``` javascript
+function rgb(r, g, b) { return '#fff'; }
+.className {
+    background: rgb(123, 123, 123);
+}
+```
+
+output
+
+``` css
+.className {
+    background: #fff;
+}
+```

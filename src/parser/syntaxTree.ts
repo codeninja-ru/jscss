@@ -4,7 +4,7 @@ export type SyntaxTree = JssNode[];
 
 export type JssNode = IgnoreNode | JsRawNode |
     JssBlockNode | CssImportNode | JssSelectorNode |
-    CommentNode | JssVarDeclarationNode | CssCharsetNode;
+    CommentNode | JssVarDeclarationNode | CssCharsetNode | JssMediaNode;
 
 export enum NodeType {
     JsImport,
@@ -112,7 +112,7 @@ export interface JsModuleNode extends MultiNode {
     type: NodeType.JsModule,
 }
 
-export type CssBlockItemNode = CssDeclarationNode | IgnoreNode;
+export type CssBlockItemNode = CssDeclarationNode | IgnoreNode | CssMediaNode;
 export interface CssBlockNode extends Node {
     type: NodeType.CssBlock,
     readonly selectors: CssSelectorNode[],
@@ -160,16 +160,16 @@ export interface JsRawNode extends Node, SourceMappedNode {
     readonly value: string;
 }
 
-export interface CssMediaNode extends Node {
+export interface CssMediaNode extends Node, SourceMappedNode {
     readonly type: NodeType.CssMedia,
     readonly mediaList: string[],
-    readonly items: CssBlockNode[],
+    readonly items: CssBlockItemNode[],
 }
 
 export interface JssMediaNode extends Node, SourceMappedNode {
     readonly type: NodeType.JssMedia,
     readonly mediaList: string[],
-    readonly items: JssBlockNode[],
+    readonly items: JssBlockItemNode[],
 }
 
 export interface CssDeclarationNode extends Node {

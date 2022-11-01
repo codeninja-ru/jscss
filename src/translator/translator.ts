@@ -1,4 +1,4 @@
-import { CssDeclarationNode, CssImportNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssNode, JssSelectorNode, JssSpreadNode, JssVarDeclarationNode, NodeType, SyntaxTree } from 'parser/syntaxTree';
+import { CssDeclarationNode, CssImportNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssMediaNode, JssNode, JssSelectorNode, JssSpreadNode, JssVarDeclarationNode, NodeType, SyntaxTree } from 'parser/syntaxTree';
 import { SourceMapGenerator, SourceNode } from 'source-map';
 import { Position } from 'stream/position';
 import { SourceMappingUrl } from './sourceMappingUrl';
@@ -148,6 +148,20 @@ function insertSourceCssImport(node : CssImportNode, fileName : string) : Source
         `@import ${quoteEscape(node.path)};`);
 }
 
+function mediaQuery2js(node : JssMediaNode, fileName : string, bindName = 'self') : SourceNode {
+    let mediaList = makeSourceNode(node.position, fileName, '[');
+    mediaList.add(node.mediaList.map((item) => {
+        mediaList.add("`" + quoteEscape(item) + "`");
+    }).join(','));
+    mediaList.add(']');
+
+    return tag`(function() {
+var self = new JssMediaQueryBlock(${mediaList});
+${declarations2js(node.items, fileName)}
+return self;
+}).bind(${bindName})()`;
+}
+
 function translateNode(node : JssNode, fileName : string) : SourceNode {
     switch(node.type) {
         case NodeType.Ignore:
@@ -168,6 +182,8 @@ function translateNode(node : JssNode, fileName : string) : SourceNode {
                                  tag`${EXPORT_VAR_NAME}.insertCss("${insertSourceCssImport(node, fileName)}");\n`);
         case NodeType.JssVarDeclaration:
             return jssVarBlock2js(node, fileName);
+        case NodeType.JssMedia:
+            return tag`${EXPORT_VAR_NAME}.insertBlock(${mediaQuery2js(node, fileName)});\n`;
         case NodeType.Comment:
         default:
             throw new Error(`unsupported node ${JSON.stringify(node)}`);

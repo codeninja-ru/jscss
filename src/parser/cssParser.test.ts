@@ -1,7 +1,7 @@
 import { StringInputStream } from "stream/input";
 import { cssLiteral, declaration, parseCssStyleSheet, rulesetStatement, selector, simpleSelector } from "./cssParser";
 import { lexer } from "./lexer";
-import { BlockType, CssBlockItemNode, CssBlockNode, CssSelectorNode, NodeType } from "./syntaxTree";
+import { CssBlockItemNode, CssBlockNode, CssSelectorNode, NodeType } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { ArrayTokenStream, GoAheadTokenStream } from "./tokenStream";
 
@@ -123,26 +123,23 @@ describe('CSS Parser', () => {
             {
                 type: NodeType.CssMedia,
                 mediaList: ["screen", "print"],
-                items: {
-                    type: NodeType.Block,
-                    blockType: BlockType.CurlyBracket,
-                    items: [
+                position: {line: 21, col: 1},
+                items: [
+                    {type: NodeType.Ignore, items: expect.anything()},
+                    cssBlock(cssSelector(["div"]), [
                         {type: NodeType.Ignore, items: expect.anything()},
-                        cssBlock(cssSelector(["div"]), [
-                            {type: NodeType.Ignore, items: expect.anything()},
-                            {type: NodeType.CssDeclaration,
-                             prop: "color",
-                             propPos: {line: 23, col: 9},
-                             value: '#888',
-                             valuePos: {line: 23, col: 16},
-                             prio: "!important",
-                             prioPos: {line: 23, col: 21},
-                            },
-                            {type: NodeType.Ignore, items: expect.anything()},
-                        ]),
+                        {type: NodeType.CssDeclaration,
+                         prop: "color",
+                         propPos: {line: 23, col: 9},
+                         value: '#888',
+                         valuePos: {line: 23, col: 16},
+                         prio: "!important",
+                         prioPos: {line: 23, col: 21},
+                        },
                         {type: NodeType.Ignore, items: expect.anything()},
-                    ]
-                }
+                    ]),
+                    {type: NodeType.Ignore, items: expect.anything()},
+                ]
             }
         ]);
     });
@@ -216,9 +213,25 @@ describe('CSS Parser', () => {
   body {
     background-color: lightblue;
   }
-}`))).toEqual([
-
-        ]);
+}`))).toEqual([{
+    type: NodeType.CssMedia,
+    mediaList: ["only screen and (max-width: 600px)"],
+    position: {line: 1, col: 1},
+    items: [
+        {type: NodeType.Ignore, items: expect.anything()},
+        cssBlock(cssSelector(["body"]), [
+            {type: NodeType.Ignore, items: expect.anything()},
+            {type: NodeType.CssDeclaration,
+             prop: "background-color",
+             propPos: {line: 3, col: 5},
+             value: 'lightblue',
+             valuePos: {line: 3, col: 23},
+            },
+            {type: NodeType.Ignore, items: expect.anything()},
+            ]),
+        {type: NodeType.Ignore, items: expect.anything()},
+    ]
+}]);
     });
 
 

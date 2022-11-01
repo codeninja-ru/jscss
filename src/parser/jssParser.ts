@@ -1,7 +1,7 @@
 import { Keywords, ReservedWords } from "keywords";
 import { Symbols } from "symbols";
-import { LiteralToken, TokenType } from "token";
-import { attrib, combinator, cssCharset, cssLiteral, hash, importStatement, pageStatement, pseudo } from "./cssParser";
+import { TokenType } from "token";
+import { attrib, combinator, cssCharset, cssLiteral, hash, importStatement, mediaQueryList, pageStatement, pseudo } from "./cssParser";
 import { assignmentExpression, identifier, moduleItem, numericLiteral, parseComment } from "./parser";
 import { SequenceError, SyntaxRuleError } from "./parserError";
 import { anyBlock, anyString, block, comma, commaList, dollarSign, firstOf, ignoreSpacesAndComments, keyword, lazyBlock, LazyBlockParser, leftHandRecurciveRule, loop, noLineTerminatorHere, noSpacesHere, oneOfSymbols, optional, returnRawValue, returnRawValueWithPosition, semicolon, sequence, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
@@ -209,27 +209,28 @@ export function rulesetStatement(stream : TokenStream) : JssBlockNode {
     };
 }
 
-function jssMediaList(stream : TokenStream) : LiteralToken[] {
-    return commaList(jssIdent)(stream);
-}
-
 export function jssMediaStatement(stream : TokenStream) : JssMediaNode {
     const start = keyword(Keywords.cssMedia)(stream);
 
-    const mediaListItems = jssMediaList(stream).map((token : LiteralToken) => token.value);
-    const rules = block(TokenType.LazyBlock, strictLoop(
-        firstOf(
-            ignoreSpacesAndComments,
-            rulesetStatement,
-            jssVariableStatement,
-    )))(stream);
+    try {
+        const mediaListItems = mediaQueryList(stream).map((item) => item.trim());
+        const rules = block(TokenType.LazyBlock, strictLoop(
+            firstOf(
+                ignoreSpacesAndComments,
+                rulesetStatement,
+                jssVariableStatement,
+                jssMediaStatement,
+            )))(stream);
 
-    return {
-        type: NodeType.JssMedia,
-        mediaList: mediaListItems,
-        position: start.position,
-        items: rules,
-    };
+        return {
+            type: NodeType.JssMedia,
+            mediaList: mediaListItems,
+            position: start.position,
+            items: rules,
+        };
+    } catch(e) {
+        throw new SequenceError(e);
+    }
 }
 
 /**
