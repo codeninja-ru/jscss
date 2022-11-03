@@ -226,7 +226,7 @@ export function jssMediaStatement(stream : TokenStream) : JssMediaNode {
             type: NodeType.JssMedia,
             mediaList: mediaListItems,
             position: start.position,
-            items: rules,
+            items: rules.items,
         };
     } catch(e) {
         throw new SequenceError(e);

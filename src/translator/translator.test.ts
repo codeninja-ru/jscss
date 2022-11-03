@@ -179,8 +179,8 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
   body {
     background-color: lightblue;
   }
-}`).toArray()).toEqual([
-
-        ]);
+}`).toArray()).toEqual([{name: '@media only screen and (max-width: 600px)', children: [
+    {name: 'body', value: {"background-color": 'lightblue'}}
+]}]);
     });
 });

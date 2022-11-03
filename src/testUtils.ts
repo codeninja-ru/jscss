@@ -1,4 +1,4 @@
-import { JssBlock, JssBlockCaller, JssStyleBlock, JssStyleSheet } from "translator/lib/core";
+import { JssBlock, JssBlockCaller, JssMediaQueryBlock, JssStyleBlock, JssStyleSheet } from "translator/lib/core";
 import { Px, Em, Percent } from "translator/lib/dimentions/dimention";
 import { parseJssScript } from "parser/jssParser";
 import { translator } from "translator/translator";
@@ -14,6 +14,7 @@ export function evalTestCode(css : string) : JssStyleSheet {
         'JssStyleBlock': JssStyleBlock,
         'JssBlock' : JssBlock,
         'JssBlockCaller' : JssBlockCaller,
+        'JssMediaQueryBlock': JssMediaQueryBlock,
         'Px' : Px,
         'Em' : Em,
         'Percent' : Percent,

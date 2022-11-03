@@ -250,7 +250,6 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
         expect(() => parseCode('class TestClass { display: none; }')).toThrow(`(1:1) : "class" is a reseved word, it's not allowed as a selector`);
     });
 
-
     it('parses imports', () => {
         parseCode(`import { test } from 'reader/comment';
 import * as _ from '/reader/readers';`).toEqual([
@@ -258,5 +257,33 @@ import * as _ from '/reader/readers';`).toEqual([
     {type: NodeType.Ignore, items: expect.anything(),},
     {type: NodeType.Raw, position: {col: 1, line: 2}, value: "import * as _ from '/reader/readers';"},
 ]);
+    });
+
+    it('parses media queries', () => {
+        parseCode(`@media only screen and (max-width: 600px) {
+  body {
+    background-color: lightblue;
+  }
+}`).toEqual([{
+    type: NodeType.JssMedia,
+    mediaList: ["only screen and (max-width: 600px)"],
+    position: {line: 1, col: 1},
+    items: [
+        {type: NodeType.Ignore, items: expect.anything()},
+        {type: NodeType.JssBlock, selectors: [{
+                type: NodeType.JssSelector,
+                items: ["body"],
+                position: {line: 2, col: 3},
+         }],
+         position: {line: 2, col: 3},
+         items: [
+             {type: NodeType.Ignore, items: expect.anything()},
+             {type: NodeType.JssDeclaration,
+              prop: "background-color", propPos: {line: 3, col: 5},
+              value: "lightblue", valuePos: {line: 3, col: 23}},
+             {type: NodeType.Ignore, items: expect.anything()},
+         ]},
+        {type: NodeType.Ignore, items: expect.anything()},
+    ]}]);
     });
 });

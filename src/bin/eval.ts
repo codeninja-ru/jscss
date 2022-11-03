@@ -1,4 +1,4 @@
-import { JssBlock, JssBlockCaller, JssStyleBlock, JssStyleSheet } from "translator/lib/core";
+import { JssBlock, JssBlockCaller, JssMediaQueryBlock, JssStyleBlock, JssStyleSheet } from "translator/lib/core";
 import vm from "vm";
 import Module from 'module';
 import { BasicStackTracePrinter, SourceMappedStackTrace, StackTrace, VmScriptStrackTrace } from "./stackTrace";
@@ -24,6 +24,7 @@ export function evalCode(sourceCode : GeneratedCode,
         'JssStyleBlock': JssStyleBlock,
         'JssBlock' : JssBlock,
         'JssBlockCaller' : JssBlockCaller,
+        'JssMediaQueryBlock': JssMediaQueryBlock,
         'require' : contectModule.require.bind(contectModule),
         'module' : contectModule,
         'exports' : contectModule.exports,
