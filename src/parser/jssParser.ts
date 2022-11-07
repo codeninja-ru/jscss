@@ -2,10 +2,10 @@ import { Keywords, ReservedWords } from "keywords";
 import { Symbols } from "symbols";
 import { TokenType } from "token";
 import { attrib, combinator, cssCharset, cssLiteral, hash, importStatement, mediaQueryList, pageStatement, pseudo } from "./cssParser";
-import { assignmentExpression, identifier, moduleItem, numericLiteral, parseComment } from "./parser";
+import { assignmentExpression, functionExpression, identifier, moduleItem, numericLiteral, parseComment, parseJsVarStatement } from "./parser";
 import { SequenceError, SyntaxRuleError } from "./parserError";
 import { anyBlock, anyString, block, comma, commaList, dollarSign, firstOf, ignoreSpacesAndComments, keyword, lazyBlock, LazyBlockParser, leftHandRecurciveRule, loop, noLineTerminatorHere, noSpacesHere, oneOfSymbols, optional, returnRawValue, returnRawValueWithPosition, semicolon, sequence, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
-import { BlockNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssMediaNode, JssSelectorNode, JssSpreadNode, JssVarDeclarationNode, NodeType, SyntaxTree } from "./syntaxTree";
+import { BlockNode, JsRawNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssMediaNode, JssSelectorNode, JssSpreadNode, JssVarDeclarationNode, NodeType, SyntaxTree } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
 
@@ -15,6 +15,18 @@ export function parseJssScript(stream : TokenStream) : SyntaxTree {
 }
 
 const templatePlaceholder = sequence(dollarSign, noSpacesHere, anyBlock); // template string ${}
+
+function toRawNode(parser : TokenParser) : TokenParser<JsRawNode> {
+    return function(stream : TokenStream) : JsRawNode {
+        const value = returnRawValueWithPosition(parser)(stream);
+
+        return {
+            type: NodeType.Raw,
+            value: value.value,
+            position: value.position,
+        }
+    }
+}
 
 function jssSpreadDefinition(stream : TokenStream) : JssSpreadNode {
     const [, value] = sequence(symbol(Symbols.dot3), returnRawValueWithPosition(assignmentExpression))(stream);
@@ -28,11 +40,20 @@ function jssSpreadDefinition(stream : TokenStream) : JssSpreadNode {
 
 /**
  * can contain and be started with '-'
+ * cannot be a reserved word
  * */
 export function jssPropertyName(stream : TokenStream) : void {
     return firstOf(
         // LiteralPropertyName
-        cssLiteral,
+        function(stream : TokenStream) {
+            const name = cssLiteral(stream);
+            if (name.value in ReservedWords) {
+                throw new SequenceError(
+                    new SyntaxRuleError(`"${name.value}" is a reseved word, it's not allowed as property name`, name.position)
+                );
+            }
+            return name;
+        },
         anyString,
         numericLiteral,
         // ComputedPropertyName[?Yield, ?Await]
@@ -145,8 +166,10 @@ export function selector(stream : TokenStream) : JssSelectorNode {
  *   someCss: rule;
  * }
  *
+ *
  * */
 function jssVariableStatement(stream : TokenStream) : JssVarDeclarationNode {
+    //NOTE it's overlapped with jsVariableStatement (can be optimaized)
     const exportKeyword = optional(keyword(Keywords._export))(stream);
     const [decKeyword, varName,,,,block] = sequenceWithPosition(
         firstOf(
@@ -159,6 +182,7 @@ function jssVariableStatement(stream : TokenStream) : JssVarDeclarationNode {
         keyword(Keywords._new),
         noLineTerminatorHere,
         jssBlockStatement,
+        optional(symbol(Symbols.semicolon)),
     )(stream);
 
     if (varName.value in {"self" : 1, "_styles" : 1, "JssStylesheet" : 1, "JssStyleBlock" : 1, "JssBlock": 1}) {
@@ -184,12 +208,17 @@ function jssBlockStatement(stream : TokenStream) : LazyBlockParser<BlockNode<Jss
         ignoreSpacesAndComments,
         jssPropertyDefinition,
         rulesetStatement,
+        startsWithDog,
+        jssVariableStatement, //TODO forbide exports
+        toRawNode(parseJsVarStatement),
+        toRawNode(functionExpression),
+        //TODO add js statements
     )))(stream);
 }
 
 export function rulesetStatement(stream : TokenStream) : JssBlockNode {
     const selectors = commaList(selector)(stream) as JssSelectorNode[];
-    const cssBlock = jssBlockStatement(stream);
+    const jssBlock = jssBlockStatement(stream);
 
     if (selectors.length == 1) {
         const firstSelector = selectors[0].items[0];
@@ -205,7 +234,7 @@ export function rulesetStatement(stream : TokenStream) : JssBlockNode {
         type: NodeType.JssBlock,
         selectors,
         position: selectors[0].position,
-        items: cssBlock.parse().items,
+        items: jssBlock.parse().items,
     };
 }
 
@@ -214,19 +243,13 @@ export function jssMediaStatement(stream : TokenStream) : JssMediaNode {
 
     try {
         const mediaListItems = mediaQueryList(stream).map((item) => item.trim());
-        const rules = block(TokenType.LazyBlock, strictLoop(
-            firstOf(
-                ignoreSpacesAndComments,
-                rulesetStatement,
-                jssVariableStatement,
-                jssMediaStatement,
-            )))(stream);
+        const rules = jssBlockStatement(stream);
 
         return {
             type: NodeType.JssMedia,
             mediaList: mediaListItems,
             position: start.position,
-            items: rules.items,
+            items: rules.parse().items,
         };
     } catch(e) {
         throw new SequenceError(e);

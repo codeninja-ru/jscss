@@ -104,6 +104,14 @@ function declarations2js(blockList : JssBlockItemNode[], fileName : string, bind
                     return tag`self.addChild(${jssBlock2js(item, fileName, bindName)});`;
                 case NodeType.JssSpread:
                     return jssSpread2SourceNode(item, fileName);
+                case NodeType.Raw:
+                    return makeSourceNode(item.position,
+                                          fileName,
+                                          [item.value, "\n"]);
+                case NodeType.JssVarDeclaration:
+                    return jssVarBlock2js(item, fileName);
+                case NodeType.JssMedia: //FIXME
+                    return tag`${EXPORT_VAR_NAME}.insertBlock(${mediaQuery2js(item, fileName)});\n`;
                 default:
                     throw new Error(`unsupported block item ${JSON.stringify(item)}`);
             }

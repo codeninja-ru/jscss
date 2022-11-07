@@ -17,7 +17,7 @@ function returnRawNode(stream : TokenStream) : JsRawNode {
     };
 }
 
-function functionExpression(stream: TokenStream) : Node {
+export function functionExpression(stream: TokenStream) : Node {
     keyword(Keywords._function)(stream);
     optional(identifier)(stream);
     roundBracket(stream);

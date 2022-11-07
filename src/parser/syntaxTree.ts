@@ -119,7 +119,9 @@ export interface CssBlockNode extends Node {
     readonly items: CssBlockItemNode[],
 }
 
-export type JssBlockItemNode = CssDeclarationNode | JssDeclarationNode | IgnoreNode | JssBlockNode | JssSpreadNode;
+export type JssBlockItemNode = CssDeclarationNode | JssDeclarationNode
+    | IgnoreNode | JssBlockNode | JssSpreadNode
+    | JsRawNode | JssVarDeclarationNode | JssMediaNode;
 export interface JssBlockNode extends Node, SourceMappedNode {
     type: NodeType.JssBlock,
     readonly selectors: JssSelectorNode[],

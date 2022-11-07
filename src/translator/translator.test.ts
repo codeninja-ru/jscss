@@ -183,4 +183,31 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
     {name: 'body', value: {"background-color": 'lightblue'}}
 ]}]);
     });
+
+    it('parses complex media queries', () => {
+        //TODO instead of @media there can be @page, @charset and etc
+        expect(evalTestCode(`.className {
+    width: 100px;
+    const value = '#fff';
+    @media screen {
+        width: 200px;
+            @media print {
+                width: \${this.parent.value + 100};
+                color: \${value};
+        } } }`).toCss()).toEqual('todo');
+    });
+
+    it('can parse variables inside style blocks', () => {
+        expect(evalTestCode(`.className { const value = 10; width: \${10 + value}px; }`).toCss())
+            .toEqual(`.className {
+    width: 20px;
+}`);
+    });
+
+    it('can parse jss variables inside style blocks', () => {
+        expect(evalTestCode(`.className { const value = new { display: block }; ...value; }`).toCss())
+            .toEqual(`.className {
+    display: block;
+}`);
+    });
 });

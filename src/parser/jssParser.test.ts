@@ -250,6 +250,53 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
         expect(() => parseCode('class TestClass { display: none; }')).toThrow(`(1:1) : "class" is a reseved word, it's not allowed as a selector`);
     });
 
+    it('can parse variables inside style blocks', () => {
+        parseCode(`.className { const value = 10; width: 10px; }`).toEqual([
+            {type: NodeType.JssBlock, selectors: [{
+                type: NodeType.JssSelector,
+                items: [".className"],
+                position: {line: 1, col: 1},
+            }],
+             position: {line: 1, col: 1},
+             items: [
+                 {type: NodeType.Ignore, items: expect.anything()},
+                 {type: NodeType.Raw, position: {line: 1, col: 14}, value: "const value = 10;"},
+                 {type: NodeType.Ignore, items: expect.anything()},
+                 {type: NodeType.JssDeclaration,
+                  prop: "width", propPos: {line: 1, col: 32},
+                  value: "10px", valuePos: {line: 1, col: 39}},
+                 {type: NodeType.Ignore, items: expect.anything()},
+             ]},
+        ]);
+    });
+
+    it('can parse jss variables inside style blocks', () => {
+        parseCode(`.className { const value = new { display: block }; ...value; }`).toEqual([
+            {type: NodeType.JssBlock, selectors: [{
+                type: NodeType.JssSelector,
+                items: [".className"],
+                position: {line: 1, col: 1},
+            }],
+             position: {line: 1, col: 1},
+             items: [
+                 {type: NodeType.Ignore, items: expect.anything()},
+                 {type: NodeType.JssVarDeclaration, keyword: 'const', keywordPos: {line: 1, col: 14},
+                  name: 'value', namePos: {line: 1, col: 20},
+                  hasExport: false, items: [
+                      {type: NodeType.Ignore, items: expect.anything()},
+                      {type: NodeType.JssDeclaration, prop: "display", value: "block",
+                       valuePos: { col: 43, line: 1},  propPos: { col: 34, line: 1 }},
+                      {type: NodeType.Ignore, items: expect.anything()},
+
+                  ]},
+                 {type: NodeType.Ignore, items: expect.anything()},
+                 {type: NodeType.JssSpread, value: "value",
+                 valuePos: {line: 1, col: 55}},
+                 {type: NodeType.Ignore, items: expect.anything()},
+             ]},
+        ]);
+    });
+
     it('parses imports', () => {
         parseCode(`import { test } from 'reader/comment';
 import * as _ from '/reader/readers';`).toEqual([

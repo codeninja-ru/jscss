@@ -59,6 +59,24 @@ Output:
 }
 ```
 
+You can put variables into style blocks
+
+``` javascript
+.className {
+  const size = new Px(10);
+  color: #fff;
+  size: ${size};
+}
+```
+
+Output:
+``` css
+.className {
+  color: #fff;
+  size: 10px;
+}
+```
+
 
 ### Mixins
 
@@ -219,5 +237,55 @@ output
 ``` css
 .className {
     background: #fff;
+}
+```
+
+primitives in jss templates
+
+``` javascript
+.className {
+    const x = 10px;
+    const color = #333;
+    font-size: ${x + 10px};
+    color: ${color + #111}
+}
+```
+
+output
+
+``` css
+.className {
+    font-size: 20px;
+    color: #444;
+}
+```
+
+class generators
+
+``` javascript
+let columns = [];
+for (var i = 1; i < 3; i++) {
+    const column = new {
+        .column_${i} {
+            width: ${100% / 3};
+            background: ${#333 + i};
+        }
+    };
+    columns.push(column);
+}
+
+.column {
+    float: left;
+    ...columns;
+}
+
+```
+
+output
+
+``` css
+.className {
+    font-size: 20px;
+    color: #444;
 }
 ```
