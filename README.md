@@ -40,13 +40,14 @@ Output:
 }
 ```
 
-You can build in classes for sizes. For examples:
+You can use buildin classes for sizes and colors. For examples:
 
 ``` javascript
 const size = new Px(10);
+const color = new HexColor('#fff');
 
 .className {
-  color: #fff;
+  color: ${color};
   size: ${size};
 }
 ```
@@ -59,7 +60,7 @@ Output:
 }
 ```
 
-You can put variables into style blocks
+You can put variables into style blocks. They'll be scoped inside the block.
 
 ``` javascript
 .className {
@@ -128,6 +129,7 @@ Output:
   font-size: 12px;
   ${this.name}.menu__item {
       color: 10px;
+      font-size: ${this.parent.styles.fontSize};
   }
 }
 ```
@@ -141,6 +143,7 @@ Output:
 
 .menu.menu__item {
     color: 10px;
+    font-size: 12px;
 }
 ```
 
@@ -172,24 +175,17 @@ Output:
 }
 ```
 
-# TODO
-px, em, % - variables and operations
+#### Media-Queries
 
-``` javascript
-const size = 3px; // converts to new Px(3);
-const size = 1px + 2px; // converts to Px.valueOf(1).plus(Px.valueOf(2));
+You can put media-quries insede the blocks
 
-const color = #777; // converts to new CssColor('#777');
-```
-
-media-queries
 
 ``` javascript
 .component {
   width: 300px;
   @media (min-width: 768px) {
     width: 600px;
-    @media  (min-resolution: 192dpi) {
+    @media (min-resolution: 192dpi) {
       background-image: url(/img/retina2x.png);
     }
   }
@@ -209,7 +205,8 @@ Output
     .component {
         width: 600px;
     }
-    @media  (min-resolution: 192dpi) {
+
+    @media (min-resolution: 192dpi) {
         .component {
             background-image: url(/img/retina2x.png);
         }
@@ -222,6 +219,17 @@ Output
     }
 }
 ```
+
+# TODO
+px, em, % - variables and operations
+
+``` javascript
+const size = 3px; // converts to new Px(3);
+const size = 1px + 2px; // converts to Px.valueOf(1).plus(Px.valueOf(2));
+
+const color = #777; // converts to new CssColor('#777');
+```
+
 
 css functions
 

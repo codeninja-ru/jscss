@@ -18,8 +18,21 @@ const baseSize = 10;
 
         it('use js syntax for variables', () => {
             const css = evalTestCode(`const size = new Px(10);
+const color = new HexColor('#fff');
 
 .className {
+  color: \${color};
+  size: \${size};
+}`).toCss();
+            expect(css).toEqual(`.className {
+    color: #fff;
+    size: 10px;
+}`);
+        });
+
+        it("You can put variables into style blocks. They'll be scoped inside the block.", () => {
+            const css = evalTestCode(`.className {
+  const size = new Px(10);
   color: #fff;
   size: \${size};
 }`).toCss();
@@ -70,6 +83,7 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
   font-size: 12px;
   \${this.name}.menu__item {
       color: 10px;
+      font-size: \${this.parent.styles.fontSize};
   }
 }`).toCss();
             expect(css).toEqual(`.menu {
@@ -78,6 +92,7 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
 
 .menu.menu__item {
     color: 10px;
+    font-size: 12px;
 }`);
         });
 
@@ -104,6 +119,46 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
 }`);
         });
 
+
+    });
+
+    describe('Media-Queries', () => {
+        it('can put media-queries insede the blocks', () => {
+            const css = evalTestCode(`.component {
+  width: 300px;
+  @media (min-width: 768px) {
+    width: 600px;
+    @media (min-resolution: 192dpi) {
+      background-image: url(/img/retina2x.png);
+    }
+  }
+  @media (min-width: 1280px) {
+    width: 800px;
+  }
+}`).toCss();
+            expect(css).toEqual(`.component {
+    width: 300px;
+}
+
+@media (min-width: 768px) {
+    .component {
+        width: 600px;
+    }
+
+    @media (min-resolution: 192dpi) {
+        .component {
+            background-image: url(/img/retina2x.png);
+        }
+    }
+}
+
+@media (min-width: 1280px) {
+    .component {
+        width: 800px;
+    }
+}`);
+
+        });
 
     });
 });

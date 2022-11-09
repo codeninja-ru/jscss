@@ -1,10 +1,9 @@
-import { JssBlock, JssBlockCaller, JssMediaQueryBlock, JssStyleBlock, JssStyleSheet } from "translator/lib/core";
 import vm from "vm";
 import Module from 'module';
 import { BasicStackTracePrinter, SourceMappedStackTrace, StackTrace, VmScriptStrackTrace } from "./stackTrace";
 import { SourceMapConsumer } from "source-map";
 import { GeneratedCode } from "translator/translator";
-import { Px, Em, Percent, Dimentions } from "translator/lib/dimentions/dimention";
+import { evalContext } from "./evalContext";
 
 export enum EvalStatucCode {
     Success,
@@ -20,19 +19,10 @@ export function evalCode(sourceCode : GeneratedCode,
                          fileName : string) : Promise<EvalResult> {
     const contectModule = new Module(fileName);
     const context = {
-        'JssStylesheet': JssStyleSheet,
-        'JssStyleBlock': JssStyleBlock,
-        'JssBlock' : JssBlock,
-        'JssBlockCaller' : JssBlockCaller,
-        'JssMediaQueryBlock': JssMediaQueryBlock,
         'require' : contectModule.require.bind(contectModule),
         'module' : contectModule,
         'exports' : contectModule.exports,
-
-        'Px' : Px,
-        'Em' : Em,
-        'Percent' : Percent,
-        'Dimentions' : Dimentions,
+        ...evalContext(),
     };
 
     try {

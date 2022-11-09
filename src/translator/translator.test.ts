@@ -80,6 +80,19 @@ font-size: 10px; }`).toArray()).toEqual([
 ]);
     });
 
+    it('can access parents objects by parent keyword', () => {
+        expect(evalTestCode(`.className1 .className2 {
+  font-size: 10px;
+
+  $\{this.name\}.className3 {
+    font-size: $\{parent.styles.fontSize\};
+}
+}`).toArray()).toEqual([
+    {name: '.className1 .className2', value: { "font-size": "10px" }},
+    {name: '.className1 .className2.className3', value: { "font-size": "10px" }},
+]);
+    });
+
     it('can call functions', () => {
         expect(evalTestCode(`
 function pad2(n) { return n.length > 1 ? n : "0" + n; }
@@ -215,6 +228,13 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
         expect(evalTestCode(`.className { const value = 10; width: \${10 + value}px; }`).toCss())
             .toEqual(`.className {
     width: 20px;
+}`);
+    });
+
+    it('can parse functions inside style blocks', () => {
+        expect(evalTestCode(`.className { function randomNumber() { return 42; } width: \${randomNumber()}px; }`).toCss())
+            .toEqual(`.className {
+    width: 42px;
 }`);
     });
 

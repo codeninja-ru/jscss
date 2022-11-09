@@ -12,7 +12,6 @@ describe('class JssStyleSheet', () => {
         expect(jssStyleSheet.toCss()).toEqual("@import 'main.css';\n\n.className { }\n\n@import 'test.css';");
         expect(jssStyleSheet2.toCss()).toEqual("");
     });
-
 });
 
 describe('class JssStyleBlock', () => {
