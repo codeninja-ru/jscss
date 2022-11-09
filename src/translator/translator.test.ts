@@ -24,13 +24,16 @@ var self = null;
 
 _styles.insertCss("@import 'main.css';");
 const bgColor = '#fff';
-_styles.insertBlock((function() {
-var self = new JssStyleBlock([\`.className\`]);
+_styles.insertBlock((function(parent) {
+var self = new JssStyleBlock([\`.className\`], {}, parent);
+
+(function(){
 self.push(\`color\`, \`red\`);
 self.push(\`background\`, \`$\{bgColor\}\`);
 
+}).bind(self)();
 return self;
-}).bind(self)());
+}).bind(self)(self));
 
 export _styles;`);
         expect(result.value).toMatch(/\/\/# sourceMappingURL=data:application\/json;charset=utf\-8;base64,[\w\+]+=*$/);
@@ -69,7 +72,7 @@ font-size: 10px; }`).toArray()).toEqual([
   font-size: 10px;
 
   $\{this.name\}.className3 {
-    font-size: $\{this.styles.fontSize\};
+    font-size: $\{this.parent.styles.fontSize\};
 }
 }`).toArray()).toEqual([
     {name: '.className1 .className2', value: { "font-size": "10px" }},
@@ -112,7 +115,7 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
     font-size: 10px;
     color: red;
     .child {
-        ...this.styles;
+        ...this.parent.styles;
     }
 }`).toArray()).toEqual([
     {name: ".parent", value: {color: "red", "font-size": "10px"}},
@@ -192,9 +195,20 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
     @media screen {
         width: 200px;
             @media print {
-                width: \${this.parent.value + 100};
+                width: \${Dimentions.fromString(this.parent.styles.width).add(100)};
                 color: \${value};
-        } } }`).toCss()).toEqual('todo');
+        } } }`).toArray()).toEqual([
+            {name: '.className', value: {width: '100px'}},
+            {name: '@media screen', children: [
+                {name: '.className', value: {width: '200px'}},
+                {name: '@media print', children: [
+                    {name: '.className', value: {
+                        width: '300px',
+                        color: '#fff',
+                    }},
+                ]}
+            ]}
+        ]);
     });
 
     it('can parse variables inside style blocks', () => {

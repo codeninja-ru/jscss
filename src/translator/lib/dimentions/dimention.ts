@@ -78,26 +78,32 @@ export function createClass<S extends Suffix>(suffix : S) : Class<Dimention<S>> 
 
 type OneOfDimentions = (PxDimention | EmDimention | PercentDimention);
 
-export function fromString<T>(str : string) : OneOfDimentions {
-    const regExp = /^(([\+\-]*\d*\.*\d+[eE])?([\+\-]*\d*\.*\d+))(px|cm|mm|in|pt|pc|em|ex|deg|rad|grad|ms|s|hz|khz|%)$/i;
-    const match = str.match(regExp);
-    if (match) {
-        const numeric = match[1];
-        const suffix = match[4];
+export class Dimentions {
+    private constructor() {
+        throw new Error('instnace of Dimentions cannot be created');
+    }
 
-        switch (suffix) {
-            case 'px':
-                return new Px(Number.parseFloat(numeric));
-            case 'em':
-                return new Em(Number.parseFloat(numeric));
-            case '%':
-                return new Percent(Number.parseFloat(numeric));
-            default:
-                throw new Error('unsupported suffix ' + suffix);
+    static fromString<T>(str : string) : OneOfDimentions {
+        const regExp = /^(([\+\-]*\d*\.*\d+[eE])?([\+\-]*\d*\.*\d+))(px|cm|mm|in|pt|pc|em|ex|deg|rad|grad|ms|s|hz|khz|%)$/i;
+        const match = str.match(regExp);
+        if (match) {
+            const numeric = match[1];
+            const suffix = match[4];
 
+            switch (suffix) {
+                case 'px':
+                    return new Px(Number.parseFloat(numeric));
+                case 'em':
+                    return new Em(Number.parseFloat(numeric));
+                case '%':
+                    return new Percent(Number.parseFloat(numeric));
+                default:
+                    throw new Error('unsupported suffix ' + suffix);
+
+            }
+        } else {
+            throw new Error('cannot parse ' + str);
         }
-    } else {
-        throw new Error('cannot parse ' + str);
     }
 }
 

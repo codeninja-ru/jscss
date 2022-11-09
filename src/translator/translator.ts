@@ -110,8 +110,8 @@ function declarations2js(blockList : JssBlockItemNode[], fileName : string, bind
                                           [item.value, "\n"]);
                 case NodeType.JssVarDeclaration:
                     return jssVarBlock2js(item, fileName);
-                case NodeType.JssMedia: //FIXME
-                    return tag`${EXPORT_VAR_NAME}.insertBlock(${mediaQuery2js(item, fileName)});\n`;
+                case NodeType.JssMedia:
+                    return tag`self.addChild(${mediaQuery2js(item, fileName, bindName)});\n`;
                 default:
                     throw new Error(`unsupported block item ${JSON.stringify(item)}`);
             }
@@ -120,11 +120,11 @@ function declarations2js(blockList : JssBlockItemNode[], fileName : string, bind
 }
 
 function jssBlock2js(node : JssBlockNode, fileName: string, bindName = 'self') : SourceNode {
-    return tag`(function() {
-var self = new JssStyleBlock(${cssSelectors2js(node.selectors, fileName)});
-${declarations2js(node.items, fileName)}
+    return tag`(function(parent) {
+var self = new JssStyleBlock(${cssSelectors2js(node.selectors, fileName)}, {}, parent);
+${printProperties(node.items, fileName, bindName)}
 return self;
-}).bind(${bindName})()`;
+}).bind(${bindName})(${bindName})`;
 }
 
 function jssVarBlock2js(node : JssVarDeclarationNode, fileName : string, bindName = 'caller') : SourceNode {
@@ -163,11 +163,20 @@ function mediaQuery2js(node : JssMediaNode, fileName : string, bindName = 'self'
     }).join(','));
     mediaList.add(']');
 
-    return tag`(function() {
-var self = new JssMediaQueryBlock(${mediaList});
-${declarations2js(node.items, fileName)}
+    return tag`(function(parent) {
+var self = new JssMediaQueryBlock(${mediaList}, {}, parent);
+${printProperties(node.items, fileName, bindName)}
 return self;
-}).bind(${bindName})()`;
+}).bind(${bindName})(${bindName})`;
+}
+
+function printProperties(items : JssBlockItemNode[],
+                         fileName : string,
+                         bindName : string) : SourceNode {
+    return tag`
+(function(){
+${declarations2js(items, fileName)}
+}).bind(${bindName})();`;
 }
 
 function translateNode(node : JssNode, fileName : string) : SourceNode {

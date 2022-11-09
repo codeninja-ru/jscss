@@ -1,5 +1,5 @@
 import { JssBlock, JssBlockCaller, JssMediaQueryBlock, JssStyleBlock, JssStyleSheet } from "translator/lib/core";
-import { Px, Em, Percent } from "translator/lib/dimentions/dimention";
+import { Px, Em, Percent, Dimentions } from "translator/lib/dimentions/dimention";
 import { parseJssScript } from "parser/jssParser";
 import { translator } from "translator/translator";
 import { ArrayTokenStream } from "parser/tokenStream";
@@ -18,6 +18,7 @@ export function evalTestCode(css : string) : JssStyleSheet {
         'Px' : Px,
         'Em' : Em,
         'Percent' : Percent,
+        'Dimentions': Dimentions,
     };
     try {
         const script = new vm.Script(sourceCode.value.replace('export _styles', '_styles'));

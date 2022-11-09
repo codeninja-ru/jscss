@@ -270,7 +270,9 @@ function sprintMediaValue(name : string, children : StyleArray, indent = 0) : st
 }
 
 export class JssStyleBlock extends JssBlock implements StyleBlock {
-    constructor(selectors : string[] | string, content : (StyleProp | JssBlockCaller) = {}) {
+    constructor(selectors : string[] | string,
+                content : (StyleProp | JssBlockCaller) = {},
+                parent : StyleBlockParent = null) {
         super();
         if (typeof selectors == 'string') {
             privateSelectors.set(this, [selectors]);
@@ -278,6 +280,7 @@ export class JssStyleBlock extends JssBlock implements StyleBlock {
             privateSelectors.set(this, selectors);
         }
         this.extend(content);
+        setPrivate(this, privateParent, parent);
     }
 
     get name() : string {
@@ -351,7 +354,9 @@ function findStyleParent(value : StyleBlock | MediaQueryBlock) : StyleBlock | nu
 
 export class JssMediaQueryBlock extends JssBlock implements MediaQueryBlock {
     readonly mediaList: string[];
-    constructor(mediaList : string[] | string, content : (StyleProp | JssBlockCaller) = {}) {
+    constructor(mediaList : string[] | string,
+                content : (StyleProp | JssBlockCaller) = {},
+                parent : StyleBlockParent = null) {
         super();
         if (typeof mediaList == 'string') {
             this.mediaList = [mediaList];
@@ -361,7 +366,8 @@ export class JssMediaQueryBlock extends JssBlock implements MediaQueryBlock {
         this.extend(content);
         Object.defineProperty(this, 'mediaList', {
             writable: false,
-        })
+        });
+        setPrivate(this, privateParent, parent);
     }
 
     get parent() : StyleBlockParent {
