@@ -1,4 +1,4 @@
-import { Dimentions, Em, Percent, Px } from './dimention';
+import { Units, Em, Percent, Px } from './unit';
 
 describe('Px', () => {
     it('represents pixels', () => {
@@ -38,13 +38,13 @@ describe('Percent', () => {
 
 describe('fromString()', () => {
     it('parse dimentions', () => {
-        expect(Dimentions.fromString('10px').toString()).toEqual('10px');
-        expect(Dimentions.fromString('10px').toString()).toEqual('10px');
-        expect(Dimentions.fromString('10em').toString()).toEqual('10em');
-        expect(Dimentions.fromString('10%').toString()).toEqual('10%');
-        expect(Dimentions.fromString('-10%').toString()).toEqual('-10%');
-        expect(Dimentions.fromString('-.10em').toString()).toEqual('-0.1em');
-        expect(Dimentions.fromString('10px').add(5).toString()).toEqual('15px');
+        expect(Units.fromString('10px').toString()).toEqual('10px');
+        expect(Units.fromString('10px').toString()).toEqual('10px');
+        expect(Units.fromString('10em').toString()).toEqual('10em');
+        expect(Units.fromString('10%').toString()).toEqual('10%');
+        expect(Units.fromString('-10%').toString()).toEqual('-10%');
+        expect(Units.fromString('-.10em').toString()).toEqual('-0.1em');
+        expect(Units.fromString('10px').add(5).toString()).toEqual('15px');
     });
 
 });

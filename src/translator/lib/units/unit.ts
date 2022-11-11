@@ -1,26 +1,27 @@
-interface Dimention<S extends Suffix> {
+//TODO be more consiste with https://drafts.css-houdini.org/css-typed-om-1/#intro
+interface Unit<S extends Suffix> {
     readonly value : number;
     readonly suffix : S;
 
     toString() : string;
-    add(value : Dimention<S> | number) : Dimention<S>;
-    minus(value : Dimention<S> | number) : Dimention<S>;
+    add(value : Unit<S> | number) : Unit<S>;
+    minus(value : Unit<S> | number) : Unit<S>;
     equal(value : any) : boolean;
 }
 
 type Suffix = 'px' | 'em' | '%';
 
-interface PxDimention extends Dimention<'px'> {
+interface PxUnit extends Unit<'px'> {
     add(value : this | number) : this;
     minus(value : this | number) : this;
 }
 
-interface EmDimention extends Dimention<'em'>{
+interface EmUnit extends Unit<'em'>{
     add(value : this | number) : this;
     minus(value : this | number) : this;
 }
 
-interface PercentDimention extends Dimention<'%'>{
+interface PercentUnit extends Unit<'%'>{
     add(value : this | number) : this;
     minus(value : this | number) : this;
 }
@@ -30,8 +31,8 @@ type Class<T> = {
     valueOf(value : Number) : T;
 };
 
-export function createClass<S extends Suffix>(suffix : S) : Class<Dimention<S>> {
-    return class BasicDemention implements Dimention<S> {
+export function createClass<S extends Suffix>(suffix : S) : Class<Unit<S>> {
+    return class BasicDemention implements Unit<S> {
         readonly suffix = suffix;
         constructor(readonly value : number) {
         }
@@ -44,7 +45,7 @@ export function createClass<S extends Suffix>(suffix : S) : Class<Dimention<S>> 
             return this.value + suffix;
         }
 
-        add(value : Dimention<S> | number) : Dimention<S> {
+        add(value : Unit<S> | number) : Unit<S> {
             if (typeof value == 'number') {
                 return new BasicDemention(this.value + value);
             } else if (value.suffix == this.suffix) {
@@ -54,7 +55,7 @@ export function createClass<S extends Suffix>(suffix : S) : Class<Dimention<S>> 
             }
         }
 
-        minus(value : Dimention<S> | number) : Dimention<S> {
+        minus(value : Unit<S> | number) : Unit<S> {
             if (typeof value == 'number') {
                 return new BasicDemention(this.value - value);
             } else if (value.suffix == this.suffix) {
@@ -76,14 +77,14 @@ export function createClass<S extends Suffix>(suffix : S) : Class<Dimention<S>> 
     }
 }
 
-type OneOfDimentions = (PxDimention | EmDimention | PercentDimention);
+type OneOfUnit = (PxUnit | EmUnit | PercentUnit);
 
-export class Dimentions {
+export class Units {
     private constructor() {
-        throw new Error('instnace of Dimentions cannot be created');
+        throw new Error('instnace of a Unit cannot be created');
     }
 
-    static fromString<T>(str : string) : OneOfDimentions {
+    static fromString<T>(str : string) : OneOfUnit {
         const regExp = /^(([\+\-]*\d*\.*\d+[eE])?([\+\-]*\d*\.*\d+))(px|cm|mm|in|pt|pc|em|ex|deg|rad|grad|ms|s|hz|khz|%)$/i;
         const match = str.match(regExp);
         if (match) {
@@ -107,8 +108,8 @@ export class Dimentions {
     }
 }
 
-export const Px = createClass('px') as Class<PxDimention>;
-export const Em = createClass('em') as Class<EmDimention>;
-export const Percent = createClass('%') as Class<PercentDimention>;
+export const Px = createClass('px') as Class<PxUnit>;
+export const Em = createClass('em') as Class<EmUnit>;
+export const Percent = createClass('%') as Class<PercentUnit>;
 
 //TODO unit convertion
