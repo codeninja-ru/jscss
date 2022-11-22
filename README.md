@@ -13,9 +13,21 @@ TODO
 ## Get started guide
 
 ### Installation
-TODO
 
-npm install jsslang
+``` sh
+npm install -g @jsslang/jss
+```
+
+### Usage
+
+``` sh
+npx @jsslang/jss file.jss file.css
+```
+or if you installed it globally
+
+``` sh
+jss file.jss file.css
+```
 
 ### Variables
 
@@ -177,7 +189,7 @@ Output:
 
 #### Media-Queries
 
-You can put media-quries insede the blocks
+You can put media-quries inside blocks
 
 
 ``` javascript
@@ -219,6 +231,25 @@ Output
     }
 }
 ```
+
+### Comments
+
+All kind of comments a supported
+``` javascript
+// a single line comment
+
+/* a multi-line comment */
+
+<!-- a html style comment  -->
+```
+
+## Syntax Highlighting
+Syntax highlighting is in progress, but you can use same of our basic configs the following text editors.
+### vim
+https://github.com/codeninja-ru/vim-jsslang
+### Emacs
+https://github.com/codeninja-ru/jsslang-mode
+
 
 # TODO
 px, em, % - variables and operations

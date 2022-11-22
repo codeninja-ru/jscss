@@ -1,29 +1,34 @@
 {
-  "name": "jscss",
-  "version": "1.0.0",
-  "description": "css pre-processor",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [
-    "css"
-  ],
-  "author": "Mayorov Vitaliy",
-  "license": "MIT",
-  "devDependencies": {
-    "@rollup/plugin-node-resolve": "^13.3.0",
-    "@tsconfig/node12": "^1.0.8",
-    "@types/jest": "^26.0.23",
-    "jest": "^27.0.5",
-    "rollup": "^2.77.0",
-    "rollup-plugin-preserve-shebang": "^1.0.1",
-    "rollup-plugin-sourcemaps": "^0.6.3",
-    "ts-jest": "^27.0.3",
-    "typescript": "^4.3.2"
-  },
-  "dependencies": {
-    "source-map": "^0.7.4",
-    "source-map-support": "^0.5.21"
-  }
+    "name": "@jsslang/jss",
+    "version": "1.0.0",
+    "description": "css pre-processor",
+    "main": "jss.js",
+    "keywords": [
+        "css",
+        "jsslang",
+        "jss"
+    ],
+    "author": "Vitaliy Mayorov",
+    "license": "MIT",
+    "bin": {
+        "jss": "./jss.js"
+    },
+    "files": [
+        "jss.js"
+    ],
+    "devDependencies": {
+        "@rollup/plugin-node-resolve": "^13.3.0",
+        "@tsconfig/node12": "^1.0.8",
+        "@types/jest": "^26.0.23",
+        "jest": "^27.0.5",
+        "rollup": "^2.77.0",
+        "rollup-plugin-preserve-shebang": "^1.0.1",
+        "rollup-plugin-sourcemaps": "^0.6.3",
+        "ts-jest": "^27.0.3",
+        "typescript": "^4.3.2"
+    },
+    "dependencies": {
+        "source-map": "^0.7.4",
+        "source-map-support": "^0.5.21"
+    }
 }

@@ -20,3 +20,14 @@ test: build
 debug: build
 	@echo "open chrome://inspect"
 	node --inspect-brk $(JEST) --runInBand
+
+publish-build:
+	cp ./package.json ./build
+	cp ./README.md ./build
+	cp ./LICENSE ./build
+
+publish: publish-build
+	npm publish ./build --access=public
+
+publish-test: publish-build
+	npm publish ./build --access=public --dry-run
