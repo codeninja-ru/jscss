@@ -2,7 +2,7 @@ import { Keywords, ReservedWords } from "keywords";
 import { Symbols } from "symbols";
 import { TokenType } from "token";
 import { attrib, combinator, cssCharset, cssLiteral, hash, importStatement, mediaQueryList, pageStatement, pseudo } from "./cssParser";
-import { assignmentExpression, functionExpression, identifier, moduleItem, numericLiteral, parseComment, parseJsVarStatement } from "./parser";
+import { assignmentExpression, expression, functionExpression, identifier, moduleItem, numericLiteral, parseComment, parseJsVarStatement } from "./parser";
 import { SequenceError, SyntaxRuleError } from "./parserError";
 import { anyBlock, anyString, block, comma, commaList, dollarSign, firstOf, ignoreSpacesAndComments, keyword, lazyBlock, LazyBlockParser, leftHandRecurciveRule, loop, noLineTerminatorHere, noSpacesHere, oneOfSymbols, optional, returnRawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
 import { BlockNode, JsRawNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssMediaNode, JssSelectorNode, JssSpreadNode, JssVarDeclarationNode, NodeType, SyntaxTree } from "./syntaxTree";
@@ -43,7 +43,7 @@ function jssSpreadDefinition(stream : TokenStream) : JssSpreadNode {
  * cannot be a reserved word
  * */
 export function jssPropertyName(stream : TokenStream) : void {
-    return firstOf(
+    const result = firstOf(
         // LiteralPropertyName
         function(stream : TokenStream) {
             const name = cssLiteral(stream);
@@ -57,11 +57,13 @@ export function jssPropertyName(stream : TokenStream) : void {
         anyString,
         numericLiteral,
         // ComputedPropertyName[?Yield, ?Await]
-        block(TokenType.SquareBrackets, assignmentExpression)
+        block(TokenType.SquareBrackets, expression)
     )(stream);
+
+    return result;
 }
 
-function jsProperyDefinition(stream : TokenStream) : JssDeclarationNode {
+function jssProperyDefinition(stream : TokenStream) : JssDeclarationNode {
     //sequence(propertyName, symbol(Symbols.colon), assignmentExpression), // clear js assigment
     //sequence(propertyName, symbol(Symbols.colon), expr, optional(prioStatement)), // clear css
     const [propName,,value] = sequence(
@@ -99,9 +101,9 @@ function jsProperyDefinition(stream : TokenStream) : JssDeclarationNode {
     };
 }
 
-function jssPropertyDefinition(stream : TokenStream) : (JssDeclarationNode | JssSpreadNode) {
+function jssDeclaration(stream : TokenStream) : (JssDeclarationNode | JssSpreadNode) {
     const result = firstOf(
-        jsProperyDefinition,
+        jssProperyDefinition,
         jssSpreadDefinition,
     )(stream);
 
@@ -207,7 +209,7 @@ function jssVariableStatement(stream : TokenStream) : JssVarDeclarationNode {
 function jssBlockStatement(stream : TokenStream) : LazyBlockParser<BlockNode<JssBlockItemNode>> {
     return lazyBlock(TokenType.LazyBlock, strictLoop(firstOf(
         ignoreSpacesAndComments,
-        jssPropertyDefinition,
+        jssDeclaration,
         rulesetStatement,
         startsWithDog,
         jssVariableStatement, //TODO forbide exports

@@ -244,4 +244,22 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
     display: block;
 }`);
     });
+
+    it('translates @font-face', () => {
+        const source = `@font-face {
+        font-family: "Bitstream Vera Serif Bold";
+        src: url("https://mdn.github.io/css-examples/web-fonts/VeraSeBd.ttf");
+      }
+
+      body {
+        font-family: "Bitstream Vera Serif Bold", serif;
+      }`;
+        expect(evalTestCode(source).toCss()).toEqual(source);
+    });
+
+    it('cannot declare @font-face within selecotros', () => {
+        expect(() => evalTestCode(`.className { @font-face { font-family: 'test'; } }`).toCss()).toThrowError('@font-face cannot be declared within css selectors');
+    });
+
+
 });
