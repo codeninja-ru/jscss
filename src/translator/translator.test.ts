@@ -67,6 +67,25 @@ font-size: 10px; }`).toArray()).toEqual([
 ])
     });
 
+    it('parses vars in propertyName in ${}', () => {
+        expect(evalTestCode(`const propName = 'color';
+div a:hover {
+background-$\{propName\}: #444;
+$\{propName\}: #fff;
+}`).toArray()).toEqual([
+    {name: 'div a:hover', value: { "color": "#fff", "background-color": '#444' }},
+])
+    });
+
+    it('parses vars in propertyName in []', () => {
+        expect(evalTestCode(`const propName = 'color';
+div a:hover {
+[propName]: #fff;
+}`).toArray()).toEqual([
+    {name: 'div a:hover', value: { "color": "#fff" }},
+])
+    });
+
     it('can access parents objects by this keyword', () => {
         expect(evalTestCode(`.className1 .className2 {
   font-size: 10px;
@@ -173,7 +192,6 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
 ]);
     });
 
-
     it('parses some complecated syntax', () => {
         expect(evalTestCode(`const a = 1; const b = 2; const c = a+b; _styles = c;`)).toEqual(3);
         expect(evalTestCode(`const a = 1; const b = 2; const c = b-a; _styles = c;`)).toEqual(1);
@@ -247,19 +265,34 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
 
     it('translates @font-face', () => {
         const source = `@font-face {
-        font-family: "Bitstream Vera Serif Bold";
-        src: url("https://mdn.github.io/css-examples/web-fonts/VeraSeBd.ttf");
-      }
+    font-family: "Bitstream Vera Serif Bold";
+    src: url("https://mdn.github.io/css-examples/web-fonts/VeraSeBd.ttf");
+}
 
-      body {
-        font-family: "Bitstream Vera Serif Bold", serif;
-      }`;
+body {
+    font-family: "Bitstream Vera Serif Bold", serif;
+}`;
         expect(evalTestCode(source).toCss()).toEqual(source);
     });
 
-    it('cannot declare @font-face within selecotros', () => {
-        expect(() => evalTestCode(`.className { @font-face { font-family: 'test'; } }`).toCss()).toThrowError('@font-face cannot be declared within css selectors');
+    it('cannot declare @font-face within selectors', () => {
+        expect(() => evalTestCode(`.className { @font-face { font-family: 'test'; } }`).toCss())
+            .toThrowError();
     });
 
+
+});
+
+describe('confict solving', () => {
+    it('should solve confict between jssDeclaration and rulesetStatement', () => {
+        expect(evalTestCode(`p { $\{this.name\}:after; $\{this.name\}:after { display: block; } }`).toCss())
+            .toEqual(`p {
+    p: after;
+}
+
+p:after {
+    display: block;
+}`);
+    });
 
 });

@@ -1,5 +1,10 @@
 # TODOs
 
+## replace new by @block
+const clearfix = @block {
+  clear: both;
+}
+
 ## universal selector *
 ```css
 * {
@@ -7,7 +12,6 @@
 }
 ```
 
-## test ${var}#${var}
 ## css variables
 ## css nesting
 ## pseudo class arguments

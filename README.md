@@ -90,6 +90,41 @@ Output:
 }
 ```
 
+You can use variables in property names
+
+``` javascript
+const propName = 'color';
+.className {
+  ${propName}: #fff;
+  background-${propName}: #777;
+}
+```
+
+Output:
+``` css
+.className {
+  color: #fff;
+  background-color: #777;
+}
+```
+
+You can even use computed properties like in javascript
+``` javascript
+const propName = 'color';
+.className {
+  [propName]: #fff;
+  ['background-' + propName]: #777;
+}
+```
+
+Output:
+``` css
+.className {
+  color: #fff;
+  background-color: #777;
+}
+```
+
 
 ### Mixins
 

@@ -1,4 +1,4 @@
-import { parseJssScript } from "./jssParser";
+import { jssIdent, parseJssScript } from "./jssParser";
 import { NodeType } from "./syntaxTree";
 import { ArrayTokenStream, GoAheadTokenStream } from "./tokenStream";
 
@@ -332,5 +332,45 @@ import * as _ from '/reader/readers';`).toEqual([
          ]},
         {type: NodeType.Ignore, items: expect.anything()},
     ]}]);
+    });
+
+    it('parse jssIdent', () => {
+        expect(jssIdent(ArrayTokenStream.fromString('background-${propName}')))
+            .toEqual({"position": {"col": 1, "line": 1}, "type": 13, "value": "background-${propName}"});
+        expect(jssIdent(ArrayTokenStream.fromString('${propName}')))
+            .toEqual({"position": {"col": 1, "line": 1}, "type": 13, "value": "${propName}"});
+    });
+
+
+    it('parses vars in propertyName in ${} and []', () => {
+        parseCode(`const propName = 'color';
+div a:hover {
+background-$\{propName\}: #444;
+$\{propName\}: #333;
+[propName]: #555;
+}`).toEqual([
+    { type: NodeType.Raw, value: "const propName = 'color';", position: {line: 1, col: 1} },
+    {type: NodeType.Ignore, items: expect.anything()},
+    { type: NodeType.JssBlock, selectors: [
+        {
+            type: NodeType.JssSelector,
+            items: ["div", " a:hover"],
+            position: expect.anything(),
+        }
+    ], items: [
+        {type: NodeType.Ignore, items: expect.anything()},
+        {type: NodeType.JssDeclaration, prop: "background-${propName}", value: "#444",
+         propPos: expect.anything(), valuePos: expect.anything()},
+        {type: NodeType.Ignore, items: expect.anything()},
+        {type: NodeType.JssDeclaration, prop: "${propName}", value: "#333",
+         propPos: expect.anything(), valuePos: expect.anything()},
+        {type: NodeType.Ignore, items: expect.anything()},
+        {type: NodeType.JssDeclaration, prop: "${propName}", value: "#555",
+         propPos: expect.anything(), valuePos: expect.anything()},
+        {type: NodeType.Ignore, items: expect.anything()},
+    ],
+      position: expect.anything(),
+    }
+])
     });
 });

@@ -4,7 +4,8 @@ export type SyntaxTree = JssNode[];
 
 export type JssNode = IgnoreNode | JsRawNode |
     JssBlockNode | CssImportNode | JssSelectorNode |
-    CommentNode | JssVarDeclarationNode | CssCharsetNode | JssMediaNode;
+    CommentNode | JssVarDeclarationNode | CssCharsetNode | JssMediaNode |
+    FontFaceNode;
 
 export enum NodeType {
     JsImport,
@@ -41,6 +42,7 @@ export enum NodeType {
     JssSelector,
     JssVarDeclaration,
     JssMedia,
+    CssFontFace,
 }
 
 export enum BlockType {
@@ -122,6 +124,7 @@ export interface CssBlockNode extends Node {
 export type JssBlockItemNode = CssDeclarationNode | JssDeclarationNode
     | IgnoreNode | JssBlockNode | JssSpreadNode
     | JsRawNode | JssVarDeclarationNode | JssMediaNode;
+
 export interface JssBlockNode extends Node, SourceMappedNode {
     type: NodeType.JssBlock,
     readonly selectors: JssSelectorNode[],
@@ -212,4 +215,9 @@ export interface JssSpreadNode extends Node {
     readonly type: NodeType.JssSpread,
     readonly value: string,
     readonly valuePos: Position,
+}
+
+export interface FontFaceNode extends Node, SourceMappedNode {
+    readonly type: NodeType.CssFontFace,
+    readonly items: JssBlockItemNode[],
 }

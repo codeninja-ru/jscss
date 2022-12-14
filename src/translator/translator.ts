@@ -1,4 +1,4 @@
-import { CssDeclarationNode, CssImportNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssMediaNode, JssNode, JssSelectorNode, JssSpreadNode, JssVarDeclarationNode, NodeType, SyntaxTree } from 'parser/syntaxTree';
+import { CssDeclarationNode, CssImportNode, FontFaceNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssMediaNode, JssNode, JssSelectorNode, JssSpreadNode, JssVarDeclarationNode, NodeType, SyntaxTree } from 'parser/syntaxTree';
 import { SourceMapGenerator, SourceNode } from 'source-map';
 import { Position } from 'stream/position';
 import { SourceMappingUrl } from './sourceMappingUrl';
@@ -127,6 +127,14 @@ return self;
 }).bind(${bindName})(${bindName})`;
 }
 
+function fontFace2js(node : FontFaceNode, fileName: string, bindName = 'self') : SourceNode {
+    return tag`(function(parent) {
+var self = new JssStyleBlock(['@font-face'], {}, parent);
+${printProperties(node.items, fileName, bindName)}
+return self;
+}).bind(${bindName})(${bindName})`;
+}
+
 function jssVarBlock2js(node : JssVarDeclarationNode, fileName : string, bindName = 'caller') : SourceNode {
     const exportSourceNode = node.hasExport && node.exportPos ? makeSourceNode(node.exportPos,
                                                              fileName,
@@ -189,6 +197,8 @@ function translateNode(node : JssNode, fileName : string) : SourceNode {
                                   [node.value, "\n"]);
         case NodeType.JssBlock:
             return tag`${EXPORT_VAR_NAME}.insertBlock(${jssBlock2js(node, fileName)});\n`;
+        case NodeType.CssFontFace:
+            return tag`${EXPORT_VAR_NAME}.insertBlock(${fontFace2js(node, fileName)});\n`;
         case NodeType.JssSelector:
             return makeSourceNode(node.position,
                                   fileName,

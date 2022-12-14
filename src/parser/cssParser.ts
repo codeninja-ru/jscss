@@ -26,7 +26,7 @@ function containsOnly(str : string, symbol : SyntaxSymbol) : boolean {
 }
 
 function isCssToken(token : Token) : boolean {
-    return token.type == TokenType.Literal
+    return (token.type == TokenType.Literal && token.value.indexOf('$') == -1)
         || (token.type == TokenType.Symbol && containsOnly(token.value, Symbols.minus));
 }
 

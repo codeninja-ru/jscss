@@ -21,6 +21,7 @@ export enum TokenType {
     TemplateString,
     RoundBrackets,
     SquareBrackets,
+    HiddenToken, // Hidden token for internal operation
 }
 
 export interface WithPosition {
@@ -98,6 +99,11 @@ export interface RoundBracketsToken extends BaseToken {
 
 export interface SquareBracketsToken extends BaseToken {
     type: TokenType.SquareBrackets,
+    readonly value: string;
+}
+
+export interface HiddenToken extends BaseToken {
+    type: TokenType.HiddenToken;
     readonly value: string;
 }
 

@@ -49,6 +49,18 @@ export function keyword(keyword: Keyword,
     };
 }
 
+export function literalKeyword(keyword: string,
+                        peekFn : TokenStreamReader = peekAndSkipSpaces): TokenParser<LiteralToken> {
+    return function(stream: TokenStream) : LiteralToken {
+        const token = peekFn(stream);
+        if (token.type == TokenType.Literal && token.value == keyword) {
+            return token;
+        } else {
+            throw new ParserError(`keyword "${keyword}" is expected`, token);
+        }
+    };
+}
+
 export function comma(stream: TokenStream) : CommaToken {
     const token = peekAndSkipSpaces(stream);
     if (token.type == TokenType.Comma) {
@@ -566,6 +578,11 @@ export function lazyBlock(expectedTokenType : OneOfBlockTokenType, parser : Toke
 
         throw new ParserError(`block is expected`, token);
     };
+}
+
+export function isBlockNode(obj : any) : obj is BlockNode {
+    return obj.type && obj.type == NodeType.Block
+        && obj.blockType && obj.items;
 }
 
 //TODO block can by rewritten using lazyBlock

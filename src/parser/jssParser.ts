@@ -1,13 +1,15 @@
 import { Keywords, ReservedWords } from "keywords";
 import { Symbols } from "symbols";
-import { TokenType } from "token";
+import { HiddenToken, TokenType } from "token";
 import { attrib, combinator, cssCharset, cssLiteral, hash, importStatement, mediaQueryList, pageStatement, pseudo } from "./cssParser";
-import { assignmentExpression, expression, functionExpression, identifier, moduleItem, numericLiteral, parseComment, parseJsVarStatement } from "./parser";
+import { expression, functionExpression, identifier, moduleItem, numericLiteral, parseComment, parseJsVarStatement } from "./parser";
 import { SequenceError, SyntaxRuleError } from "./parserError";
-import { anyBlock, anyString, block, comma, commaList, dollarSign, firstOf, ignoreSpacesAndComments, keyword, lazyBlock, LazyBlockParser, leftHandRecurciveRule, loop, noLineTerminatorHere, noSpacesHere, oneOfSymbols, optional, returnRawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
-import { BlockNode, JsRawNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssMediaNode, JssSelectorNode, JssSpreadNode, JssVarDeclarationNode, NodeType, SyntaxTree } from "./syntaxTree";
+import { anyBlock, anyString, block, comma, commaList, dollarSign, firstOf, ignoreSpacesAndComments, isBlockNode, keyword, lazyBlock, LazyBlockParser, leftHandRecurciveRule, literalKeyword, longestOf, loop, noLineTerminatorHere, noSpacesHere, oneOfSymbols, optional, returnRawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
+import { isSourceFragment } from "./sourceFragment";
+import { BlockNode, FontFaceNode, JsRawNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssMediaNode, JssSelectorNode, JssSpreadNode, JssVarDeclarationNode, NodeType, SyntaxTree } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
+import { peekNextToken } from "./tokenStreamReader";
 
 export function parseJssScript(stream : TokenStream) : SyntaxTree {
     optional(skipShebang)(stream);
@@ -29,7 +31,7 @@ function toRawNode(parser : TokenParser) : TokenParser<JsRawNode> {
 }
 
 function jssSpreadDefinition(stream : TokenStream) : JssSpreadNode {
-    const [, value] = sequence(symbol(Symbols.dot3), returnRawValueWithPosition(assignmentExpression))(stream);
+    const [, value] = sequence(symbol(Symbols.dot3), returnRawValueWithPosition(expression))(stream);
 
     return {
         type: NodeType.JssSpread,
@@ -42,11 +44,11 @@ function jssSpreadDefinition(stream : TokenStream) : JssSpreadNode {
  * can contain and be started with '-'
  * cannot be a reserved word
  * */
-export function jssPropertyName(stream : TokenStream) : void {
-    const result = firstOf(
+export function jssPropertyName(stream : TokenStream) : any {
+    return firstOf(
         // LiteralPropertyName
         function(stream : TokenStream) {
-            const name = cssLiteral(stream);
+            const name = jssIdent(stream);
             if (name.value in ReservedWords) {
                 throw new SequenceError(
                     new SyntaxRuleError(`"${name.value}" is a reseved word, it's not allowed as property name`, name.position)
@@ -57,16 +59,14 @@ export function jssPropertyName(stream : TokenStream) : void {
         anyString,
         numericLiteral,
         // ComputedPropertyName[?Yield, ?Await]
-        block(TokenType.SquareBrackets, expression)
+        block(TokenType.SquareBrackets, returnRawValueWithPosition(expression)),
     )(stream);
-
-    return result;
 }
 
-function jssProperyDefinition(stream : TokenStream) : JssDeclarationNode {
+function jssPropretyDefinition(stream : TokenStream) : JssDeclarationNode {
     //sequence(propertyName, symbol(Symbols.colon), assignmentExpression), // clear js assigment
     //sequence(propertyName, symbol(Symbols.colon), expr, optional(prioStatement)), // clear css
-    const [propName,,value] = sequence(
+    const [propNameToken,,value] = sequence(
         jssPropertyName,
         symbol(Symbols.colon),
         returnRawValueWithPosition(loop(
@@ -91,11 +91,26 @@ function jssProperyDefinition(stream : TokenStream) : JssDeclarationNode {
         ))
     )(stream);
 
+    let propName = null;
+    let propPos = propNameToken.position;
+    if (isBlockNode(propNameToken)) {
+        if (isSourceFragment(propNameToken.items)) {
+            propName = '${' + propNameToken.items.value + '}';
+            propPos = propNameToken.items.position;
+        } else {
+            throw new Error('block should contain a sourceFragment')
+        }
+    } else if (propNameToken.type && propNameToken.type == TokenType.String) {
+        propName = propNameToken.value.slice(1, propNameToken.value.length - 1);
+    } else {
+        propName = propNameToken.value;
+    }
+
     return {
         type: NodeType.JssDeclaration,
         //TODO string in properyName should be fobiddne
-        prop: propName.type == TokenType.String ? propName.value.slice(1, propName.value.length - 1) : propName.value,
-        propPos: propName.position,
+        prop: propName,
+        propPos: propPos,
         value: value.value,
         valuePos: value.position,
     };
@@ -103,7 +118,7 @@ function jssProperyDefinition(stream : TokenStream) : JssDeclarationNode {
 
 function jssDeclaration(stream : TokenStream) : (JssDeclarationNode | JssSpreadNode) {
     const result = firstOf(
-        jssProperyDefinition,
+        jssPropretyDefinition,
         jssSpreadDefinition,
     )(stream);
 
@@ -112,14 +127,23 @@ function jssDeclaration(stream : TokenStream) : (JssDeclarationNode | JssSpreadN
     return result;
 }
 
-function jssIdent(stream : TokenStream) : string {
-    return returnRawValue(leftHandRecurciveRule(
+export function jssIdent(stream : TokenStream) : HiddenToken {
+    const result = returnRawValueWithPosition(leftHandRecurciveRule(
         firstOf(
             templatePlaceholder,
             cssLiteral,//NOTE it can't be started with numbers, and content some chars, read the spec
         ),
-        sequence(noSpacesHere, jssIdent),
+        sequence(noSpacesHere, firstOf(
+            templatePlaceholder,
+            cssLiteral,
+        )),
     ))(stream);
+
+    return {
+        type: TokenType.HiddenToken,
+        position: result.position,
+        value: result.value,
+    };
 }
 
 export function simpleSelector(stream : TokenStream) : string {
@@ -209,9 +233,13 @@ function jssVariableStatement(stream : TokenStream) : JssVarDeclarationNode {
 function jssBlockStatement(stream : TokenStream) : LazyBlockParser<BlockNode<JssBlockItemNode>> {
     return lazyBlock(TokenType.LazyBlock, strictLoop(firstOf(
         ignoreSpacesAndComments,
-        jssDeclaration,
-        rulesetStatement,
-        startsWithDog,
+        longestOf( //NOTE these two rules are in confilct
+            jssDeclaration,
+            rulesetStatement,
+        ),
+        startsWithDog(
+            jssMediaStatement,
+        ),
         jssVariableStatement, //TODO forbide exports
         toRawNode(parseJsVarStatement),
         toRawNode(functionExpression),
@@ -259,39 +287,67 @@ export function jssMediaStatement(stream : TokenStream) : JssMediaNode {
     }
 }
 
+function fontFace(stream : TokenStream) : FontFaceNode {
+    const [start,,, block] = sequence(
+        literalKeyword('font', peekNextToken),
+        symbol(Symbols.minus, peekNextToken),
+        literalKeyword('face'),
+        lazyBlock(TokenType.LazyBlock, strictLoop(
+            firstOf(
+                ignoreSpacesAndComments,
+                jssDeclaration,
+            )
+        ))
+    )(stream);
+
+    return {
+        type: NodeType.CssFontFace,
+        position: start.position,
+        items: block.parse().items,
+    }
+}
+
 /**
  * all rules that stat with @
  * */
-function startsWithDog(stream : TokenStream) : any {
-    const dog = symbol(Symbols.at)(stream);
-    noSpacesHere(stream);
-    try {
-        let result = firstOf(
-            cssCharset,
-            importStatement,
-            jssMediaStatement,
-            pageStatement,
-        )(stream);
+function startsWithDog(...rules : TokenParser<any>[]) : TokenParser {
+    return function(stream : TokenStream) : ReturnType<TokenParser> {
+        const dog = symbol(Symbols.at)(stream);
+        noSpacesHere(stream);
+        try {
+            let result = firstOf(
+                ...rules,
+            )(stream);
 
-        if (result.rawValue) {
-            result.rawValue = '@' + result.rawValue;
+            if (result.rawValue) {
+                result.rawValue = '@' + result.rawValue;
+            }
+
+            if (result.position) {
+                result.position = dog.position;
+            }
+
+            return result;
+        } catch (e) {
+            throw new SequenceError(e);
         }
 
-        if (result.position) {
-            result.position = dog.position;
-        }
-
-        return result;
-    } catch (e) {
-        throw new SequenceError(e);
-    }
+    };
 }
+
 
 export function stylesheetItem(stream : TokenStream) : ReturnType<TokenParser> {
     return firstOf(
         rulesetStatement,
         jssVariableStatement,
-        startsWithDog,
+        startsWithDog(
+            cssCharset,
+            importStatement,
+            jssMediaStatement,
+            pageStatement,
+            fontFace,
+        ),
+
     )(stream);
 }
 

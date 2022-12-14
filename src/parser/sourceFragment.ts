@@ -2,6 +2,11 @@ import { Token } from "token";
 import { Position } from "stream/position";
 import { isSpaceOrComment } from "./tokenStreamReader";
 
+export function isSourceFragment(obj : any) : obj is SourceFragment {
+    return obj instanceof ArraySourceFragment
+    || obj instanceof LeftTrimSourceFragment;
+}
+
 export interface SourceFragment {
     readonly position: Position;
     value : string;
