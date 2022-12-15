@@ -280,6 +280,14 @@ body {
             .toThrowError();
     });
 
+    it('support @namespace', () => {
+        expect(evalTestCode(`@namespace url(http://www.w3.org/1999/xhtml);
+@namespace svg url(http://www.w3.org/2000/svg);`).toCss())
+            .toEqual(`@namespace url(http://www.w3.org/1999/xhtml);
+
+@namespace svg url(http://www.w3.org/2000/svg);`);
+    });
+
 
 });
 

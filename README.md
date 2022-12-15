@@ -90,6 +90,8 @@ Output:
 }
 ```
 
+#### Computed properties
+
 You can use variables in property names
 
 ``` javascript

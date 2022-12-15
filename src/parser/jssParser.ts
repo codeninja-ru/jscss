@@ -4,9 +4,9 @@ import { HiddenToken, TokenType } from "token";
 import { attrib, combinator, cssCharset, cssLiteral, hash, importStatement, mediaQueryList, pageStatement, pseudo } from "./cssParser";
 import { expression, functionExpression, identifier, moduleItem, numericLiteral, parseComment, parseJsVarStatement } from "./parser";
 import { SequenceError, SyntaxRuleError } from "./parserError";
-import { anyBlock, anyString, block, comma, commaList, dollarSign, firstOf, ignoreSpacesAndComments, isBlockNode, keyword, lazyBlock, LazyBlockParser, leftHandRecurciveRule, literalKeyword, longestOf, loop, noLineTerminatorHere, noSpacesHere, oneOfSymbols, optional, returnRawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
+import { anyBlock, anyString, block, comma, commaList, dollarSign, firstOf, ignoreSpacesAndComments, isBlockNode, keyword, lazyBlock, LazyBlockParser, leftHandRecurciveRule, literalKeyword, loop, noLineTerminatorHere, noSpacesHere, oneOfSymbols, optional, rawValue, returnRawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
 import { isSourceFragment } from "./sourceFragment";
-import { BlockNode, FontFaceNode, JsRawNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssMediaNode, JssSelectorNode, JssSpreadNode, JssVarDeclarationNode, NodeType, SyntaxTree } from "./syntaxTree";
+import { BlockNode, CssRawNode, FontFaceNode, JsRawNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssMediaNode, JssSelectorNode, JssSpreadNode, JssVarDeclarationNode, NodeType, SyntaxTree } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
 import { peekNextToken } from "./tokenStreamReader";
@@ -75,6 +75,7 @@ function jssPropretyDefinition(stream : TokenStream) : JssDeclarationNode {
                 cssLiteral,
                 anyString,
                 roundBracket,
+                numericLiteral,
 
                 oneOfSymbols(
                     Symbols.plus,
@@ -233,10 +234,8 @@ function jssVariableStatement(stream : TokenStream) : JssVarDeclarationNode {
 function jssBlockStatement(stream : TokenStream) : LazyBlockParser<BlockNode<JssBlockItemNode>> {
     return lazyBlock(TokenType.LazyBlock, strictLoop(firstOf(
         ignoreSpacesAndComments,
-        longestOf( //NOTE these two rules are in confilct
-            jssDeclaration,
-            rulesetStatement,
-        ),
+        rulesetStatement, //NOTE these two rules are in confilct, I changed order accourding to the priority, but could use longestOne
+        jssDeclaration,
         startsWithDog(
             jssMediaStatement,
         ),
@@ -286,6 +285,43 @@ export function jssMediaStatement(stream : TokenStream) : JssMediaNode {
         throw new SequenceError(e);
     }
 }
+/**
+ * Implements:
+ *
+  namespace =
+  @namespace <namespace-prefix>? [ <string> | <url> ] ;
+ * */
+function namespaceStatement(stream : TokenStream) : CssRawNode {
+    sequence(
+        literalKeyword('namespace'),
+        // <namespace-prefix> = <ident>
+        firstOf(
+            // <url> =
+            // url( <string> <url-modifier>* )  |
+            // src( <string> <url-modifier>* )
+            //TODO add template placehoders
+            sequence(
+                cssLiteral,
+                firstOf(
+                    anyString,
+                    sequence(cssLiteral, roundBracket),
+                    roundBracket,
+                )
+            ),
+            anyString,
+        ),
+        semicolon,
+    )(stream);
+
+    const source = rawValue(stream);
+
+    return {
+        type: NodeType.CssRaw,
+        value: '@' + source.value,
+        position: source.position,
+    };
+}
+
 
 function fontFace(stream : TokenStream) : FontFaceNode {
     const [start,,, block] = sequence(
@@ -345,6 +381,7 @@ export function stylesheetItem(stream : TokenStream) : ReturnType<TokenParser> {
             importStatement,
             jssMediaStatement,
             pageStatement,
+            namespaceStatement,
             fontFace,
         ),
 

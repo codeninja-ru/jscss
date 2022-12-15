@@ -1,4 +1,4 @@
-import { CssDeclarationNode, CssImportNode, FontFaceNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssMediaNode, JssNode, JssSelectorNode, JssSpreadNode, JssVarDeclarationNode, NodeType, SyntaxTree } from 'parser/syntaxTree';
+import { CssDeclarationNode, CssImportNode, CssRawNode, FontFaceNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssMediaNode, JssNode, JssSelectorNode, JssSpreadNode, JssVarDeclarationNode, NodeType, SyntaxTree } from 'parser/syntaxTree';
 import { SourceMapGenerator, SourceNode } from 'source-map';
 import { Position } from 'stream/position';
 import { SourceMappingUrl } from './sourceMappingUrl';
@@ -164,6 +164,14 @@ function insertSourceCssImport(node : CssImportNode, fileName : string) : Source
         `@import ${quoteEscape(node.path)};`);
 }
 
+function insertSourceCssRaw(node : CssRawNode, fileName : string) : SourceNode {
+    return makeSourceNode(
+        node.position,
+        fileName,
+        node.value,
+    );
+}
+
 function mediaQuery2js(node : JssMediaNode, fileName : string, bindName = 'self') : SourceNode {
     let mediaList = makeSourceNode(node.position, fileName, '[');
     mediaList.add(node.mediaList.map((item) => {
@@ -203,6 +211,10 @@ function translateNode(node : JssNode, fileName : string) : SourceNode {
             return makeSourceNode(node.position,
                                   fileName,
                                   node.items.join(','));
+        case NodeType.CssRaw:
+            return makeSourceNode(node.position,
+                                 fileName,
+                                 tag`${EXPORT_VAR_NAME}.insertCss("${insertSourceCssRaw(node, fileName)}");\n`);
         case NodeType.CssImport:
             return makeSourceNode(node.position,
                                  fileName,

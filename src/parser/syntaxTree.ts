@@ -5,7 +5,7 @@ export type SyntaxTree = JssNode[];
 export type JssNode = IgnoreNode | JsRawNode |
     JssBlockNode | CssImportNode | JssSelectorNode |
     CommentNode | JssVarDeclarationNode | CssCharsetNode | JssMediaNode |
-    FontFaceNode;
+    FontFaceNode | CssRawNode;
 
 export enum NodeType {
     JsImport,
@@ -16,6 +16,7 @@ export enum NodeType {
     JsStatement,
     CssBlock,
     CssImport,
+    CssRaw,
     JsScript,
     FunctionExpression,
     IfStatement,
@@ -134,6 +135,11 @@ export interface JssBlockNode extends Node, SourceMappedNode {
 export interface CssImportNode extends Node, SourceMappedNode {
     type: NodeType.CssImport,
     readonly path: string,
+}
+
+export interface CssRawNode extends Node, SourceMappedNode {
+    type: NodeType.CssRaw,
+    readonly value: string,
 }
 
 export interface CssCharsetNode extends Node, SourceMappedNode {
