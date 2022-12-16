@@ -22,7 +22,7 @@ describe('translator()', () => {
 var _styles = _styles ? _styles : new JssStylesheet();
 var self = null;
 
-_styles.insertCss("@import 'main.css';");
+_styles.insertCss(\`@import 'main.css';\`);
 const bgColor = '#fff';
 _styles.insertBlock((function(parent) {
 var self = new JssStyleBlock([\`.className\`], {}, parent);
@@ -286,6 +286,54 @@ body {
             .toEqual(`@namespace url(http://www.w3.org/1999/xhtml);
 
 @namespace svg url(http://www.w3.org/2000/svg);`);
+    });
+
+    it('supprts @keyframes', () => {
+        debugger;
+        expect(evalTestCode(`const size = '50px';
+@keyframes important1 {
+  from {
+    margin-top: $\{size\};
+  }
+  50% {
+    margin-top: 150px !important;
+  } /* ignored */
+  to {
+    margin-top: 100px;
+  }
+}
+
+@keyframes important2 {
+  from {
+    margin-top: 50px;
+    margin-bottom: 100px;
+  }
+  to {
+    margin-top: 150px !important; /* ignored */
+    margin-bottom: 50px;
+  }
+}`).toCss()).toEqual(`@keyframes important1 {
+  from {
+    margin-top: 50px;
+  }
+  50% {
+    margin-top: 150px !important;
+  } /* ignored */
+  to {
+    margin-top: 100px;
+  }
+}
+
+@keyframes important2 {
+  from {
+    margin-top: 50px;
+    margin-bottom: 100px;
+  }
+  to {
+    margin-top: 150px !important; /* ignored */
+    margin-bottom: 50px;
+  }
+}`);
     });
 
 

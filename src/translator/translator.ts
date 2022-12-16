@@ -19,6 +19,10 @@ function quoteEscape(str : string) : string {
     return str.replace('"', '\"').replace("`", "\`");
 }
 
+function templateEscape(str : string) : string {
+    return str.replace("`", "\`");
+}
+
 export interface GeneratedCode {
     value: string;
     sourceMap: string;
@@ -168,7 +172,7 @@ function insertSourceCssRaw(node : CssRawNode, fileName : string) : SourceNode {
     return makeSourceNode(
         node.position,
         fileName,
-        node.value,
+        templateEscape(node.value),
     );
 }
 
@@ -214,11 +218,11 @@ function translateNode(node : JssNode, fileName : string) : SourceNode {
         case NodeType.CssRaw:
             return makeSourceNode(node.position,
                                  fileName,
-                                 tag`${EXPORT_VAR_NAME}.insertCss("${insertSourceCssRaw(node, fileName)}");\n`);
+                                 tag`${EXPORT_VAR_NAME}.insertCss(\`${insertSourceCssRaw(node, fileName)}\`);\n`);
         case NodeType.CssImport:
             return makeSourceNode(node.position,
                                  fileName,
-                                 tag`${EXPORT_VAR_NAME}.insertCss("${insertSourceCssImport(node, fileName)}");\n`);
+                                 tag`${EXPORT_VAR_NAME}.insertCss(\`${insertSourceCssImport(node, fileName)}\`);\n`);
         case NodeType.JssVarDeclaration:
             return jssVarBlock2js(node, fileName);
         case NodeType.JssMedia:

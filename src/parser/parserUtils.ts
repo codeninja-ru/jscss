@@ -170,7 +170,7 @@ export function sequence(...parsers: TokenParser[]) : TokenParser<any[]> {
                 result.push(parsers[i](parserStream));
             } catch(e) {
                 if (i > 0) {
-                    throw new SequenceError(e);
+                    throw new SequenceError(e, i);
                 } else {
                     throw e;
                 }

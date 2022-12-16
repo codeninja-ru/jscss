@@ -174,7 +174,7 @@ function classTail(stream : TokenStream) : void {
 }
 
 function nonDecimalIntergerLiteral(stream : TokenStream) : void {
-    firstOf(
+    return firstOf(
         // BinaryIntegerLiteral[?Sep]
         regexpLiteral(/^0[bB][0-1\_]+n?$/),
         // OctalIntegerLiteral[?Sep]
@@ -216,10 +216,10 @@ export function numericLiteral(stream : TokenStream) : void {
             throw new Error("it's not a number");
         }
 
-        return numberPart + dot + fraction;
+        return [numberPart, dot, fraction].filter(value => value !== undefined).join('');
     }
 
-    firstOf(
+    return firstOf(
         // DecimalLiteral
         // DecimalBigIntegerLiteral
         numberRule,

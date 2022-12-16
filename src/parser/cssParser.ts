@@ -371,7 +371,7 @@ function percentage(stream : TokenStream) : string {
   ;
  *
  * */
-function term(stream : TokenStream) : void {
+export function term(stream : TokenStream) : void {
 
     firstOf(
         // numbers

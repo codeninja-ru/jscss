@@ -42,10 +42,11 @@ export class BlockParserError extends Error {
  * */
 export class SequenceError extends Error {
     public cause: Error;
-    constructor(error : ParserError | SyntaxRuleError) {
+    constructor(error : ParserError | SyntaxRuleError,
+                sequenceIndex : number = 0) {
         // Error.prototype.cause has been avaliable since ecma-262 (2022)
         //super(error.message, {cause: error}); // TODO uncomment if switch to esnext
-        super(error.message);
+        super(error.message + ` at index ${sequenceIndex}`);
         this.cause = error;
     }
 }

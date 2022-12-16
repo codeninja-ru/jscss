@@ -1,7 +1,7 @@
 import { Keywords, ReservedWords } from "keywords";
 import { Symbols } from "symbols";
 import { HiddenToken, TokenType } from "token";
-import { attrib, combinator, cssCharset, cssLiteral, hash, importStatement, mediaQueryList, pageStatement, pseudo } from "./cssParser";
+import { attrib, combinator, cssCharset, cssLiteral, hash, importStatement, mediaQueryList, pageStatement, pseudo, term } from "./cssParser";
 import { expression, functionExpression, identifier, moduleItem, numericLiteral, parseComment, parseJsVarStatement } from "./parser";
 import { SequenceError, SyntaxRuleError } from "./parserError";
 import { anyBlock, anyString, block, comma, commaList, dollarSign, firstOf, ignoreSpacesAndComments, isBlockNode, keyword, lazyBlock, LazyBlockParser, leftHandRecurciveRule, literalKeyword, loop, noLineTerminatorHere, noSpacesHere, oneOfSymbols, optional, rawValue, returnRawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
@@ -322,6 +322,40 @@ function namespaceStatement(stream : TokenStream) : CssRawNode {
     };
 }
 
+/**
+ * implements:
+ *@keyframes =
+  @keyframes <keyframes-name> { <rule-list> }
+ *
+ * */
+function keyframesStatement(stream : TokenStream) : CssRawNode {
+    sequence(
+        literalKeyword('keyframes'),
+        cssLiteral,
+        block(TokenType.LazyBlock, strictLoop(
+            firstOf(
+                ignoreSpacesAndComments,
+                sequence(
+                    firstOf(
+                        literalKeyword('from'),
+                        literalKeyword('to'),
+                        term,
+                    ),
+                    jssBlockStatement,
+                )
+            )))
+    )(stream);
+
+    const source = rawValue(stream);
+
+    return {
+        type: NodeType.CssRaw,
+        position: source.position,
+        value: '@' + source.value,
+    };
+}
+
+
 
 function fontFace(stream : TokenStream) : FontFaceNode {
     const [start,,, block] = sequence(
@@ -350,27 +384,21 @@ function startsWithDog(...rules : TokenParser<any>[]) : TokenParser {
     return function(stream : TokenStream) : ReturnType<TokenParser> {
         const dog = symbol(Symbols.at)(stream);
         noSpacesHere(stream);
-        try {
-            let result = firstOf(
-                ...rules,
-            )(stream);
+        let result = firstOf(
+            ...rules,
+        )(stream);
 
-            if (result.rawValue) {
-                result.rawValue = '@' + result.rawValue;
-            }
-
-            if (result.position) {
-                result.position = dog.position;
-            }
-
-            return result;
-        } catch (e) {
-            throw new SequenceError(e);
+        if (result.rawValue) {
+            result.rawValue = '@' + result.rawValue;
         }
 
+        if (result.position) {
+            result.position = dog.position;
+        }
+
+        return result;
     };
 }
-
 
 export function stylesheetItem(stream : TokenStream) : ReturnType<TokenParser> {
     return firstOf(
@@ -382,6 +410,7 @@ export function stylesheetItem(stream : TokenStream) : ReturnType<TokenParser> {
             jssMediaStatement,
             pageStatement,
             namespaceStatement,
+            keyframesStatement,
             fontFace,
         ),
 
