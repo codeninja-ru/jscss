@@ -6,7 +6,7 @@ import { expression, functionExpression, identifier, moduleItem, numericLiteral,
 import { SequenceError, SyntaxRuleError } from "./parserError";
 import { anyBlock, anyString, block, comma, commaList, dollarSign, firstOf, ignoreSpacesAndComments, isBlockNode, keyword, lazyBlock, LazyBlockParser, leftHandRecurciveRule, literalKeyword, loop, noLineTerminatorHere, noSpacesHere, oneOfSymbols, optional, rawValue, returnRawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
 import { isSourceFragment } from "./sourceFragment";
-import { BlockNode, CssRawNode, FontFaceNode, JsRawNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssMediaNode, JssSelectorNode, JssSpreadNode, JssSupportsNode, JssVarDeclarationNode, NodeType, SyntaxTree } from "./syntaxTree";
+import { BlockNode, CssRawNode, FontFaceNode, JsRawNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssAtRuleNode, JssSelectorNode, JssSpreadNode, JssSupportsNode, JssVarDeclarationNode, NodeType, SyntaxTree } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
 import { peekNextToken } from "./tokenStreamReader";
@@ -239,6 +239,7 @@ function jssBlockStatement(stream : TokenStream) : LazyBlockParser<BlockNode<Jss
         startsWithDog(
             jssMediaStatement,
             supportsStatement,
+            atRule,
         ),
         jssVariableStatement, //TODO forbide exports
         toRawNode(parseJsVarStatement),
@@ -269,7 +270,7 @@ export function rulesetStatement(stream : TokenStream) : JssBlockNode {
     };
 }
 
-export function jssMediaStatement(stream : TokenStream) : JssMediaNode {
+export function jssMediaStatement(stream : TokenStream) : JssAtRuleNode {
     const start = keyword(Keywords.cssMedia)(stream);
 
     try {
@@ -277,8 +278,9 @@ export function jssMediaStatement(stream : TokenStream) : JssMediaNode {
         const rules = jssBlockStatement(stream);
 
         return {
-            type: NodeType.JssMedia,
+            type: NodeType.JssAtRule,
             mediaList: mediaListItems,
+            name: '@media',
             position: start.position,
             items: rules.parse().items,
         };
@@ -286,6 +288,22 @@ export function jssMediaStatement(stream : TokenStream) : JssMediaNode {
         throw new SequenceError(e);
     }
 }
+
+function atRule(stream : TokenStream) : JssAtRuleNode {
+    const start = cssLiteral(stream);
+    const mediaListItems = mediaQueryList(stream).map((item) => item.trim());
+    const rules = jssBlockStatement(stream);
+
+    return {
+        type: NodeType.JssAtRule,
+        mediaList: mediaListItems,
+        name: '@' + start.value,
+        position: start.position,
+        items: rules.parse().items,
+    };
+}
+
+
 /**
  * Implements:
  *
@@ -430,7 +448,8 @@ export function stylesheetItem(stream : TokenStream) : ReturnType<TokenParser> {
             namespaceStatement,
             keyframesStatement,
             supportsStatement,
-            fontFace,
+            fontFace, //TODO at-rule
+            atRule,
         ),
 
     )(stream);

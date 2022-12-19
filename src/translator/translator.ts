@@ -1,4 +1,4 @@
-import { CssDeclarationNode, CssImportNode, CssRawNode, FontFaceNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssMediaNode, JssNode, JssSelectorNode, JssSpreadNode, JssSupportsNode, JssVarDeclarationNode, NodeType, SyntaxTree } from 'parser/syntaxTree';
+import { CssDeclarationNode, CssImportNode, CssRawNode, FontFaceNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssAtRuleNode, JssNode, JssSelectorNode, JssSpreadNode, JssSupportsNode, JssVarDeclarationNode, NodeType, SyntaxTree } from 'parser/syntaxTree';
 import { SourceMapGenerator, SourceNode } from 'source-map';
 import { Position } from 'stream/position';
 import { SourceMappingUrl } from './sourceMappingUrl';
@@ -114,7 +114,7 @@ function declarations2js(blockList : JssBlockItemNode[], fileName : string, bind
                                           [item.value, "\n"]);
                 case NodeType.JssVarDeclaration:
                     return jssVarBlock2js(item, fileName);
-                case NodeType.JssMedia:
+                case NodeType.JssAtRule:
                     return tag`self.addChild(${mediaQuery2js(item, fileName, bindName)});\n`;
                 case NodeType.JssSupports:
                     return tag`self.addChild(${supports2js(item, fileName, bindName)});\n`;
@@ -191,15 +191,19 @@ return self;
 }).bind(${bindName})(${bindName})`;
 }
 
-function mediaQuery2js(node : JssMediaNode, fileName : string, bindName = 'self') : SourceNode {
+function mediaQuery2js(node : JssAtRuleNode, fileName : string, bindName = 'self') : SourceNode {
     let mediaList = makeSourceNode(node.position, fileName, '[');
     mediaList.add(node.mediaList.map((item) => {
         mediaList.add("`" + quoteEscape(item) + "`");
     }).join(','));
     mediaList.add(']');
 
+    const instance = node.name == '@media' ?
+        tag`var self = new JssMediaQueryBlock(${mediaList}, {}, parent);`
+        : tag`var self = new JssAtRuleBlock('${quoteEscape(node.name)}', ${mediaList}, {}, parent);`
+
     return tag`(function(parent) {
-var self = new JssMediaQueryBlock(${mediaList}, {}, parent);
+${instance}
 ${printProperties(node.items, fileName, bindName)}
 return self;
 }).bind(${bindName})(${bindName})`;
@@ -240,7 +244,7 @@ function translateNode(node : JssNode, fileName : string) : SourceNode {
                                  tag`${EXPORT_VAR_NAME}.insertCss(\`${insertSourceCssImport(node, fileName)}\`);\n`);
         case NodeType.JssVarDeclaration:
             return jssVarBlock2js(node, fileName);
-        case NodeType.JssMedia:
+        case NodeType.JssAtRule:
             return tag`${EXPORT_VAR_NAME}.insertBlock(${mediaQuery2js(node, fileName)});\n`;
         case NodeType.JssSupports:
             return tag`${EXPORT_VAR_NAME}.insertBlock(${supports2js(node, fileName)});\n`;

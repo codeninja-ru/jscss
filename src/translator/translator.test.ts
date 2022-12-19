@@ -360,6 +360,18 @@ body {
 }`);
     });
 
+    it('parses any atRules', () => {
+        expect(evalTestCode(`@custom-rule (display: flex) {
+    .flex-container {
+        display: flex;
+    }
+}`).toCss()).toEqual(`@custom-rule (display: flex) {
+    .flex-container {
+        display: flex;
+    }
+}`);
+    });
+
 
 });
 

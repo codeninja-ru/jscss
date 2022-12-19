@@ -312,7 +312,8 @@ import * as _ from '/reader/readers';`).toEqual([
     background-color: lightblue;
   }
 }`).toEqual([{
-    type: NodeType.JssMedia,
+    type: NodeType.JssAtRule,
+    name: '@media',
     mediaList: ["only screen and (max-width: 600px)"],
     position: {line: 1, col: 1},
     items: [

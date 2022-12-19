@@ -352,7 +352,7 @@ function findStyleParent(value : StyleBlock | MediaQueryBlock) : StyleBlock | nu
     return null;
 }
 
-abstract class AbstractMediaBlock extends JssBlock implements MediaQueryBlock {
+export class JssAtRuleBlock extends JssBlock implements MediaQueryBlock {
     readonly mediaList: string[];
     constructor(private blockName: string,
                 mediaList : string[] | string,
@@ -436,7 +436,7 @@ abstract class AbstractMediaBlock extends JssBlock implements MediaQueryBlock {
     }
 }
 
-export class JssMediaQueryBlock extends AbstractMediaBlock {
+export class JssMediaQueryBlock extends JssAtRuleBlock {
     constructor(mediaList : string[] | string,
                 content : (StyleProp | JssBlockCaller) = {},
                 parent : StyleBlockParent = null) {
@@ -444,7 +444,7 @@ export class JssMediaQueryBlock extends AbstractMediaBlock {
     }
 }
 
-export class JssSupportsBlock extends AbstractMediaBlock {
+export class JssSupportsBlock extends JssAtRuleBlock {
     constructor(query : string,
                 content : (StyleProp | JssBlockCaller) = {},
                 parent : StyleBlockParent = null) {
