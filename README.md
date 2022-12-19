@@ -269,6 +269,31 @@ Output
 }
 ```
 
+You can use @supports in the same way.
+
+``` javascript
+.flex-container {
+    display: block;
+    @supports {
+        display: flex;
+    }
+}
+```
+
+Output:
+
+``` css
+.flex-container {
+    display: block;
+}
+
+@supports (display: flex) {
+    .flex-container {
+        display: flex;
+    }
+}
+```
+
 ### Comments
 
 All kind of comments a supported

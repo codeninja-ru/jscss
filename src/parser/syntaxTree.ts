@@ -5,9 +5,11 @@ export type SyntaxTree = JssNode[];
 export type JssNode = IgnoreNode | JsRawNode |
     JssBlockNode | CssImportNode | JssSelectorNode |
     CommentNode | JssVarDeclarationNode | CssCharsetNode | JssMediaNode |
-    FontFaceNode | CssRawNode;
+    JssSupportsNode | FontFaceNode | CssRawNode;
 
 export enum NodeType {
+    Error,
+
     JsImport,
     Comment,
     Raw,
@@ -43,6 +45,7 @@ export enum NodeType {
     JssSelector,
     JssVarDeclaration,
     JssMedia,
+    JssSupports,
     CssFontFace,
 }
 
@@ -124,7 +127,7 @@ export interface CssBlockNode extends Node {
 
 export type JssBlockItemNode = CssDeclarationNode | JssDeclarationNode
     | IgnoreNode | JssBlockNode | JssSpreadNode
-    | JsRawNode | JssVarDeclarationNode | JssMediaNode;
+    | JsRawNode | JssVarDeclarationNode | JssMediaNode | JssSupportsNode;
 
 export interface JssBlockNode extends Node, SourceMappedNode {
     type: NodeType.JssBlock,
@@ -183,6 +186,12 @@ export interface JssMediaNode extends Node, SourceMappedNode {
     readonly items: JssBlockItemNode[],
 }
 
+export interface JssSupportsNode extends Node, SourceMappedNode {
+    readonly type: NodeType.JssSupports,
+    readonly query: string,
+    readonly items: JssBlockItemNode[],
+}
+
 export interface CssDeclarationNode extends Node {
     readonly type: NodeType.CssDeclaration,
     readonly prop: string,
@@ -226,4 +235,11 @@ export interface JssSpreadNode extends Node {
 export interface FontFaceNode extends Node, SourceMappedNode {
     readonly type: NodeType.CssFontFace,
     readonly items: JssBlockItemNode[],
+}
+
+export interface ErrorNode extends Node, SourceMappedNode {
+    readonly type: NodeType.Error,
+    readonly errorMessage: string,
+    readonly exception: Error,
+    readonly parserName: string,
 }

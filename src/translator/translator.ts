@@ -1,4 +1,4 @@
-import { CssDeclarationNode, CssImportNode, CssRawNode, FontFaceNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssMediaNode, JssNode, JssSelectorNode, JssSpreadNode, JssVarDeclarationNode, NodeType, SyntaxTree } from 'parser/syntaxTree';
+import { CssDeclarationNode, CssImportNode, CssRawNode, FontFaceNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssMediaNode, JssNode, JssSelectorNode, JssSpreadNode, JssSupportsNode, JssVarDeclarationNode, NodeType, SyntaxTree } from 'parser/syntaxTree';
 import { SourceMapGenerator, SourceNode } from 'source-map';
 import { Position } from 'stream/position';
 import { SourceMappingUrl } from './sourceMappingUrl';
@@ -116,6 +116,8 @@ function declarations2js(blockList : JssBlockItemNode[], fileName : string, bind
                     return jssVarBlock2js(item, fileName);
                 case NodeType.JssMedia:
                     return tag`self.addChild(${mediaQuery2js(item, fileName, bindName)});\n`;
+                case NodeType.JssSupports:
+                    return tag`self.addChild(${supports2js(item, fileName, bindName)});\n`;
                 default:
                     throw new Error(`unsupported block item ${JSON.stringify(item)}`);
             }
@@ -176,6 +178,19 @@ function insertSourceCssRaw(node : CssRawNode, fileName : string) : SourceNode {
     );
 }
 
+function supports2js(node :
+                          JssSupportsNode, fileName : string, bindName = 'self') : SourceNode {
+    const query = makeSourceNode(node.position,
+                                 fileName,
+                                 "`" + quoteEscape(node.query.trim()) + "`");
+
+    return tag`(function(parent) {
+var self = new JssSupportsBlock(${query}, {}, parent);
+${printProperties(node.items, fileName, bindName)}
+return self;
+}).bind(${bindName})(${bindName})`;
+}
+
 function mediaQuery2js(node : JssMediaNode, fileName : string, bindName = 'self') : SourceNode {
     let mediaList = makeSourceNode(node.position, fileName, '[');
     mediaList.add(node.mediaList.map((item) => {
@@ -227,6 +242,8 @@ function translateNode(node : JssNode, fileName : string) : SourceNode {
             return jssVarBlock2js(node, fileName);
         case NodeType.JssMedia:
             return tag`${EXPORT_VAR_NAME}.insertBlock(${mediaQuery2js(node, fileName)});\n`;
+        case NodeType.JssSupports:
+            return tag`${EXPORT_VAR_NAME}.insertBlock(${supports2js(node, fileName)});\n`;
         case NodeType.Comment:
         default:
             throw new Error(`unsupported node ${JSON.stringify(node)}`);

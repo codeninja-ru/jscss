@@ -1,12 +1,12 @@
 import { Keywords, ReservedWords } from "keywords";
 import { Symbols } from "symbols";
 import { HiddenToken, TokenType } from "token";
-import { attrib, combinator, cssCharset, cssLiteral, hash, importStatement, mediaQueryList, pageStatement, pseudo, term } from "./cssParser";
+import { attrib, combinator, cssCharset, cssLiteral, hash, importStatement, mediaQuery, mediaQueryList, pageStatement, pseudo, term } from "./cssParser";
 import { expression, functionExpression, identifier, moduleItem, numericLiteral, parseComment, parseJsVarStatement } from "./parser";
 import { SequenceError, SyntaxRuleError } from "./parserError";
 import { anyBlock, anyString, block, comma, commaList, dollarSign, firstOf, ignoreSpacesAndComments, isBlockNode, keyword, lazyBlock, LazyBlockParser, leftHandRecurciveRule, literalKeyword, loop, noLineTerminatorHere, noSpacesHere, oneOfSymbols, optional, rawValue, returnRawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
 import { isSourceFragment } from "./sourceFragment";
-import { BlockNode, CssRawNode, FontFaceNode, JsRawNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssMediaNode, JssSelectorNode, JssSpreadNode, JssVarDeclarationNode, NodeType, SyntaxTree } from "./syntaxTree";
+import { BlockNode, CssRawNode, FontFaceNode, JsRawNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssMediaNode, JssSelectorNode, JssSpreadNode, JssSupportsNode, JssVarDeclarationNode, NodeType, SyntaxTree } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
 import { peekNextToken } from "./tokenStreamReader";
@@ -238,6 +238,7 @@ function jssBlockStatement(stream : TokenStream) : LazyBlockParser<BlockNode<Jss
         jssDeclaration,
         startsWithDog(
             jssMediaStatement,
+            supportsStatement,
         ),
         jssVariableStatement, //TODO forbide exports
         toRawNode(parseJsVarStatement),
@@ -355,6 +356,23 @@ function keyframesStatement(stream : TokenStream) : CssRawNode {
     };
 }
 
+/**
+ * implements:
+ * @supports <supports-condition> { <stylesheet> }
+ *
+ * */
+function supportsStatement(stream : TokenStream) : JssSupportsNode {
+    const start = keyword(Keywords.cssSupports)(stream);
+    const query = mediaQuery(stream);
+    const rules = jssBlockStatement(stream);
+
+    return {
+        type: NodeType.JssSupports,
+        query: query,
+        position: start.position,
+        items: rules.parse().items,
+    };
+}
 
 
 function fontFace(stream : TokenStream) : FontFaceNode {
@@ -411,6 +429,7 @@ export function stylesheetItem(stream : TokenStream) : ReturnType<TokenParser> {
             pageStatement,
             namespaceStatement,
             keyframesStatement,
+            supportsStatement,
             fontFace,
         ),
 

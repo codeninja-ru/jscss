@@ -64,6 +64,7 @@ export const Keywords = {
     cssCharset: new Keyword('charset'),
     cssUrl: new Keyword('url'),
     cssMedia: new Keyword('media'),
+    cssSupports: new Keyword('supports'),
     cssPage: new Keyword('page'),
     cssImportant: new Keyword('important'),
     cssNot: new Keyword('not'),

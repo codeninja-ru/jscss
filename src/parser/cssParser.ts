@@ -184,7 +184,7 @@ export function mediaQueryList(stream : TokenStream) : any[] {
  *  | expression [ AND S* expression ]*
  *  ;
  * */
-function mediaQuery(stream : TokenStream) : any {
+export function mediaQuery(stream : TokenStream) : any {
     return firstOf(
         //  : [ONLY | NOT]? S* media_type S* [ AND S* expression ]*
         returnRawValue(leftHandRecurciveRule(

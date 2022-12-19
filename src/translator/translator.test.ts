@@ -336,6 +336,30 @@ body {
 }`);
     });
 
+    it('parses @supports', () => {
+        expect(evalTestCode(`@supports (display: flex) {
+    .flex-container {
+        display: flex;
+    }
+}`).toCss()).toEqual(`@supports (display: flex) {
+    .flex-container {
+        display: flex;
+    }
+}`);
+
+        expect(evalTestCode(`.flex-container {
+    @supports (display: flex) {
+        display: flex;
+    }
+}`).toCss()).toEqual(`.flex-container { }
+
+@supports (display: flex) {
+    .flex-container {
+        display: flex;
+    }
+}`);
+    });
+
 
 });
 

@@ -1,4 +1,4 @@
-import { JssBlock, JssBlockCaller, JssMediaQueryBlock, JssStyleBlock, JssStyleSheet } from './core';
+import { JssBlock, JssBlockCaller, JssMediaQueryBlock, JssStyleBlock, JssStyleSheet, JssSupportsBlock } from './core';
 
 describe('class JssStyleSheet', () => {
     it('prints css', () => {
@@ -317,6 +317,42 @@ describe('MediaQueryBlock', () => {
         expect(media.toArray()).toEqual([
             {name: '@media screen', children: []},
         ]);
+    });
+
+
+});
+
+describe('SupportsBlock', () => {
+    it('prints @supports', () => {
+        const block = new JssStyleBlock('.flex', {
+            display: 'flex',
+        });
+        const supports = new JssSupportsBlock('(display: flex)');
+        supports.addChild(block);
+        expect(supports.toCss()).toEqual(`@supports (display: flex) {
+    .flex {
+        display: flex;
+    }
+}`);
+    });
+
+    it('prints nested @supports', () => {
+        const block = new JssStyleBlock('.flex', {
+            display: 'block',
+        });
+        const supports = new JssSupportsBlock('(display: flex)', {
+            display: 'flex'
+        });
+        block.addChild(supports);
+        expect(block.toCss()).toEqual(`.flex {
+    display: block;
+}
+
+@supports (display: flex) {
+    .flex {
+        display: flex;
+    }
+}`);
     });
 
 

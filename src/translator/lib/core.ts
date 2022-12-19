@@ -352,9 +352,10 @@ function findStyleParent(value : StyleBlock | MediaQueryBlock) : StyleBlock | nu
     return null;
 }
 
-export class JssMediaQueryBlock extends JssBlock implements MediaQueryBlock {
+abstract class AbstractMediaBlock extends JssBlock implements MediaQueryBlock {
     readonly mediaList: string[];
-    constructor(mediaList : string[] | string,
+    constructor(private blockName: string,
+                mediaList : string[] | string,
                 content : (StyleProp | JssBlockCaller) = {},
                 parent : StyleBlockParent = null) {
         super();
@@ -367,6 +368,9 @@ export class JssMediaQueryBlock extends JssBlock implements MediaQueryBlock {
         Object.defineProperty(this, 'mediaList', {
             writable: false,
         });
+        Object.defineProperty(this, 'blockName', {
+            writable: false,
+        });
         setPrivate(this, privateParent, parent);
     }
 
@@ -375,7 +379,7 @@ export class JssMediaQueryBlock extends JssBlock implements MediaQueryBlock {
     }
 
     toArray() : StyleArray {
-        const name = ['@media', this.mediaList.join(', ')].filter((item) => item).join(' ');
+        const name = [this.blockName, this.mediaList.join(', ')].filter((item) => item).join(' ');
         const children = getPrivate(this, privateChildren);
         const value = getPrivate(this, privateValue);
         const result = [] as StyleArray;
@@ -398,7 +402,7 @@ export class JssMediaQueryBlock extends JssBlock implements MediaQueryBlock {
                 });
 
             } else {
-                throw new Error(`@media has inner values and doesn't have a parent class`);
+                throw new Error(`${this.blockName} has inner values and doesn't have a parent class`);
             }
 
         }
@@ -429,5 +433,25 @@ export class JssMediaQueryBlock extends JssBlock implements MediaQueryBlock {
 
     toString() : string {
         return this.toCss();
+    }
+}
+
+export class JssMediaQueryBlock extends AbstractMediaBlock {
+    constructor(mediaList : string[] | string,
+                content : (StyleProp | JssBlockCaller) = {},
+                parent : StyleBlockParent = null) {
+        super('@media', mediaList, content, parent);
+    }
+}
+
+export class JssSupportsBlock extends AbstractMediaBlock {
+    constructor(query : string,
+                content : (StyleProp | JssBlockCaller) = {},
+                parent : StyleBlockParent = null) {
+        super('@supports', query, content, parent);
+    }
+
+    get query() : string {
+        return this.mediaList[0];
     }
 }
