@@ -372,6 +372,36 @@ body {
 }`);
     });
 
+    it('parses any atRules inside blocks', () => {
+        expect(evalTestCode(`.flex-container {
+    @custom-rule (display: flex) {
+        display: flex;
+    }
+}`).toCss()).toEqual(`.flex-container { }
+
+@custom-rule (display: flex) {
+    .flex-container {
+        display: flex;
+    }
+}`);
+    });
+
+    it('supports nested @atRules', () => {
+        expect(evalTestCode(`@supports (display: flex) {
+  @media screen and (min-width: 900px) {
+    article {
+      display: flex;
+    }
+  }
+}`).toCss()).toEqual(`@supports (display: flex) {
+    @media screen and (min-width: 900px) {
+        article {
+            display: flex;
+        }
+    }
+}`);
+    });
+
 
 });
 
