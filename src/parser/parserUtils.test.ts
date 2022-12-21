@@ -4,7 +4,7 @@ import { Symbols } from "symbols";
 import { LiteralToken, TokenType } from "token";
 import { lexer } from "./lexer";
 import { BlockParserError, ParserError, SequenceError } from "./parserError";
-import { anyLiteral, anyString, block, cannotStartWith, commaList, firstOf, ignoreSpacesAndComments, keyword, longestOf, map, noLineTerminatorHere, noSpacesHere, oneOfSymbols, optional, regexpLiteral, sequence, symbol } from "./parserUtils";
+import { anyLiteral, anyString, block, notAllowed, commaList, firstOf, ignoreSpacesAndComments, keyword, longestOf, map, noLineTerminatorHere, noSpacesHere, oneOfSymbols, optional, regexpLiteral, sequence, symbol } from "./parserUtils";
 import { BlockType, NodeType } from "./syntaxTree";
 import { ArrayTokenStream, TokenStream } from "./tokenStream";
 
@@ -254,45 +254,45 @@ describe('parserUtils', () => {
 
     });
 
-    describe('cannotStartWith()', () => {
+    describe('notAllowed()', () => {
         it('throws an exception', () => {
             expect(() => {
-                cannotStartWith(
+                notAllowed([
                     keyword(Keywords._function),
                     keyword(Keywords._if),
-                )(ArrayTokenStream.fromString('  function var var'));
+                ])(ArrayTokenStream.fromString('  function var var'));
             }).toThrowError();
             expect(() => {
-                cannotStartWith(
+                notAllowed([
                     keyword(Keywords._function),
                     keyword(Keywords._if),
-                )(ArrayTokenStream.fromString('function var var'));
+                ])(ArrayTokenStream.fromString('function var var'));
             }).toThrowError();
             expect(() => {
-                cannotStartWith(
+                notAllowed([
                     keyword(Keywords._function),
                     keyword(Keywords._if),
-                )(ArrayTokenStream.fromString('  if var var'));
+                ])(ArrayTokenStream.fromString('  if var var'));
             }).toThrowError();
 
             expect(() => {
-                cannotStartWith(
+                notAllowed([
                     keyword(Keywords._function),
                     keyword(Keywords._if),
-                )(ArrayTokenStream.fromString('  if function var var'));
+                ])(ArrayTokenStream.fromString('  if function var var'));
             }).toThrowError();
         });
 
         it('does not throw an exception if the rule does not match', () => {
-            cannotStartWith(
+            notAllowed([
                 keyword(Keywords._function),
                 keyword(Keywords._if),
-            )(ArrayTokenStream.fromString('  (list 1 2 3) if'));
+            ])(ArrayTokenStream.fromString('  (list 1 2 3) if'));
 
-            cannotStartWith(
+            notAllowed([
                 keyword(Keywords._function),
                 keyword(Keywords._if),
-            )(ArrayTokenStream.fromString('no if function (list 1 2 3) if'));
+            ])(ArrayTokenStream.fromString('no if function (list 1 2 3) if'));
         });
     });
 

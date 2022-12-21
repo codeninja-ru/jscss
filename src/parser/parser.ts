@@ -2,7 +2,7 @@ import { Keywords, ReservedWords } from "keywords";
 import { AssignmentOperator, Symbols } from "symbols";
 import { LiteralToken, TokenType } from "token";
 import { ParserError, UnexpectedEndError } from "./parserError";
-import { anyLiteral, anyString, anyTempateStringLiteral, block, cannotStartWith, comma, commaList, firstOf, keyword, anyBlock, leftHandRecurciveRule, longestOf, loop, noLineTerminatorHere, oneOfSymbols, optional, rawValue, regexpLiteral, roundBracket, sequence, squareBracket, strictLoop, symbol } from "./parserUtils";
+import { anyLiteral, anyString, anyTempateStringLiteral, block, notAllowed, comma, commaList, firstOf, keyword, anyBlock, leftHandRecurciveRule, longestOf, loop, noLineTerminatorHere, oneOfSymbols, optional, rawValue, regexpLiteral, roundBracket, sequence, squareBracket, strictLoop, symbol } from "./parserUtils";
 import { CommentNode, IfNode, JsModuleNode, JsRawNode, JssScriptNode, MultiNode, Node, NodeType, SyntaxTree, VarDeclaraionNode } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { GoAheadTokenStream, TokenStream } from "./tokenStream";
@@ -657,13 +657,13 @@ export function expression(stream : TokenStream) : MultiNode {
 
 export function expressionStatement(stream : TokenStream) : Node {
     //[lookahead ∉ { {, function, async [no LineTerminator here] function, class, let [ }] Expression[+In, ?Yield, ?Await] ;
-    cannotStartWith(
+    notAllowed([
         anyBlock,
         keyword(Keywords._function),
         sequence(keyword(Keywords._async), keyword(Keywords._function, peekNoLineTerminatorHere)),
         keyword(Keywords._class),
         keyword(Keywords._let),
-    )(stream);
+    ], 'expression cannot be started with...')(stream);
 
     const expr = expression(stream);
 
@@ -947,11 +947,11 @@ function exportDeclaration(stream : TokenStream) : JsRawNode {
         // export default [lookahead ∉ { function, async [no LineTerminator here] function, class }] AssignmentExpression[+In, ~Yield, ~Await] ;
         sequence(
             keyword(Keywords._default),
-            cannotStartWith(
+            notAllowed([
                 keyword(Keywords._function),
                 sequence(keyword(Keywords._async), keyword(Keywords._function, peekNoLineTerminatorHere)),
                 keyword(Keywords._class),
-            ),
+            ], 'export declaration cannot be started with...'),
             assignmentExpression,
             symbol(Symbols.semicolon)
         )

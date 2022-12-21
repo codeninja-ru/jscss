@@ -172,8 +172,8 @@ function uri(stream : TokenStream) : void {
  * @see https://www.w3.org/TR/mediaqueries-3/#syntax
  * The media_query_list production defined below replaces the media_list production from CSS2. [CSS21]
  * */
-export function mediaQueryList(stream : TokenStream) : any[] {
-    return commaList(mediaQuery)(stream);
+export function mediaQueryList(stream : TokenStream, canListBeEmpty = false) : any[] {
+    return commaList(mediaQuery, canListBeEmpty)(stream);
 }
 
 /**

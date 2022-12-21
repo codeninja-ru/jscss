@@ -652,7 +652,19 @@ export function ignoreSpacesAndComments(stream : TokenStream) : IgnoreNode {
     };
 }
 
-export function cannotStartWith(...parsers : TokenParser[]) : TokenParser {
+export function andRule(...parsers : TokenParser[]) : TokenParser {
+    return function(stream : TokenStream) : ReturnType<TokenParser> {
+        let result = null;
+        for (const parser of parsers) {
+            result = parser(stream);
+        }
+
+        return result;
+    };
+}
+
+export function notAllowed(parserArray : TokenParser[] | TokenParser, errorMessage : string = 'cannot start with') : TokenParser {
+    const parsers = Array.isArray(parserArray) ? parserArray : [parserArray];
     return function(stream : TokenStream) : ReturnType<TokenParser> {
         for (const parser of parsers) {
             const stubStream = new GoAheadTokenStream(stream);
@@ -662,7 +674,7 @@ export function cannotStartWith(...parsers : TokenParser[]) : TokenParser {
                 // it's ok
                 continue;
             }
-            throw new Error(`cannot start with`)
+            throw new ParserError(errorMessage, stream.peek());
         }
     };
 }

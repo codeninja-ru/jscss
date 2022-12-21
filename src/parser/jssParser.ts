@@ -4,9 +4,9 @@ import { HiddenToken, TokenType } from "token";
 import { attrib, combinator, cssCharset, cssLiteral, hash, importStatement, mediaQuery, mediaQueryList, pageStatement, pseudo, term } from "./cssParser";
 import { expression, functionExpression, identifier, moduleItem, numericLiteral, parseComment, parseJsVarStatement } from "./parser";
 import { SequenceError, SyntaxRuleError } from "./parserError";
-import { anyBlock, anyString, block, comma, commaList, dollarSign, firstOf, ignoreSpacesAndComments, isBlockNode, keyword, lazyBlock, LazyBlockParser, leftHandRecurciveRule, literalKeyword, loop, noLineTerminatorHere, noSpacesHere, oneOfSymbols, optional, rawValue, returnRawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
+import { andRule, anyBlock, anyString, block, notAllowed, comma, commaList, dollarSign, firstOf, ignoreSpacesAndComments, isBlockNode, keyword, lazyBlock, LazyBlockParser, leftHandRecurciveRule, literalKeyword, loop, noLineTerminatorHere, noSpacesHere, oneOfSymbols, optional, rawValue, returnRawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
 import { isSourceFragment } from "./sourceFragment";
-import { BlockNode, CssRawNode, FontFaceNode, JsRawNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssAtRuleNode, JssSelectorNode, JssSpreadNode, JssSupportsNode, JssVarDeclarationNode, NodeType, SyntaxTree } from "./syntaxTree";
+import { BlockNode, CssRawNode, JsRawNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssAtRuleNode, JssSelectorNode, JssSpreadNode, JssSupportsNode, JssVarDeclarationNode, NodeType, SyntaxTree, FontFaceNode } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
 import { peekNextToken } from "./tokenStreamReader";
@@ -239,7 +239,10 @@ function jssBlockStatement(stream : TokenStream) : LazyBlockParser<BlockNode<Jss
         startsWithDog(
             jssMediaStatement,
             supportsStatement,
-            atRule,
+            andRule(
+                notAllowed(fontFace, '@font-face is not allowed inside blocks'),
+                atRule,
+            )
         ),
         jssVariableStatement, //TODO forbide exports
         toRawNode(parseJsVarStatement),
@@ -289,10 +292,33 @@ export function jssMediaStatement(stream : TokenStream) : JssAtRuleNode {
     }
 }
 
+function fontFace(stream : TokenStream) : FontFaceNode {
+    const [start,,, block] = sequence(
+        literalKeyword('font', peekNextToken),
+        symbol(Symbols.minus, peekNextToken),
+        literalKeyword('face'),
+        lazyBlock(TokenType.LazyBlock, strictLoop(
+            firstOf(
+                ignoreSpacesAndComments,
+                jssDeclaration,
+            )
+        ))
+    )(stream);
+
+    return {
+        type: NodeType.CssFontFace,
+        position: start.position,
+        items: block.parse().items,
+    }
+}
+
 function atRule(stream : TokenStream) : JssAtRuleNode {
     const start = cssLiteral(stream);
-    const mediaListItems = mediaQueryList(stream).map((item) => item.trim());
-    const rules = jssBlockStatement(stream);
+    const mediaListItems = mediaQueryList(stream, true).map((item) => item.trim());
+    const rules = firstOf(
+        jssBlockStatement,
+        semicolon,
+    )(stream);
 
     return {
         type: NodeType.JssAtRule,
@@ -302,7 +328,6 @@ function atRule(stream : TokenStream) : JssAtRuleNode {
         items: rules.parse().items,
     };
 }
-
 
 /**
  * Implements:
@@ -392,26 +417,6 @@ function supportsStatement(stream : TokenStream) : JssSupportsNode {
     };
 }
 
-
-function fontFace(stream : TokenStream) : FontFaceNode {
-    const [start,,, block] = sequence(
-        literalKeyword('font', peekNextToken),
-        symbol(Symbols.minus, peekNextToken),
-        literalKeyword('face'),
-        lazyBlock(TokenType.LazyBlock, strictLoop(
-            firstOf(
-                ignoreSpacesAndComments,
-                jssDeclaration,
-            )
-        ))
-    )(stream);
-
-    return {
-        type: NodeType.CssFontFace,
-        position: start.position,
-        items: block.parse().items,
-    }
-}
 
 /**
  * all rules that stat with @
