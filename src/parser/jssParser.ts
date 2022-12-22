@@ -1,6 +1,6 @@
 import { Keywords, ReservedWords } from "keywords";
 import { Symbols } from "symbols";
-import { HiddenToken, TokenType } from "token";
+import { HiddenToken, LiteralToken, TokenType } from "token";
 import { attrib, combinator, cssCharset, cssLiteral, hash, importStatement, mediaQuery, mediaQueryList, pageStatement, pseudo, term } from "./cssParser";
 import { expression, functionExpression, identifier, moduleItem, numericLiteral, parseComment, parseJsVarStatement } from "./parser";
 import { SequenceError, SyntaxRuleError } from "./parserError";
@@ -80,7 +80,6 @@ function jssPropretyDefinition(stream : TokenStream) : JssDeclarationNode {
                 oneOfSymbols(
                     Symbols.plus,
                     Symbols.minus,
-                    Symbols.at,
                     Symbols.not,
                     Symbols.div,
                     Symbols.dot,
@@ -240,7 +239,10 @@ function jssBlockStatement(stream : TokenStream) : LazyBlockParser<BlockNode<Jss
             jssMediaStatement,
             supportsStatement,
             andRule(
-                notAllowed(fontFace, '@font-face is not allowed inside blocks'),
+                notAllowed(fontFaceKeyword, '@font-face is not allowed inside blocks'),
+                notAllowed(keyword(Keywords.cssKeyframes), '@keyframes is not allowed inside blocks'),
+                notAllowed(keyword(Keywords.cssNamespace), '@namespace is not allowed inside blocks'),
+                notAllowed(keyword(Keywords.cssCharset), '@charset is not allowed inside blocks'),
                 atRule,
             )
         ),
@@ -292,11 +294,28 @@ export function jssMediaStatement(stream : TokenStream) : JssAtRuleNode {
     }
 }
 
-function fontFace(stream : TokenStream) : FontFaceNode {
-    const [start,,, block] = sequence(
+/**
+ * implements:
+ * font-face
+ *
+ * */
+function fontFaceKeyword(stream : TokenStream) : LiteralToken {
+    const [start, ,,] = sequence(
         literalKeyword('font', peekNextToken),
         symbol(Symbols.minus, peekNextToken),
-        literalKeyword('face'),
+        literalKeyword('face', peekNextToken),
+    )(stream);
+
+    return {
+        type: TokenType.Literal,
+        position: start.position,
+        value: 'font-face',
+    };
+}
+
+function fontFace(stream : TokenStream) : FontFaceNode {
+    const [start, block] = sequence(
+        fontFaceKeyword,
         lazyBlock(TokenType.LazyBlock, strictLoop(
             firstOf(
                 ignoreSpacesAndComments,
@@ -337,7 +356,7 @@ function atRule(stream : TokenStream) : JssAtRuleNode {
  * */
 function namespaceStatement(stream : TokenStream) : CssRawNode {
     sequence(
-        literalKeyword('namespace'),
+        keyword(Keywords.cssNamespace),
         // <namespace-prefix> = <ident>
         firstOf(
             // <url> =
@@ -453,7 +472,7 @@ export function stylesheetItem(stream : TokenStream) : ReturnType<TokenParser> {
             namespaceStatement,
             keyframesStatement,
             supportsStatement,
-            fontFace, //TODO at-rule
+            fontFace,
             atRule,
         ),
 

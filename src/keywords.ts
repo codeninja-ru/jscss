@@ -70,4 +70,6 @@ export const Keywords = {
     cssNot: new Keyword('not'),
     cssOnly: new Keyword('only'),
     cssAnd: new Keyword('and'),
+    cssNamespace: new Keyword('namespace'),
+    cssKeyframes: new Keyword('keyframes'),
 }
