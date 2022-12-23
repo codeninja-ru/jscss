@@ -402,6 +402,12 @@ body {
 }`);
     });
 
+    it('parses simple selectors', () => {
+        expect(evalTestCode('div { display: block; }').toArray()).toEqual([
+            {name: 'div', value: { display: 'block' }}
+        ]);
+    });
+
 
 });
 

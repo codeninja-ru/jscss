@@ -5,6 +5,7 @@
 import { Keywords } from "keywords";
 import { Symbols, SyntaxSymbol } from "symbols";
 import { LiteralToken, Token, TokenType } from "token";
+import { jssIdent } from "./jssParser";
 import { ParserError } from "./parserError";
 import { anyString, block, commaList, firstOf, ignoreSpacesAndComments, keyword, leftHandRecurciveRule, list, loop, noSpacesHere, oneOfSymbols, optional, rawValue, regexpLiteral, returnRawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, squareBracket, strictLoop, symbol } from "./parserUtils";
 import { BlockNode, CssBlockNode, CssCharsetNode, CssDeclarationNode, CssImportNode, CssMediaNode, CssSelectorNode, NodeType, StringNode } from "./syntaxTree";
@@ -451,6 +452,7 @@ export function combinator(stream : TokenStream) : void {
     oneOfSymbols(
         Symbols.plus,
         Symbols.lt,
+        Symbols.tilde,
     )(stream);
 }
 
@@ -527,7 +529,7 @@ export function pseudo(stream : TokenStream) : string {
         symbol(Symbols.colon),
         optional(symbol(Symbols.colon, peekNextToken)),
         firstOf(
-            ident,
+            jssIdent,
             functionCallDoNothing,
         )
     ))(stream);
@@ -535,7 +537,7 @@ export function pseudo(stream : TokenStream) : string {
 
 function functionCallDoNothing(stream : TokenStream) : ReturnType<TokenParser> {
     sequence(
-        ident,
+        jssIdent,
         noSpacesHere,
         roundBracket,
     )(stream);
