@@ -374,4 +374,13 @@ $\{propName\}: #333;
     }
 ])
     });
+
+    it('parses $ in names', () => {
+        parseCode('const $_ = 1;').toEqual([{
+            position: {col: 1, line: 1},
+            type: NodeType.Raw,
+            value: "const $_ = 1;",
+        }]);
+    });
+
 });
