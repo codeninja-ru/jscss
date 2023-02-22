@@ -1,7 +1,7 @@
 import { Keywords, ReservedWords } from "keywords";
 import { Symbols } from "symbols";
 import { HiddenToken, LiteralToken, TokenType } from "token";
-import { attrib, combinator, cssCharset, cssLiteral, hash, importStatement, mediaQuery, mediaQueryList, pageStatement, pseudo, term } from "./cssParser";
+import { attrib, combinator, cssCharset, cssLiteral, hash, importStatement, mediaQuery, mediaQueryList, pageStatement, term } from "./cssParser";
 import { expression, functionExpression, identifier, moduleItem, numericLiteral, parseComment, parseJsVarStatement } from "./parser";
 import { SequenceError, SyntaxRuleError } from "./parserError";
 import { andRule, anyBlock, anyString, block, notAllowed, comma, commaList, dollarSign, firstOf, ignoreSpacesAndComments, isBlockNode, keyword, lazyBlock, LazyBlockParser, leftHandRecurciveRule, literalKeyword, loop, noLineTerminatorHere, noSpacesHere, oneOfSymbols, optional, rawValue, returnRawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
@@ -17,6 +17,25 @@ export function parseJssScript(stream : TokenStream) : SyntaxTree {
 }
 
 const templatePlaceholder = sequence(dollarSign, noSpacesHere, anyBlock); // template string ${}
+
+function pseudo(stream : TokenStream) : string {
+    return returnRawValue(sequence(
+        symbol(Symbols.colon),
+        optional(symbol(Symbols.colon, peekNextToken)),
+        firstOf(
+            jssIdent,
+            functionCallDoNothing,
+        )
+    ))(stream);
+}
+
+function functionCallDoNothing(stream : TokenStream) : ReturnType<TokenParser> {
+    sequence(
+        jssIdent,
+        noSpacesHere,
+        roundBracket,
+    )(stream);
+}
 
 function toRawNode(parser : TokenParser) : TokenParser<JsRawNode> {
     return function(stream : TokenStream) : JsRawNode {
@@ -147,7 +166,12 @@ export function jssIdent(stream : TokenStream) : HiddenToken {
 }
 
 export function simpleSelector(stream : TokenStream) : string {
-    const elementName = returnRawValue(firstOf(jssIdent, symbol(Symbols.astersik)));
+    const elementName = returnRawValue(
+        firstOf(jssIdent,
+                oneOfSymbols(
+                    Symbols.astersik, // universal selecotr
+                    Symbols.and, // nesting selector
+                )));
     const cssClass = sequence(symbol(Symbols.dot), noSpacesHere, jssIdent);
     const rest = firstOf(
         hash,
@@ -164,7 +188,7 @@ export function simpleSelector(stream : TokenStream) : string {
     }
 }
 
-export function selector(stream : TokenStream) : JssSelectorNode {
+export function jssSelector(stream : TokenStream) : JssSelectorNode {
     const firstSelector = returnRawValueWithPosition(simpleSelector)(stream);
     let result = [firstSelector.value];
     while(!stream.eof()) {
@@ -254,7 +278,7 @@ function jssBlockStatement(stream : TokenStream) : LazyBlockParser<BlockNode<Jss
 }
 
 export function rulesetStatement(stream : TokenStream) : JssBlockNode {
-    const selectors = commaList(selector)(stream) as JssSelectorNode[];
+    const selectors = commaList(jssSelector)(stream) as JssSelectorNode[];
     const jssBlock = jssBlockStatement(stream);
 
     if (selectors.length == 1) {
