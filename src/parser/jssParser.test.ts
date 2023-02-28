@@ -383,4 +383,16 @@ $\{propName\}: #333;
         }]);
     });
 
+    it('root properties', () => {
+        parseCode('--width: 10px; --width-a: 12px;').toEqual([
+            {type: NodeType.JssDeclaration,
+             prop: "--width", propPos: {line: 1, col: 1},
+             value: "10px", valuePos: {line: 1, col: 10}},
+            {type: NodeType.Ignore, items: expect.anything()},
+            {type: NodeType.JssDeclaration,
+             prop: "--width-a", propPos: {line: 1, col: 16},
+             value: "12px", valuePos: {line: 1, col: 27}},
+        ]);
+    });
+
 });

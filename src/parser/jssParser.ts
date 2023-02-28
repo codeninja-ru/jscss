@@ -82,7 +82,7 @@ export function jssPropertyName(stream : TokenStream) : any {
     )(stream);
 }
 
-function jssPropretyDefinition(stream : TokenStream) : JssDeclarationNode {
+function jssPropertyDefinition(stream : TokenStream) : JssDeclarationNode {
     //sequence(propertyName, symbol(Symbols.colon), assignmentExpression), // clear js assigment
     //sequence(propertyName, symbol(Symbols.colon), expr, optional(prioStatement)), // clear css
     const [propNameToken,,value] = sequence(
@@ -137,7 +137,7 @@ function jssPropretyDefinition(stream : TokenStream) : JssDeclarationNode {
 
 function jssDeclaration(stream : TokenStream) : (JssDeclarationNode | JssSpreadNode) {
     const result = firstOf(
-        jssPropretyDefinition,
+        jssPropertyDefinition,
         jssSpreadDefinition,
     )(stream);
 
@@ -487,6 +487,12 @@ function startsWithDog(...rules : TokenParser<any>[]) : TokenParser {
 export function stylesheetItem(stream : TokenStream) : ReturnType<TokenParser> {
     return firstOf(
         rulesetStatement,
+        function(stream : TokenStream) {
+            const prop = jssPropertyDefinition(stream);
+            optional(semicolon)(stream);
+
+            return prop;
+        },
         jssVariableStatement,
         startsWithDog(
             cssCharset,
