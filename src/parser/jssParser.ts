@@ -104,6 +104,10 @@ function jssPropertyDefinition(stream : TokenStream) : JssDeclarationNode {
                     Symbols.dot,
                     Symbols.numero,
                     Symbols.percent,
+                    Symbols.colon,
+                    Symbols.question,
+                    Symbols.and,
+                    Symbols.astersik,
                 ),
                 comma,
             )
