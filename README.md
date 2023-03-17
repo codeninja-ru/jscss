@@ -313,3 +313,5 @@ https://github.com/codeninja-ru/vim-jsslang
 https://github.com/codeninja-ru/jsslang-mode
 ### VSCode
 https://github.com/codeninja-ru/vscode-jsslang
+### Tree-sitter grammar
+https://github.com/codeninja-ru/tree-sitter-jsslang

@@ -185,6 +185,7 @@ export function mediaQueryList(stream : TokenStream, canListBeEmpty = false) : a
  *  ;
  * */
 export function mediaQuery(stream : TokenStream) : any {
+    //TODO it might be a wrong implementation, check with tree-sitter-jsslang
     return firstOf(
         //  : [ONLY | NOT]? S* media_type S* [ AND S* expression ]*
         returnRawValue(leftHandRecurciveRule(
@@ -534,6 +535,11 @@ export function pseudo(stream : TokenStream) : string {
     ))(stream);
 }
 
+/**
+ *function
+  : FUNCTION S* expr ')' S*
+  ;
+ * */
 function functionCallDoNothing(stream : TokenStream) : ReturnType<TokenParser> {
     sequence(
         ident,
