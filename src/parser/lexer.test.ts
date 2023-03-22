@@ -239,6 +239,4 @@ function process(css) {
             makeLiteralToken('sh')
         ])
     });
-
-
 });

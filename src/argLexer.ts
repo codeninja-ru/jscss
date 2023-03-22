@@ -36,27 +36,3 @@ export function argLexer(stream : InputStream) : Token[] {
 
     return tokens;
 }
-//console.log(readStream(new StringInputStream(`
-//import { func, classNameBase } from 'foo';
-//
-//var test1 = '123';
-//let test2 = '2';
-//const classNameBase = {
-//  display: block;
-//};
-//
-//function color(color) {
-//  return color;
-//}
-//
-//// comment
-//
-//.className {
-//  ...classNameBase;
-//  [generateProp]: bold;
-//  font-weight: test ? 'bold' : 'normal';
-//  font-seze: 12px;
-//  color: color(#eee);
-//  background: func();
-//}
-//`)));

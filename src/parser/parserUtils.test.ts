@@ -4,7 +4,7 @@ import { Symbols } from "symbols";
 import { LiteralToken, TokenType } from "token";
 import { lexer } from "./lexer";
 import { BlockParserError, ParserError, SequenceError } from "./parserError";
-import { anyLiteral, anyString, block, notAllowed, commaList, firstOf, ignoreSpacesAndComments, keyword, longestOf, map, noLineTerminatorHere, noSpacesHere, oneOfSymbols, optional, regexpLiteral, sequence, symbol } from "./parserUtils";
+import { anyLiteral, anyString, block, notAllowed, commaList, firstOf, ignoreSpacesAndComments, keyword, longestOf, map, noLineTerminatorHere, noSpacesHere, oneOfSymbols, optional, regexpLiteral, sequence, symbol, repeatUntil } from "./parserUtils";
 import { BlockType, NodeType } from "./syntaxTree";
 import { ArrayTokenStream, TokenStream } from "./tokenStream";
 
@@ -626,6 +626,36 @@ describe('parserUtils', () => {
             expect(parserError instanceof ParserError).toBeTruthy();
             expect(blockError instanceof BlockParserError).toBeTruthy();
             expect(blockError instanceof Error).toBeTruthy();
+        });
+
+    });
+
+    describe('repeatUntil()', () => {
+        it('parse unil the end of the stream', () => {
+            const stream = ArrayTokenStream.fromString('bold text *');
+            const [bold, text] = repeatUntil(anyLiteral, symbol(Symbols.astersik))(stream);
+            expect(bold.value).toEqual('bold');
+            expect(text.value).toEqual('text');
+        });
+
+        it('parse unil the end', () => {
+            const stream = ArrayTokenStream.fromString('bold text ');
+            const [bold, text] = repeatUntil(anyLiteral, symbol(Symbols.astersik))(stream);
+            expect(bold.value).toEqual('bold');
+            expect(text.value).toEqual('text');
+        });
+
+        it('parses correct sequence', () => {
+            const stream = ArrayTokenStream.fromString('* bold text *');
+            const [_, [bold, text], asterisk] = sequence(
+                symbol(Symbols.astersik),
+                repeatUntil(anyLiteral, symbol(Symbols.astersik)),
+                symbol(Symbols.astersik),
+            )(stream);
+
+            expect(bold.value).toEqual('bold');
+            expect(text.value).toEqual('text');
+            expect(asterisk.value).toEqual('*');
         });
 
     });

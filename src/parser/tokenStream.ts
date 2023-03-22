@@ -4,6 +4,7 @@ import { Token } from "token";
 import { lexer } from "./lexer";
 import { ArraySourceFragment, SourceFragment } from "./sourceFragment";
 
+// TODO free method to safe mem?
 export interface TokenStream {
     take(idx: number): Token;
     peek(): Token;

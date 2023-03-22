@@ -1,7 +1,7 @@
 import { Keyword } from "keywords";
 import { SubStringInputStream } from "stream/input/SubStringInputStream";
 import { Symbols, SyntaxSymbol } from "symbols";
-import { CommaToken, isToken, LiteralToken, SquareBracketsToken, StringToken, SymbolToken, TemplateStringToken, Token, TokenType } from "token";
+import { CommaToken, isToken, LiteralToken, SpaceToken, SquareBracketsToken, StringToken, SymbolToken, TemplateStringToken, Token, TokenType } from "token";
 import { lexer } from "./lexer";
 import { BlockParserError, EmptyStreamError, ParserError, SequenceError, UnexpectedEndError } from "./parserError";
 import { LeftTrimSourceFragment, SourceFragment } from "./sourceFragment";
@@ -395,14 +395,31 @@ export function anyTempateStringLiteral(stream: TokenStream) : TemplateStringTok
     throw new ParserError(`template string literal is expected`, token);
 }
 
-export function anyLiteral(stream: TokenStream) : LiteralToken {
-    const token = peekAndSkipSpaces(stream);
+export function anyLiteral(stream: TokenStream, peekNext = peekAndSkipSpaces) : LiteralToken {
+    const token = peekNext(stream);
     if (token.type == TokenType.Literal) {
         return token;
     }
 
     throw new ParserError(`literal is expected`, token);
 }
+
+export function anySymbol(stream : TokenStream, peekNext = peekAndSkipSpaces) : SymbolToken | CommaToken {
+    const token = peekNext(stream);
+    if (token.type == TokenType.Symbol || token.type == TokenType.Comma) {
+        return token;
+    }
+    throw new ParserError(`symbol or comma is expected`, token);
+}
+
+export function anySpace(stream : TokenStream, peekNext = peekNextToken) : SpaceToken {
+    const token = peekNext(stream);
+    if (token.type == TokenType.Space) {
+        return token;
+    }
+    throw new ParserError(`space is expected`, token);
+}
+
 
 export function dollarSign(stream: TokenStream) : LiteralToken {
     const token = peekAndSkipSpaces(stream);
@@ -504,11 +521,13 @@ export function regexpLiteral(reg : RegExp, peekFn : TokenStreamReader = peekAnd
 }
 
 export function strictLoop(parser : TokenParser) : TokenParser {
-    return function(stream : TokenStream) : ReturnType<TokenParser> {
+    return function(stream : TokenStream) : ReturnType<TokenParser>[] {
         let results = [] as ReturnType<TokenParser>[];
         while(!stream.eof()) {
             const result = parser(stream);
-            results.push(result);
+            if (result != null && result !== undefined) {
+                results.push(result);
+            }
         }
 
         return results;
@@ -676,5 +695,51 @@ export function notAllowed(parserArray : TokenParser[] | TokenParser, errorMessa
             }
             throw new ParserError(errorMessage, stream.peek());
         }
+    };
+}
+
+export function isNext(parser: TokenParser) : TokenParser {
+    return function(stream: TokenStream) : ReturnType<TokenParser> {
+        const parserStream = new GoAheadTokenStream(stream);
+
+        try {
+            parser(parserStream);
+            return true;
+        } catch(e) {
+            if (e instanceof BlockParserError) {
+                throw e;
+            }
+            return false;
+        }
+    };
+}
+
+export function repeatUntil(parser : TokenParser, until : TokenParser) : TokenParser {
+    return function(stream : TokenStream) : ReturnType<TokenParser>[] {
+        let results = [] as ReturnType<TokenParser>[];
+        while(!stream.eof()) {
+            const isEnd = isNext(until)(stream);
+            if (isEnd) {
+                break;
+            } else {
+                try {
+                    results.push(parser(stream));
+                } catch(e) {
+                    if (e instanceof UnexpectedEndError) {
+                        break;
+                    }
+
+                    throw e;
+                }
+            }
+        }
+
+        return results;
+    };
+}
+
+export function skip(parser : TokenParser) : TokenParser {
+    return function(stream : TokenStream) : void {
+        parser(stream);
     };
 }
