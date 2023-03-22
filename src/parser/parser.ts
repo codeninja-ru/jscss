@@ -5,7 +5,7 @@ import { ParserError, UnexpectedEndError } from "./parserError";
 import { anyLiteral, anyString, anyTempateStringLiteral, block, notAllowed, comma, commaList, firstOf, keyword, anyBlock, leftHandRecurciveRule, longestOf, loop, noLineTerminatorHere, oneOfSymbols, optional, rawValue, regexpLiteral, roundBracket, sequence, squareBracket, strictLoop, symbol } from "./parserUtils";
 import { CommentNode, IfNode, JsModuleNode, JsRawNode, JssScriptNode, MultiNode, Node, NodeType, SyntaxTree, VarDeclaraionNode } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
-import { GoAheadTokenStream, TokenStream } from "./tokenStream";
+import { LookAheadTokenStream, TokenStream } from "./tokenStream";
 import { peekAndSkipSpaces, peekNextToken, peekNoLineTerminatorHere } from "./tokenStreamReader";
 
 function returnRawNode(stream : TokenStream) : JsRawNode {
@@ -999,7 +999,7 @@ export function parse(stream: TokenStream) : SyntaxTree {
         let node = null;
         let lastError = null;
         for (const parser of TOP_LEVEL_PARSERS) {
-            const parserStream = new GoAheadTokenStream(stream);
+            const parserStream = new LookAheadTokenStream(stream);
             try {
                 node = parser(parserStream);
                 node.rawValue = parserStream.sourceFragment().value;

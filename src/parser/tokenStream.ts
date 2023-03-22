@@ -68,7 +68,7 @@ export class ArrayTokenStream implements TokenStream {
     }
 }
 
-export class GoAheadTokenStream implements FlushableTokenStream {
+export class LookAheadTokenStream implements FlushableTokenStream {
     private pos : number;
     private startPos : number;
     readonly startStreamPosition: Position;

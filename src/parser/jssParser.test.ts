@@ -1,6 +1,6 @@
 import { jssIdent, parseJssScript } from "./jssParser";
 import { NodeType } from "./syntaxTree";
-import { ArrayTokenStream, GoAheadTokenStream } from "./tokenStream";
+import { ArrayTokenStream, LookAheadTokenStream } from "./tokenStream";
 
 const SIMPLE = `import _ from 'lodash';
 @import 'style.css';
@@ -26,7 +26,7 @@ function parseCode(source : string) {
 
 describe('parseJssScript()', () => {
     it('simple script', () => {
-        const stream = new GoAheadTokenStream(ArrayTokenStream.fromString(SIMPLE));
+        const stream = new LookAheadTokenStream(ArrayTokenStream.fromString(SIMPLE));
         const node = parseJssScript(stream);
 
         expect(stream.sourceFragment().value).toEqual(SIMPLE);

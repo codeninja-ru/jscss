@@ -3,7 +3,7 @@ import { cssLiteral, declaration, parseCssStyleSheet, rulesetStatement, selector
 import { lexer } from "./lexer";
 import { CssBlockItemNode, CssBlockNode, CssSelectorNode, NodeType } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
-import { ArrayTokenStream, GoAheadTokenStream } from "./tokenStream";
+import { ArrayTokenStream, LookAheadTokenStream } from "./tokenStream";
 
 const SAMPLE = `
 @charset 'utf-8';
@@ -33,7 +33,7 @@ div {
 
 function testParser(fn : TokenParser, str : string) : any {
     const tokens = lexer(new StringInputStream(str));
-    const stream = new GoAheadTokenStream(new ArrayTokenStream(tokens));
+    const stream = new LookAheadTokenStream(new ArrayTokenStream(tokens));
 
     const result = fn(stream);
     expect(stream.sourceFragment().value).toEqual(str);
@@ -57,7 +57,7 @@ function cssBlock(selectors : CssSelectorNode[], blockItems : CssBlockItemNode[]
 describe('CSS Parser', () => {
     it('parse simple css', () => {
         const tokens = lexer(new StringInputStream(SAMPLE));
-        const stream = new GoAheadTokenStream(new ArrayTokenStream(tokens));
+        const stream = new LookAheadTokenStream(new ArrayTokenStream(tokens));
 
         const result = parseCssStyleSheet(stream);
         expect(stream.sourceFragment().value).toEqual(SAMPLE);

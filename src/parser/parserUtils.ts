@@ -7,7 +7,7 @@ import { BlockParserError, EmptyStreamError, ParserError, SequenceError, Unexpec
 import { LeftTrimSourceFragment, SourceFragment } from "./sourceFragment";
 import { BlockNode, BlockType, IgnoreNode, LazyNode, NodeType } from "./syntaxTree";
 import { ParsedSourceWithPosition, TokenParser, TokenParserArrayWithPosition } from "./tokenParser";
-import { ArrayTokenStream, FlushableTokenStream, GoAheadTokenStream, TokenStream } from "./tokenStream";
+import { ArrayTokenStream, FlushableTokenStream, LookAheadTokenStream, TokenStream } from "./tokenStream";
 import { isSpaceOrComment, peekAndSkipSpaces, peekNextToken, TokenStreamReader } from "./tokenStreamReader";
 
 export function noLineTerminatorHere(stream : TokenStream) : void {
@@ -76,7 +76,7 @@ export function commaList(parser: TokenParser, canListBeEmpty : boolean = false)
 
 export function flushed(parser : TokenParser) : TokenParser {
     return function(stream: TokenStream) : ReturnType<TokenParser> {
-        const childStream = new GoAheadTokenStream(stream);
+        const childStream = new LookAheadTokenStream(stream);
         let result;
         try {
             result = parser(childStream);
@@ -103,7 +103,7 @@ export function rawValue(stream : TokenStream | FlushableTokenStream) : SourceFr
 
 export function returnRawValueWithPosition(parser : TokenParser) : TokenParser<SourceFragment> {
     return function(stream: TokenStream) : SourceFragment {
-        const childStream = new GoAheadTokenStream(stream);
+        const childStream = new LookAheadTokenStream(stream);
         parser(childStream);
         const result = new LeftTrimSourceFragment(childStream.sourceFragment());
         childStream.flush();
@@ -114,7 +114,7 @@ export function returnRawValueWithPosition(parser : TokenParser) : TokenParser<S
 
 export function returnRawValue(parser : TokenParser) : TokenParser<string> {
     return function(stream: TokenStream) : string {
-        const childStream = new GoAheadTokenStream(stream);
+        const childStream = new LookAheadTokenStream(stream);
         parser(childStream);
         const result = childStream.sourceFragment();
         childStream.flush();
@@ -163,7 +163,7 @@ export function sequenceName(name: string,
 
 export function sequence(...parsers: TokenParser[]) : TokenParser<any[]> {
     return function(stream: TokenStream) : ReturnType<TokenParser>[] {
-        const parserStream = new GoAheadTokenStream(stream);
+        const parserStream = new LookAheadTokenStream(stream);
         const result = [];
         for (var i = 0; i < parsers.length; i++) {
             try {
@@ -185,7 +185,7 @@ export function sequence(...parsers: TokenParser[]) : TokenParser<any[]> {
 
 export function sequenceWithPosition(...parsers: TokenParser[]) : TokenParserArrayWithPosition {
     return function(stream: TokenStream) : ParsedSourceWithPosition[] {
-        const parserStream = new GoAheadTokenStream(stream);
+        const parserStream = new LookAheadTokenStream(stream);
         const result = [] as ParsedSourceWithPosition[];
         for (var i = 0; i < parsers.length; i++) {
             try {
@@ -244,7 +244,7 @@ export function longestOf(...parsers: TokenParser[]) : TokenParser {
         let result = [] as Array<[ReturnType<TokenParser>, FlushableTokenStream]>;
         for (let i = 0; i < parsers.length; i++) {
             try {
-                let parserStream = new GoAheadTokenStream(stream);
+                let parserStream = new LookAheadTokenStream(stream);
                 result.push([parsers[i](parserStream), parserStream]);
             } catch( e ) {
                 errors.push(e);
@@ -275,7 +275,7 @@ export function firstOf(...parsers: TokenParser[]) : TokenParser {
         let blockErrors = [];
         for (let i = 0; i < parsers.length; i++) {
             try {
-                let parserStream = new GoAheadTokenStream(stream);
+                let parserStream = new LookAheadTokenStream(stream);
                 const result = parsers[i](parserStream);
                 parserStream.flush();
                 return result;
@@ -305,7 +305,7 @@ export function firstOf(...parsers: TokenParser[]) : TokenParser {
 
 export function optional(parser: TokenParser) : TokenParser {
     return function(stream: TokenStream) : ReturnType<TokenParser> {
-        const parserStream = new GoAheadTokenStream(stream);
+        const parserStream = new LookAheadTokenStream(stream);
 
         try {
             let result = parser(parserStream);
@@ -346,7 +346,7 @@ export function oneOfSymbols(...chars: SyntaxSymbol[]) : TokenParser<SymbolToken
         for (const group of groupByLength) {
             const len = group[0].name.length;
             let acc = firstToken.value;
-            const groupStream = new GoAheadTokenStream(stream);
+            const groupStream = new LookAheadTokenStream(stream);
             for (let i = 1; i < Number(len); i++) {
                 if (groupStream.eof()) {
                     break;
@@ -686,7 +686,7 @@ export function notAllowed(parserArray : TokenParser[] | TokenParser, errorMessa
     const parsers = Array.isArray(parserArray) ? parserArray : [parserArray];
     return function(stream : TokenStream) : ReturnType<TokenParser> {
         for (const parser of parsers) {
-            const stubStream = new GoAheadTokenStream(stream);
+            const stubStream = new LookAheadTokenStream(stream);
             try {
                 parser(stubStream);
             } catch (e) {
@@ -700,7 +700,7 @@ export function notAllowed(parserArray : TokenParser[] | TokenParser, errorMessa
 
 export function isNext(parser: TokenParser) : TokenParser {
     return function(stream: TokenStream) : ReturnType<TokenParser> {
-        const parserStream = new GoAheadTokenStream(stream);
+        const parserStream = new LookAheadTokenStream(stream);
 
         try {
             parser(parserStream);
