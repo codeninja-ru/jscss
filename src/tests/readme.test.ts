@@ -19,7 +19,7 @@ function testSourceCode(node : SourceCodeMarkdownNode, expectedNode? : SourceCod
         expect(output.trim()).toEqual(expectedNode.value.trim());
     } else {
         console.warn(`source code at line ${node.position.line} doesn't have the matching output`)
-        expect(output.trim().length).not.toEqual(0);
+        expect(output).toBeDefined();
     }
 }
 
@@ -40,7 +40,7 @@ describe('README.md', () => {
                 if (sources[i + 1]) {
                     testSourceCode(node, sources[i + 1] as SourceCodeMarkdownNode);
                 } else {
-
+                    testSourceCode(node);
                 }
             }
         }

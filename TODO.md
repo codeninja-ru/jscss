@@ -99,6 +99,20 @@ output
 }
 ```
 
+## Html-style comments
+
+Html-style comments are transformet into css-style
+
+```jsslang
+<!-- html style comment -->
+```
+
+Output:
+
+```css
+/* html style comment */
+```
+
 ## class generators
 
 ``` javascript
