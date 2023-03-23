@@ -129,7 +129,7 @@ function takeWhile(stream: InputStream, fn: (ch: string) => boolean): [string, P
 
 }
 
-const JS_SYMBOLS = ".=<>-*+&|^@%?:#!\\";
+const JS_SYMBOLS = ".=<>-*+&|^@%?:#!~\\";
 
 export function readSymbol(stream : InputStream, allowedSymbols = JS_SYMBOLS) : [string, Position?] {
     var symbolsFn = (ch: string) => {

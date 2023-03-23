@@ -342,7 +342,6 @@ import * as _ from '/reader/readers';`).toEqual([
             .toEqual({"position": {"col": 1, "line": 1}, "type": 13, "value": "${propName}"});
     });
 
-
     it('parses vars in propertyName in ${} and []', () => {
         parseCode(`const propName = 'color';
 div a:hover {
@@ -394,5 +393,86 @@ $\{propName\}: #333;
              value: "-12px", valuePos: {line: 1, col: 27}},
         ]);
     });
+
+    describe('bugs', () => {
+        it('parses pseudo classes', () => {
+            parseCode(`.markdown-body table tr:nth-child(2n) {
+background-color: #f8f8f8;
+}`).toEqual([
+    { type: NodeType.JssBlock, selectors: [
+        {
+            type: NodeType.JssSelector,
+            items: [".markdown-body", " table", " tr:nth-child(2n)"],
+            position: {line: 1, col: 1}
+        }
+    ], items: [
+        {type: NodeType.Ignore, items: expect.anything()},
+        {type: NodeType.JssDeclaration, prop: "background-color", value: "#f8f8f8",
+         propPos: {line: 2, col: 1}, valuePos: {line: 2, col: 19}},
+        {type: NodeType.Ignore, items: expect.anything()},
+    ],
+      position: {line: 1, col: 1}
+    }
+]);
+        });
+
+        it('parses ~ selector', () => {
+            parseCode(`.form-checkbox-details-trigger:checked ~ * .form-checkbox-details {
+background-color: #f8f8f8;
+}`).toEqual([
+    { type: NodeType.JssBlock, selectors: [
+        {
+            type: NodeType.JssSelector,
+            items: [".form-checkbox-details-trigger:checked", " ~", " *", " .form-checkbox-details"],
+            position: {line: 1, col: 1}
+        },
+    ], items: [
+        {type: NodeType.Ignore, items: expect.anything()},
+        {type: NodeType.JssDeclaration, prop: "background-color", value: "#f8f8f8",
+         propPos: {line: 2, col: 1}, valuePos: {line: 2, col: 19}},
+        {type: NodeType.Ignore, items: expect.anything()},
+    ],
+      position: {line: 1, col: 1}
+    }
+]);
+        });
+    });
+
+    it('parses css expt', () => {
+        debugger;
+        parseCode(`.className{padding-right: 8px${'\\'}9;}`)
+            .toEqual([
+                { type: NodeType.JssBlock, selectors: [
+                    {
+                        type: NodeType.JssSelector,
+                        items: [".className"],
+                        position: {line: 1, col: 1}
+                    },
+                ], items: [
+                    {type: NodeType.JssDeclaration, prop: "padding-right", value: '8px\\9',
+                     propPos: {line: 1, col: 12}, valuePos: {line: 1, col: 27}},
+                ],
+                  position: {line: 1, col: 1}
+                }
+            ]);
+    });
+
+    it('parses octal escape sequences', () => {
+        parseCode(`.className{content: "${'\\'}00a0";}`).toEqual([
+            { type: NodeType.JssBlock, selectors: [
+                {
+                    type: NodeType.JssSelector,
+                    items: [".className"],
+                    position: {line: 1, col: 1}
+                },
+            ], items: [
+                {type: NodeType.JssDeclaration, prop: "content", value: '"\\00a0"',
+                 propPos: {line: 1, col: 12}, valuePos: {line: 1, col: 21}},
+            ],
+              position: {line: 1, col: 1}
+            }
+        ]);
+    });
+
 
 });

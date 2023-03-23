@@ -16,11 +16,11 @@ function makeNullSourceNode(chunks : Array<(string | SourceNode)> | SourceNode |
 }
 
 function quoteEscape(str : string) : string {
-    return str.replace('"', '\"').replace("`", "\`");
+    return str.replaceAll('"', '\"').replaceAll("`", "\\`").replaceAll("\\", "\\\\");
 }
 
 function templateEscape(str : string) : string {
-    return str.replace("`", "\`");
+    return str.replaceAll("`", "\\`").replaceAll("\\", "\\\\");
 }
 
 export interface GeneratedCode {
@@ -32,7 +32,7 @@ export interface GeneratedCode {
 function cssSelectors2js(selectors : JssSelectorNode[], fileName : string) : SourceNode {
     const chunks = makeNullSourceNode('[');
     chunks.add(selectors.map((item) => {
-        const selector = item.items.map(quoteEscape).join('');
+        const selector = item.items.map(templateEscape).join('');
         return tag`\`${makeSourceNode(item.position, fileName, selector)}\``;
     }).join(','));
     chunks.add(']');
@@ -80,10 +80,10 @@ function jssDeclaration2SourceNode(item : JssDeclarationNode, fileName : string)
 
     const prop = makeSourceNode(item.propPos,
                                 fileName,
-                                quoteEscape(item.prop));
+                                templateEscape(item.prop));
     const value = makeSourceNode(item.valuePos,
                                  fileName,
-                                 item.value);
+                                 templateEscape(item.value));
     return tag`self.push(\`${prop}\`, \`${value}\`);\n`;
 }
 
@@ -182,7 +182,7 @@ function supports2js(node :
                           JssSupportsNode, fileName : string, bindName = 'self') : SourceNode {
     const query = makeSourceNode(node.position,
                                  fileName,
-                                 "`" + quoteEscape(node.query.trim()) + "`");
+                                 "`" + templateEscape(node.query.trim()) + "`");
 
     return tag`(function(parent) {
 var self = new JssSupportsBlock(${query}, {}, parent);
@@ -194,7 +194,7 @@ return self;
 function mediaQuery2js(node : JssAtRuleNode, fileName : string, bindName = 'self') : SourceNode {
     let mediaList = makeSourceNode(node.position, fileName, '[');
     mediaList.add(node.mediaList.map((item) => {
-        mediaList.add("`" + quoteEscape(item) + "`");
+        return "`" + templateEscape(item) + "`";
     }).join(','));
     mediaList.add(']');
 

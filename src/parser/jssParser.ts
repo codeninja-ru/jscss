@@ -18,23 +18,48 @@ export function parseJssScript(stream : TokenStream) : SyntaxTree {
 
 const templatePlaceholder = sequence(dollarSign, noSpacesHere, anyBlock); // template string ${}
 
+/**
+ * add vendor prefix to keywordParser
+ *
+ * vendorPrfixes:
+ * -webkit-
+ * -moz-
+ * -o-
+ * -ms-
+ *
+ * */
+function withVendorPrefix(keywordParser : TokenParser) : TokenParser {
+    return function(stream : TokenStream) : ReturnType<TokenParser> {
+        firstOf(
+            sequence(
+                symbol(Symbols.minus),
+                firstOf(
+                    literalKeyword('webkit', peekNextToken),
+                    literalKeyword('moz', peekNextToken),
+                    literalKeyword('o', peekNextToken),
+                    literalKeyword('ms', peekNextToken),
+                ),
+                symbol(Symbols.minus, peekNextToken),
+                noSpacesHere,
+                keywordParser,
+            ),
+            keywordParser,
+        )(stream);
+    };
+}
+
 function pseudo(stream : TokenStream) : string {
     return returnRawValue(sequence(
         symbol(Symbols.colon),
         optional(symbol(Symbols.colon, peekNextToken)),
-        firstOf(
-            jssIdent,
-            functionCallDoNothing,
+        jssIdent,
+        optional( //functionalCall
+            sequence(
+                noSpacesHere,
+                roundBracket //TODO parse
+            )
         )
     ))(stream);
-}
-
-function functionCallDoNothing(stream : TokenStream) : ReturnType<TokenParser> {
-    sequence(
-        jssIdent,
-        noSpacesHere,
-        roundBracket,
-    )(stream);
 }
 
 function toRawNode(parser : TokenParser) : TokenParser<JsRawNode> {
@@ -88,26 +113,28 @@ function jssPropertyDefinition(stream : TokenStream) : JssDeclarationNode {
     const [propNameToken,,value] = sequence(
         jssPropertyName,
         symbol(Symbols.colon),
-        returnRawValueWithPosition(loop(
+        returnRawValueWithPosition(loop( //jssPropertyValue
             firstOf(
                 templatePlaceholder, // template string ${}
                 cssLiteral,
                 anyString,
-                roundBracket,
                 numericLiteral,
+                roundBracket,
+                //TODO url
 
                 oneOfSymbols(
                     Symbols.plus,
                     Symbols.minus,
+                    Symbols.astersik,
                     Symbols.not,
                     Symbols.div,
+                    Symbols.backslash,
                     Symbols.dot,
                     Symbols.numero,
                     Symbols.percent,
                     Symbols.colon,
                     Symbols.question,
                     Symbols.and,
-                    Symbols.astersik,
                 ),
                 comma,
             )
@@ -421,7 +448,9 @@ function namespaceStatement(stream : TokenStream) : CssRawNode {
  * */
 function keyframesStatement(stream : TokenStream) : CssRawNode {
     sequence(
-        literalKeyword('keyframes'),
+        withVendorPrefix(
+            literalKeyword('keyframes'),
+        ),
         cssLiteral,
         block(TokenType.LazyBlock, strictLoop(
             firstOf(

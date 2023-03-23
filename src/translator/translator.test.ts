@@ -289,7 +289,6 @@ body {
     });
 
     it('supprts @keyframes', () => {
-        debugger;
         expect(evalTestCode(`const size = '50px';
 @keyframes important1 {
   from {

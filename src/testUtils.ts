@@ -5,10 +5,14 @@ import vm from "vm";
 import { evalContext } from "bin/evalContext";
 import { JssStyleSheet } from "translator/lib/core";
 
-export function evalTestCode(css : string, line = 1, col = 1) : JssStyleSheet {
+export function evalTestCode(css : string,
+                             line = 1,
+                             col = 1,
+                             sourceFileName = 'result.jss',
+                             resultFileName = 'result.css') : JssStyleSheet {
     const sourceCode = translator(parseJssScript(ArrayTokenStream.fromString(css, line, col)),
-                                 'result.jss',
-                                 'result.css');
+                                 sourceFileName,
+                                 resultFileName);
     const context = {
         ...evalContext(),
     };
@@ -21,4 +25,11 @@ export function evalTestCode(css : string, line = 1, col = 1) : JssStyleSheet {
         console.error(e);
         throw e;
     }
+}
+
+export function evalTestCodeFile(css : string,
+                                 sourceFileName : string,
+                                 resultFileName: string
+                                ) : JssStyleSheet {
+    return evalTestCode(css, 1, 1, sourceFileName, resultFileName);
 }

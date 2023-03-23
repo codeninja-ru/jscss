@@ -1,11 +1,12 @@
 {
     "extends": "@tsconfig/node12/tsconfig.json",
     "compilerOptions": {
-        "target": "es2015" /* Specify ECMAScript target version: 'ES3' (default), 'ES5', 'ES2015', 'ES2016', 'ES2017','ES2018' or 'ESNEXT'. */,
+        "target": "es2021" /* Specify ECMAScript target version: 'ES3' (default), 'ES5', 'ES2015', 'ES2016', 'ES2017','ES2018' or 'ESNEXT'. */,
         "module": "esnext" /* Specify module code generation: 'none', 'commonjs', 'amd', 'system', 'umd', 'es2015', or 'ESNext'. */,
         "preserveConstEnums": true,
         "sourceMap": true,
         "outDir":"build",
+        "lib": ["ES2021"],
 
         /* Strict Type-Checking Options */
         "strict": true /* Enable all strict type-checking options. */,
@@ -23,7 +24,7 @@
         "noFallthroughCasesInSwitch": true /* Report errors for fallthrough cases in switch statement. */,
 
         "baseUrl": "./src",
-        "moduleResolution": "node",
+        "moduleResolution": "node"
     },
     "include": ["src/**/*"],
     "exclude": ["node_modules", "./build"],
