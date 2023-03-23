@@ -1,4 +1,4 @@
-import { argLexer } from "argLexer";
+import { argLexer } from "lexer/argLexer";
 import { ArgNodeType, CommandArgNode, parseArgsStatement } from "parser/argParser";
 import { ArrayTokenStream } from "parser/tokenStream";
 import { StringInputStream } from "stream/input";

@@ -2,7 +2,7 @@ import { Keyword } from "keywords";
 import { SubStringInputStream } from "stream/input/SubStringInputStream";
 import { Symbols, SyntaxSymbol } from "symbols";
 import { CommaToken, isToken, LiteralToken, SpaceToken, SquareBracketsToken, StringToken, SymbolToken, TemplateStringToken, Token, TokenType } from "token";
-import { lexer } from "./lexer";
+import { lexer } from "lexer/lexer";
 import { BlockParserError, EmptyStreamError, ParserError, SequenceError, UnexpectedEndError } from "./parserError";
 import { LeftTrimSourceFragment, SourceFragment } from "./sourceFragment";
 import { BlockNode, BlockType, IgnoreNode, LazyNode, NodeType } from "./syntaxTree";

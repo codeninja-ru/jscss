@@ -1,5 +1,7 @@
-import { lexer } from 'parser/lexer';
+import { lexer } from 'lexer/lexer';
 import { StringInputStream } from './stream/input';
+
+//TODO remove this?
 
 console.log(lexer(new StringInputStream(`
 // comment

@@ -1,7 +1,7 @@
 import { StringInputStream } from "stream/input";
 import { Position } from "stream/position";
 import { Token } from "token";
-import { lexer } from "./lexer";
+import { lexer } from "lexer/lexer";
 import { ArraySourceFragment, SourceFragment } from "./sourceFragment";
 
 // TODO free method to safe mem?

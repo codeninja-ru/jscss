@@ -2,7 +2,7 @@ import { Keyword, Keywords } from "keywords";
 import { StringInputStream } from "stream/input";
 import { Symbols } from "symbols";
 import { LiteralToken, TokenType } from "token";
-import { lexer } from "./lexer";
+import { lexer } from "lexer/lexer";
 import { BlockParserError, ParserError, SequenceError } from "./parserError";
 import { anyLiteral, anyString, block, notAllowed, commaList, firstOf, ignoreSpacesAndComments, keyword, longestOf, map, noLineTerminatorHere, noSpacesHere, oneOfSymbols, optional, regexpLiteral, sequence, symbol, repeatUntil } from "./parserUtils";
 import { BlockType, NodeType } from "./syntaxTree";

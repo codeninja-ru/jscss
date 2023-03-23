@@ -1,4 +1,4 @@
-import { argLexer } from "argLexer";
+import { argLexer } from "lexer/argLexer";
 import { StringInputStream } from "stream/input";
 import { Token, TokenType } from "token";
 

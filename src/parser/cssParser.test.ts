@@ -1,6 +1,6 @@
 import { StringInputStream } from "stream/input";
 import { cssLiteral, declaration, parseCssStyleSheet, rulesetStatement, selector, simpleSelector } from "./cssParser";
-import { lexer } from "./lexer";
+import { lexer } from "lexer/lexer";
 import { CssBlockItemNode, CssBlockNode, CssSelectorNode, NodeType } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { ArrayTokenStream, LookAheadTokenStream } from "./tokenStream";

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { argLexer } from 'argLexer';
+import { argLexer } from 'lexer/argLexer';
 import fs from 'fs';
 import { ArgNodeType, CommandErrorArgNode, InputAndOutputArgNode, parseArgsStatement } from 'parser/argParser';
 import { parseJssScript } from 'parser/jssParser';

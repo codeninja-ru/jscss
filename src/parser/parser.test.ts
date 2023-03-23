@@ -1,5 +1,5 @@
 import { StringInputStream } from "stream/input";
-import { lexer } from "./lexer";
+import { lexer } from "lexer/lexer";
 import { parseJsModule, parseJsScript, parseJsStatement, parseJsVarStatement } from "./parser";
 import { Node, NodeType } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
