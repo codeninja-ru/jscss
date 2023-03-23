@@ -1,6 +1,6 @@
 module.exports = {
     "transform": {
-        "^.+\\.(ts|tsx)$": "ts-jest"
+        "^.+\\.(t|j)sx?$": "@swc/jest"
     },
     //"roots": [
     //    "<rootDir>/build"

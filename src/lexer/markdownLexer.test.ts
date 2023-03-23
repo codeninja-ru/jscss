@@ -1,13 +1,13 @@
 import { StringInputStream } from "stream/input";
 import { TokenType } from "token";
 import { makeLiteralToken, makeSymbolToken } from "token/helpers";
-import { markdownLexer } from "./markdownLexer";
+import { lexerMarkdown } from "./markdownLexer";
 
 const anySpace = () => { return {type: TokenType.Space, value: expect.anything(), position: expect.anything()} };
 
 describe('markdownLexer()', () => {
     it('parses markdown', () => {
-        expect(markdownLexer(new StringInputStream(`# Header
+        expect(lexerMarkdown(new StringInputStream(`# Header
 
 Hello world!
 

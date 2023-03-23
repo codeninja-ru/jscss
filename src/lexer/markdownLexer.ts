@@ -20,7 +20,7 @@ export function makeSymbolRegReader(stream: InputStream, reg = /[^\s\w]/): Reade
     };
 }
 
-export function markdownLexer(stream : InputStream) : Token[] {
+export function lexerMarkdown(stream : InputStream) : Token[] {
     const out = new StringOutputStream();
     const tokens: Token[] = [];
     const readers: Array<Reader> = [

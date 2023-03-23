@@ -1,10 +1,10 @@
+import { Position } from "stream/position";
 import { SingleSymbol, Symbols, SyntaxSymbol } from "symbols";
 import { SpaceToken, Token, TokenType } from "token";
 import { ParserError } from "./parserError";
-import { anyLiteral, anySpace, anySymbol, firstOf, optional, repeatUntil, returnRawValue, sequence, skip, strictLoop, symbol } from "./parserUtils";
-import { SyntaxTree } from "./syntaxTree";
+import { anyLiteral, anySpace, anySymbol, firstOf, optional, repeatUntil, returnRawValue, returnRawValueWithPosition, sequence, skip, strictLoop, symbol } from "./parserUtils";
 import { TokenStream } from "./tokenStream";
-import { peekNextToken } from "./tokenStreamReader";
+import { peekNoLineTerminatorHere } from "./tokenStreamReader";
 
 export enum MarkdownNodeType {
     P,
@@ -54,6 +54,7 @@ export interface UrlMarkdownNode extends MarkdownNode {
 export interface SourceCodeMarkdownNode extends MarkdownNode {
     type: MarkdownNodeType.SOURCE_CODE;
     readonly lang : string;
+    readonly position: Position;
 }
 
 export interface QuoteMarkdownNode extends MarkdownNode {
@@ -139,9 +140,9 @@ function endOfLine(stream : TokenStream) : void {
 
 function sourceCode(stream : TokenStream) : SourceCodeMarkdownNode {
     symbol(MarkdownSymbols.quote)(stream);
-    const lang = anyLiteral(stream, peekNextToken);
+    const lang = anyLiteral(stream, peekNoLineTerminatorHere);
 
-    const value = returnRawValue(
+    const value = returnRawValueWithPosition(
         repeatUntil(
             firstOf(
                 anyLiteral,
@@ -157,7 +158,8 @@ function sourceCode(stream : TokenStream) : SourceCodeMarkdownNode {
     return {
         type: MarkdownNodeType.SOURCE_CODE,
         lang: lang.value,
-        value: value.trimLeft(),
+        value: value.value.trimLeft(),
+        position: value.position,
     };
 }
 
@@ -193,7 +195,7 @@ function endOfBlock(stream : TokenStream) : SpaceToken {
 }
 
 function p(stream : TokenStream) : PMarkdownNode {
-    firstOf(
+    firstOf( //TODO remove?
         endOfBlock,
         beginningOfStream,
     )(stream);
@@ -221,7 +223,9 @@ function p(stream : TokenStream) : PMarkdownNode {
     }
 }
 
-export function parseMarkdown(stream : TokenStream) : SyntaxTree {
+export type MarkdownSyntaxTree = MarkdownNode[];
+
+export function parseMarkdown(stream : TokenStream) : MarkdownSyntaxTree {
     return strictLoop(firstOf(
         header,
         sourceCode,

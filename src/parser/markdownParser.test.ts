@@ -1,11 +1,10 @@
-import { markdownLexer } from "lexer/markdownLexer";
+import { lexerMarkdown } from "lexer/markdownLexer";
 import { StringInputStream } from "stream/input";
-import { MarkdownNodeType, parseMarkdown } from "./markdownParser";
-import { SyntaxTree } from "./syntaxTree";
+import { MarkdownNodeType, MarkdownSyntaxTree, parseMarkdown } from "./markdownParser";
 import { ArrayTokenStream } from "./tokenStream";
 
-function parse(str : string) : SyntaxTree {
-    const tokens = new ArrayTokenStream(markdownLexer(new StringInputStream(str)))
+function parse(str : string) : MarkdownSyntaxTree {
+    const tokens = new ArrayTokenStream(lexerMarkdown(new StringInputStream(str)))
     return parseMarkdown(tokens);
 }
 
@@ -29,7 +28,7 @@ describe('markdownParse()', () => {
             {type: MarkdownNodeType.H2, value: "Header 2"},
             {type: MarkdownNodeType.H3, value: "Header 3"},
             {type: MarkdownNodeType.P, value: "The Paragraph test\ntest"},
-            {type: MarkdownNodeType.SOURCE_CODE, lang: 'js', value: "source code"}
+            {type: MarkdownNodeType.SOURCE_CODE, lang: 'js', value: "source code", position: {line: 10, col: 1}}
         ]);
     });
 

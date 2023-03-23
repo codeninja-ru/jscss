@@ -3,6 +3,7 @@ import { Position } from "stream/position";
 import { Token } from "token";
 import { lexer } from "lexer/lexer";
 import { ArraySourceFragment, SourceFragment } from "./sourceFragment";
+import { FileInputStream } from "stream/input/FileInputStream";
 
 // TODO free method to safe mem?
 export interface TokenStream {
@@ -31,8 +32,12 @@ export class ArrayTokenStream implements TokenStream {
     private pos : number = 0;
     readonly startStreamPosition: Position;
 
-    static fromString(str : string) : TokenStream {
-        return new ArrayTokenStream(lexer(new StringInputStream(str)));
+    static fromString(str : string, line = 1, col = 1) : TokenStream {
+        return new ArrayTokenStream(lexer(new StringInputStream(str, line, col)));
+    }
+
+    static fromFile(filePath : string) : TokenStream {
+        return new ArrayTokenStream(lexer(new FileInputStream(filePath)));
     }
 
     constructor(private tokens : Token[], startStreamPosition = ZERO_POSITION) {

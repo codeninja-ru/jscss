@@ -5,8 +5,8 @@ import vm from "vm";
 import { evalContext } from "bin/evalContext";
 import { JssStyleSheet } from "translator/lib/core";
 
-export function evalTestCode(css : string) : JssStyleSheet {
-    const sourceCode = translator(parseJssScript(ArrayTokenStream.fromString(css)),
+export function evalTestCode(css : string, line = 1, col = 1) : JssStyleSheet {
+    const sourceCode = translator(parseJssScript(ArrayTokenStream.fromString(css, line, col)),
                                  'result.jss',
                                  'result.css');
     const context = {

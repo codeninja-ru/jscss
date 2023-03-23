@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-import { argLexer } from 'lexer/argLexer';
 import fs from 'fs';
+import { argLexer } from 'lexer/argLexer';
 import { ArgNodeType, CommandErrorArgNode, InputAndOutputArgNode, parseArgsStatement } from 'parser/argParser';
 import { parseJssScript } from 'parser/jssParser';
 import { ArrayTokenStream } from 'parser/tokenStream';
@@ -55,11 +55,10 @@ function processInput(node : InputAndOutputArgNode) {
         process.exit(1);
     }
 
-    const inStr = fs.readFileSync(infilepath).toString() ;
     const resultFileName = path.basename(outfilepath);
     const inputFileName = path.basename(infilepath);
     const outStr = translator(
-        parseJssScript(ArrayTokenStream.fromString(inStr)),
+        parseJssScript(ArrayTokenStream.fromFile(infilepath)),
         inputFileName,
         resultFileName,
     );

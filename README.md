@@ -23,6 +23,7 @@ npm install -g @jsslang/jss
 ``` sh
 npx @jsslang/jss file.jss file.css
 ```
+
 or if you installed it globally
 
 ``` sh
@@ -33,7 +34,7 @@ jss file.jss file.css
 
 You can use the javascript syntax for variables
 
-``` javascript
+``` jsslang
 const color = '#fff';
 const baseSize = 10;
 
@@ -47,14 +48,14 @@ Output:
 
 ``` css
 .className {
-  color: #fff;
-  size: 12px;
+    color: #fff;
+    size: 12px;
 }
 ```
 
 You can use buildin classes for sizes and colors. For examples:
 
-``` javascript
+``` jsslang
 const size = new Px(10);
 const color = new HexColor('#fff');
 
@@ -67,14 +68,14 @@ const color = new HexColor('#fff');
 Output:
 ``` css
 .className {
-  color: #fff;
-  size: 10px;
+    color: #fff;
+    size: 10px;
 }
 ```
 
 You can put variables into style blocks. They'll be scoped inside the block.
 
-``` javascript
+``` jsslang
 .className {
   const size = new Px(10);
   color: #fff;
@@ -85,8 +86,8 @@ You can put variables into style blocks. They'll be scoped inside the block.
 Output:
 ``` css
 .className {
-  color: #fff;
-  size: 10px;
+    color: #fff;
+    size: 10px;
 }
 ```
 
@@ -94,7 +95,7 @@ Output:
 
 You can use variables in property names
 
-``` javascript
+``` jsslang
 const propName = 'color';
 .className {
   ${propName}: #fff;
@@ -105,13 +106,13 @@ const propName = 'color';
 Output:
 ``` css
 .className {
-  color: #fff;
-  background-color: #777;
+    color: #fff;
+    background-color: #777;
 }
 ```
 
 You can even use computed properties like in javascript
-``` javascript
+``` jsslang
 const propName = 'color';
 .className {
   [propName]: #fff;
@@ -122,15 +123,15 @@ const propName = 'color';
 Output:
 ``` css
 .className {
-  color: #fff;
-  background-color: #777;
+    color: #fff;
+    background-color: #777;
 }
 ```
 
 
 ### Mixins
 
-``` javascript
+``` jsslang
 const bordered = new {
   border: 3px solid red;
   border-radius: 3px;
@@ -146,15 +147,15 @@ Output:
 
 ``` css
 .className {
-  font-size: 12px;
-  border: 3px solid red;
-  border-radius: 3px;
+    font-size: 12px;
+    border: 3px solid red;
+    border-radius: 3px;
 }
 ```
 
 ### Functions
 
-``` javascript
+``` jsslang
 function pad2(n) { return n.length > 1 ? n : "0" + n; }
 function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) + pad2(b.toString(16)); }
 
@@ -173,7 +174,7 @@ Output:
 
 ### Nesting
 
-``` javascript
+``` jsslang
 .menu {
   font-size: 12px;
   ${this.name}.menu__item {
@@ -197,7 +198,7 @@ Output:
 ```
 
 or in case of a list of selectors
-``` javascript
+``` jsslang
 .menu1, .menu2 {
   font-size: 12px;
   ${this.selectors[0]}.menu__item {
@@ -229,7 +230,7 @@ Output:
 You can put media-quries inside blocks
 
 
-``` javascript
+``` jsslang
 .component {
   width: 300px;
   @media (min-width: 768px) {
@@ -271,7 +272,7 @@ Output
 
 You can use @supports in the same way.
 
-``` javascript
+``` jsslang
 .flex-container {
     display: block;
     @supports {
@@ -297,7 +298,7 @@ Output:
 ### Comments
 
 All kind of comments a supported
-``` javascript
+``` jsslang
 // a single line comment
 
 /* a multi-line comment */
@@ -306,12 +307,21 @@ All kind of comments a supported
 ```
 
 ## Syntax Highlighting
+
 Syntax highlighting is in progress, but you can use same of our basic configs the following text editors.
+
 ### vim
+
 https://github.com/codeninja-ru/vim-jsslang
+
 ### Emacs
+
 https://github.com/codeninja-ru/jsslang-mode
+
 ### VSCode
+
 https://github.com/codeninja-ru/vscode-jsslang
+
 ### Tree-sitter grammar
+
 https://github.com/codeninja-ru/tree-sitter-jsslang
