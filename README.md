@@ -135,7 +135,7 @@ Output:
 const bordered = new {
   border: 3px solid red;
   border-radius: 3px;
-}
+};
 
 .className {
   font-size: 12px;
@@ -275,7 +275,7 @@ You can use @supports in the same way.
 ``` jsslang
 .flex-container {
     display: block;
-    @supports {
+    @supports(display: flex) {
         display: flex;
     }
 }
