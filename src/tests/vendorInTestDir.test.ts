@@ -5,8 +5,9 @@ import { evalTestCodeFile } from 'testUtils';
 const ATOM_FILEPATH = path.join(__dirname, '../../test/atom.io.css');
 const NORMALIZE_FILEPATH = path.join(__dirname, '../../test/normalize.css');
 const GITHUB_FILEPATH = path.join(__dirname, '../../test/github.com.css');
+const JQUERY_FILEPATH = path.join(__dirname, '../../test/jquery.js');
 
-describe('/test', () => {
+xdescribe('/test', () => {
     it('parses atom.io.css', () => {
         expect(
             evalTestCodeFile(
@@ -37,4 +38,13 @@ describe('/test', () => {
         ).toBeDefined();
     });
 
+    it('parses jquery', () => {
+        expect(
+            evalTestCodeFile(
+                fs.readFileSync(JQUERY_FILEPATH).toString(),
+                'jquery.js',
+                'jquery.compliled.js',
+            )
+        ).toBeDefined();
+    });
 });

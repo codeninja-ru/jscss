@@ -141,6 +141,7 @@ console.log('hi');
         testParserFunction(parseJsScript, "var a = /(.)*[a-z]/gi;");
         testParserFunction(parseJsScript, "/(.)*[a-z]/;");
         testParserFunction(parseJsScript, /\/\/\/\\*[a-z]\\/gi.toString());
+        testParserFunction(parseJsScript, 'rcleanScript = /^\s*<!\[CDATA\[|\]\]>\s*$/g;');
         expect(() => parseJsScript(ArrayTokenStream.fromString('/'))).toThrowError('(1:2) : unexpected end');
     });
 

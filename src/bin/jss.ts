@@ -50,7 +50,7 @@ function processInput(node : InputAndOutputArgNode) {
     const outfilepath = node.outputFile && node.outputFile != '-'
         ? node.outputFile : getOutFilePath(infilepath);
 
-    if (infilepath == outfilepath) {
+    if (infilepath == outfilepath && node.outputFile != '-') {
         console.error(`filename and outputfile cannot be the same file`)
         process.exit(1);
     }

@@ -5,6 +5,7 @@ coverage
 # temp files
 *.*~
 *~
+*.swp
 
 # Dependency directory
 node_modules
