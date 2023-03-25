@@ -4,12 +4,13 @@ import { HiddenToken, LiteralToken, TokenType } from "token";
 import { attrib, combinator, cssCharset, cssLiteral, hash, importStatement, mediaQuery, mediaQueryList, pageStatement, term } from "./cssParser";
 import { expression, functionExpression, identifier, moduleItem, numericLiteral, parseComment, parseJsVarStatement } from "./parser";
 import { SequenceError, SyntaxRuleError } from "./parserError";
-import { andRule, anyBlock, anyString, block, notAllowed, comma, commaList, dollarSign, firstOf, ignoreSpacesAndComments, isBlockNode, keyword, lazyBlock, LazyBlockParser, leftHandRecurciveRule, literalKeyword, loop, noLineTerminatorHere, noSpacesHere, oneOfSymbols, optional, rawValue, returnRawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
+import { andRule, anyBlock, anyString, block, comma, commaList, dollarSign, firstOf, ignoreSpacesAndComments, isBlockNode, keyword, lazyBlock, LazyBlockParser, leftHandRecurciveRule, literalKeyword, loop, noLineTerminatorHere, noSpacesHere, notAllowed, oneOfSymbols, optional, rawValue, returnRawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
 import { isSourceFragment } from "./sourceFragment";
-import { BlockNode, CssRawNode, JsRawNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssAtRuleNode, JssSelectorNode, JssSpreadNode, JssSupportsNode, JssVarDeclarationNode, NodeType, SyntaxTree, FontFaceNode } from "./syntaxTree";
+import { BlockNode, CssRawNode, FontFaceNode, JsRawNode, JssAtRuleNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssSelectorNode, JssSpreadNode, JssSupportsNode, JssVarDeclarationNode, NodeType, SyntaxTree } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
-import { TokenStream } from "./tokenStream";
-import { peekNextToken } from "./tokenStreamReader";
+import { LookAheadTokenStream, TokenStream } from "./tokenStream";
+import { peekAndSkipSpaces, peekNextToken } from "./tokenStreamReader";
+
 
 export function parseJssScript(stream : TokenStream) : SyntaxTree {
     optional(skipShebang)(stream);
@@ -107,38 +108,81 @@ export function jssPropertyName(stream : TokenStream) : any {
     )(stream);
 }
 
+function jssPropertyValue(stream : TokenStream) : any {
+
+        return returnRawValueWithPosition(loop( //jssPropertyValue
+            (stream : TokenStream) => {
+                const token = peekAndSkipSpaces(new LookAheadTokenStream(stream));
+                if (token.type == TokenType.Literal) {
+                    if (token.value == '$') {
+                        return templatePlaceholder(stream);
+                    }
+                }
+
+                if (token.type == TokenType.String) {
+                    return anyString(stream);
+                }
+
+                if (token.type == TokenType.RoundBrackets) {
+                    return roundBracket(stream);
+                }
+
+                if (token.type == TokenType.Symbol) {
+                    return oneOfSymbols(
+                        Symbols.plus,
+                        Symbols.minus,
+                        Symbols.astersik,
+                        Symbols.not,
+                        Symbols.div,
+                        Symbols.backslash,
+                        Symbols.dot,
+                        Symbols.numero,
+                        Symbols.percent,
+                        Symbols.colon,
+                        Symbols.question,
+                        Symbols.and,
+                    )(stream);
+                }
+
+                if (token.type == TokenType.Comma) {
+                    return comma(stream);
+                }
+
+                return firstOf(
+                    //templatePlaceholder, // template string ${}
+                    cssLiteral,
+                    //anyString,
+                    numericLiteral,
+                    //roundBracket,
+                    ////TODO url
+
+                    //oneOfSymbols(
+                    //    Symbols.plus,
+                    //    Symbols.minus,
+                    //    Symbols.astersik,
+                    //    Symbols.not,
+                    //    Symbols.div,
+                    //    Symbols.backslash,
+                    //    Symbols.dot,
+                    //    Symbols.numero,
+                    //    Symbols.percent,
+                    //    Symbols.colon,
+                    //    Symbols.question,
+                    //    Symbols.and,
+                    //),
+                    //comma,
+                )(stream);
+            }
+        ))(stream);
+}
+
 function jssPropertyDefinition(stream : TokenStream) : JssDeclarationNode {
     //sequence(propertyName, symbol(Symbols.colon), assignmentExpression), // clear js assigment
     //sequence(propertyName, symbol(Symbols.colon), expr, optional(prioStatement)), // clear css
     const [propNameToken,,value] = sequence(
         jssPropertyName,
         symbol(Symbols.colon),
-        returnRawValueWithPosition(loop( //jssPropertyValue
-            firstOf(
-                templatePlaceholder, // template string ${}
-                cssLiteral,
-                anyString,
-                numericLiteral,
-                roundBracket,
-                //TODO url
-
-                oneOfSymbols(
-                    Symbols.plus,
-                    Symbols.minus,
-                    Symbols.astersik,
-                    Symbols.not,
-                    Symbols.div,
-                    Symbols.backslash,
-                    Symbols.dot,
-                    Symbols.numero,
-                    Symbols.percent,
-                    Symbols.colon,
-                    Symbols.question,
-                    Symbols.and,
-                ),
-                comma,
-            )
-        ))
+        jssPropertyValue,
     )(stream);
 
     let propName = null;

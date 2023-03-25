@@ -24,7 +24,10 @@
         "noFallthroughCasesInSwitch": true /* Report errors for fallthrough cases in switch statement. */,
 
         "baseUrl": "./src",
-        "moduleResolution": "node"
+        "moduleResolution": "node",
+        "plugins": [
+            { "transform": "./src/optim/cachingTransformer.ts" }
+        ]
     },
     "include": ["src/**/*"],
     "exclude": ["node_modules", "./build"],

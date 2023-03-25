@@ -10,7 +10,7 @@ rollup:
 	chmod +x ./build/jss.js
 
 compile:
-	./node_modules/typescript/bin/tsc
+	./node_modules/ttypescript/bin/tsc
 
 build: clean compile rollup
 

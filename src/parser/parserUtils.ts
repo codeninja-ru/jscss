@@ -10,6 +10,9 @@ import { ParsedSourceWithPosition, TokenParser, TokenParserArrayWithPosition } f
 import { ArrayTokenStream, FlushableTokenStream, LookAheadTokenStream, TokenStream } from "./tokenStream";
 import { isSpaceOrComment, peekAndSkipSpaces, peekNextToken, TokenStreamReader } from "./tokenStreamReader";
 
+// @ts-ignore
+import { instance } from 'optim/cache';
+
 export function noLineTerminatorHere(stream : TokenStream) : void {
     while(!stream.eof()) {
         const token = stream.peek();
@@ -128,14 +131,16 @@ export function list(parser: TokenParser,
                      canListBeEmpty : boolean = false) : TokenParser {
     return function(stream: TokenStream) : ReturnType<TokenParser> {
         let result = [];
+        const optionalSeperator = optional(separator);
+        const flushedParser = flushed(parser);
         while (!stream.eof()) {
             try {
-                result.push(flushed(parser)(stream));
+                result.push(flushedParser(stream));
             } catch(e) {
                 break;
             }
 
-            if (!optional(separator)(stream)) {
+            if (!optionalSeperator(stream)) {
                 break;
             }
         }
@@ -420,7 +425,6 @@ export function anySpace(stream : TokenStream, peekNext = peekNextToken) : Space
     throw new ParserError(`space is expected`, token);
 }
 
-
 export function dollarSign(stream: TokenStream) : LiteralToken {
     const token = peekAndSkipSpaces(stream);
     if (token.type == TokenType.Literal && token.value == '$') {
@@ -538,8 +542,9 @@ export function strictLoop(parser : TokenParser) : TokenParser {
 export function loop(parser : TokenParser) : TokenParser {
     return function(stream : TokenStream) : ReturnType<TokenParser>[] {
         let results = [] as ReturnType<TokenParser>[];
+        const optionalParser = optional(parser);
         while(!stream.eof()) {
-            const result = optional(parser)(stream);
+            const result = optionalParser(stream);
             if (result === undefined) {
                 break;
             } else {
