@@ -3,32 +3,15 @@
 // https://www.w3.org/TR/mediaqueries-3/#syntax
 
 import { Keywords } from "keywords";
-import { Symbols, SyntaxSymbol } from "symbols";
-import { LiteralToken, Token, TokenType } from "token";
+import { Symbols } from "symbols";
+import { LiteralToken, TokenType } from "token";
 import { ParserError } from "./parserError";
 import { anyString, block, commaList, firstOf, ignoreSpacesAndComments, keyword, leftHandRecurciveRule, list, loop, noSpacesHere, oneOfSymbols, optional, rawValue, regexpLiteral, returnRawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, squareBracket, strictLoop, symbol } from "./parserUtils";
+import { isCssToken, isSymbolNextToken, makeIsSymbolNextTokenProbe, makeIsTokenTypeNextTokenProbe } from "./predicats";
 import { BlockNode, CssBlockNode, CssCharsetNode, CssDeclarationNode, CssImportNode, CssMediaNode, CssSelectorNode, NodeType, StringNode } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
 import { peekAndSkipSpaces, peekNextToken } from "./tokenStreamReader";
-
-function containsOnly(str : string, symbol : SyntaxSymbol) : boolean {
-    if (str.length == 0) {
-        return false;
-    }
-    for (const ch of str) {
-        if (ch != symbol.name) {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-function isCssToken(token : Token) : boolean {
-    return (token.type == TokenType.Literal && token.value.indexOf('$') == -1)
-        || (token.type == TokenType.Symbol && containsOnly(token.value, Symbols.minus));
-}
 
 /**
  * literal that can contain "-"
@@ -454,6 +437,7 @@ export function combinator(stream : TokenStream) : void {
         Symbols.tilde,
     )(stream);
 }
+combinator.probe = isSymbolNextToken;
 
 
 /**
@@ -498,6 +482,7 @@ export function hash(stream : TokenStream) : string {
         cssLiteral,
     ))(stream);
 }
+hash.probe = makeIsSymbolNextTokenProbe(Symbols.numero);
 
 /**
  * implements:
@@ -510,6 +495,7 @@ export function hash(stream : TokenStream) : string {
 export function attrib(stream : TokenStream) : string {
     return returnRawValue(squareBracket)(stream); //TODO parse the content
 }
+attrib.probe = makeIsTokenTypeNextTokenProbe(TokenType.SquareBrackets);
 
 /**
  * implements:
@@ -533,6 +519,7 @@ export function pseudo(stream : TokenStream) : string {
         )
     ))(stream);
 }
+pseudo.probe = makeIsSymbolNextTokenProbe(Symbols.colon);
 
 /**
  *function

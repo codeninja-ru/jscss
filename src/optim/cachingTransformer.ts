@@ -67,6 +67,7 @@ export default function (program: ts.Program) {
                                 case 'returnRawValueWithPosition':
                                 case 'returnRawValue':
                                 case 'optional':
+                                case 'probe':
                                     return wrapFn(node, combinatorIdx++);
                                 default:
                                     break;

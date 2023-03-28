@@ -6,12 +6,13 @@ import { lexer } from "lexer/lexer";
 import { BlockParserError, EmptyStreamError, ParserError, SequenceError, UnexpectedEndError } from "./parserError";
 import { LeftTrimSourceFragment, SourceFragment } from "./sourceFragment";
 import { BlockNode, BlockType, IgnoreNode, LazyNode, NodeType } from "./syntaxTree";
-import { ParsedSourceWithPosition, TokenParser, TokenParserArrayWithPosition } from "./tokenParser";
+import { NextNotSpaceToken, NextToken, ParsedSourceWithPosition, ProbeFn, TokenParser, TokenParserArrayWithPosition } from "./tokenParser";
 import { ArrayTokenStream, FlushableTokenStream, LookAheadTokenStream, TokenStream } from "./tokenStream";
 import { isSpaceOrComment, peekAndSkipSpaces, peekNextToken, TokenStreamReader } from "./tokenStreamReader";
 
 // @ts-ignore
 import { instance } from 'optim/cache';
+import { isRoundBracketNextToken, isStringNextToken, isSymbolNextToken } from "./predicats";
 
 export function noLineTerminatorHere(stream : TokenStream) : void {
     while(!stream.eof()) {
@@ -72,6 +73,7 @@ export function comma(stream: TokenStream) : CommaToken {
 
     throw new ParserError(`, is expected`, token);
 }
+comma.probe = (nextToken : NextToken) => nextToken.token.type == TokenType.Comma;
 
 export function commaList(parser: TokenParser, canListBeEmpty : boolean = false) : TokenParser {
     return list(parser, comma, canListBeEmpty);
@@ -278,10 +280,17 @@ export function firstOf(...parsers: TokenParser[]) : TokenParser {
     return function(stream: TokenStream) : ReturnType<TokenParser> {
         let sequenceErrors = [];
         let blockErrors = [];
-        for (let i = 0; i < parsers.length; i++) {
+        const nextToken = NextNotSpaceToken.fromStream(stream);
+        for (const parser of parsers) {
             try {
+                if (parser.probe) {
+                    if (nextToken.exists && !parser.probe(nextToken)) {
+                        // skip parser
+                        continue;
+                    }
+                }
                 let parserStream = new LookAheadTokenStream(stream);
-                const result = parsers[i](parserStream);
+                const result = parser(parserStream);
                 parserStream.flush();
                 return result;
             } catch( e ) {
@@ -310,6 +319,14 @@ export function firstOf(...parsers: TokenParser[]) : TokenParser {
 
 export function optional(parser: TokenParser) : TokenParser {
     return function(stream: TokenStream) : ReturnType<TokenParser> {
+        if (parser.probe) {
+            const nextToken = NextNotSpaceToken.fromStream(stream);
+
+            if (nextToken.exists && !parser.probe(nextToken)) {
+                return undefined;
+            }
+
+        }
         const parserStream = new LookAheadTokenStream(stream);
 
         try {
@@ -381,6 +398,7 @@ export function oneOfSymbols(...chars: SyntaxSymbol[]) : TokenParser<SymbolToken
         throw new ParserError(`one of ${chars.map((item) => item.name).join(', ')} is expected`, firstToken);
     };
 }
+oneOfSymbols.probe = isSymbolNextToken;
 
 export function anyString(stream: TokenStream) : StringToken {
     const token = peekAndSkipSpaces(stream);
@@ -390,6 +408,7 @@ export function anyString(stream: TokenStream) : StringToken {
 
     throw new ParserError(`string literal is expected`, token);
 }
+anyString.probe = isStringNextToken;
 
 export function anyTempateStringLiteral(stream: TokenStream) : TemplateStringToken {
     const token = peekAndSkipSpaces(stream);
@@ -427,6 +446,7 @@ export function anySpace(stream : TokenStream, peekNext = peekNextToken) : Space
 
 export function dollarSign(stream: TokenStream) : LiteralToken {
     const token = peekAndSkipSpaces(stream);
+
     if (token.type == TokenType.Literal && token.value == '$') {
         return token;
     }
@@ -512,6 +532,7 @@ export function roundBracket(stream: TokenStream) : LazyNode {
 
     throw new ParserError(`round brackets were expected`, token);
 }
+roundBracket.probe = isRoundBracketNextToken;
 
 export function regexpLiteral(reg : RegExp, peekFn : TokenStreamReader = peekAndSkipSpaces) : TokenParser {
     return function(stream : TokenStream) : ReturnType<TokenParser> {
@@ -747,4 +768,9 @@ export function skip(parser : TokenParser) : TokenParser {
     return function(stream : TokenStream) : void {
         parser(stream);
     };
+}
+
+export function probe(parser : TokenParser, probeFn?: ProbeFn) : TokenParser {
+    parser.probe = probeFn;
+    return parser;
 }

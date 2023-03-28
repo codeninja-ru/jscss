@@ -1,10 +1,11 @@
 import { Keyword, Keywords } from "keywords";
+import { lexer } from "lexer/lexer";
 import { StringInputStream } from "stream/input";
 import { Symbols } from "symbols";
 import { LiteralToken, TokenType } from "token";
-import { lexer } from "lexer/lexer";
 import { BlockParserError, ParserError, SequenceError } from "./parserError";
-import { anyLiteral, anyString, block, notAllowed, commaList, firstOf, ignoreSpacesAndComments, keyword, longestOf, map, noLineTerminatorHere, noSpacesHere, oneOfSymbols, optional, regexpLiteral, sequence, symbol, repeatUntil } from "./parserUtils";
+import { anyLiteral, anyString, block, commaList, firstOf, ignoreSpacesAndComments, keyword, longestOf, map, noLineTerminatorHere, noSpacesHere, notAllowed, oneOfSymbols, optional, probe, regexpLiteral, repeatUntil, sequence, symbol } from "./parserUtils";
+import { isLiteralNextToken } from "./predicats";
 import { BlockType, NodeType } from "./syntaxTree";
 import { ArrayTokenStream, TokenStream } from "./tokenStream";
 
@@ -101,6 +102,24 @@ describe('parserUtils', () => {
             const node = firstOf(
                 keyword(Keywords._if),
                 keyword(Keywords._async),
+                keyword(Keywords._var),
+            )(stream);
+            expect(node.value).toEqual('var');
+            expect(stream.currentPosition()).toEqual(1);
+        });
+
+        it('parses with probe', () => {
+            const tokens = lexer(new StringInputStream(`var var`))
+            const stream = new ArrayTokenStream(tokens);
+            const node = firstOf(
+                probe(
+                    keyword(Keywords._if),
+                    isLiteralNextToken,
+                ),
+                probe(
+                    keyword(Keywords._async),
+                    isLiteralNextToken,
+                ),
                 keyword(Keywords._var),
             )(stream);
             expect(node.value).toEqual('var');

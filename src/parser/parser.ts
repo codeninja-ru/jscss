@@ -3,8 +3,9 @@ import { AssignmentOperator, Symbols } from "symbols";
 import { LiteralToken, TokenType } from "token";
 import { ParserError, UnexpectedEndError } from "./parserError";
 import { anyLiteral, anyString, anyTempateStringLiteral, block, notAllowed, comma, commaList, firstOf, keyword, anyBlock, leftHandRecurciveRule, longestOf, loop, noLineTerminatorHere, oneOfSymbols, optional, rawValue, regexpLiteral, roundBracket, sequence, squareBracket, strictLoop, symbol } from "./parserUtils";
+import { isLiteralNextToken } from "./predicats";
 import { CommentNode, IfNode, JsModuleNode, JsRawNode, JssScriptNode, MultiNode, Node, NodeType, SyntaxTree, VarDeclaraionNode } from "./syntaxTree";
-import { TokenParser } from "./tokenParser";
+import { NextToken, TokenParser } from "./tokenParser";
 import { LookAheadTokenStream, TokenStream } from "./tokenStream";
 import { peekAndSkipSpaces, peekNextToken, peekNoLineTerminatorHere } from "./tokenStreamReader";
 
@@ -229,6 +230,7 @@ export function numericLiteral(stream : TokenStream) : void {
         nonDecimalIntergerLiteral,
     )(stream);
 }
+numericLiteral.probe = (nextToken : NextToken) => isLiteralNextToken(nextToken) || Symbols.dot.equal(nextToken.token);
 
 function literal(stream : TokenStream) : void {
     firstOf(

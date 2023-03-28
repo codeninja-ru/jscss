@@ -31,3 +31,8 @@ publish: publish-build
 
 publish-test: publish-build
 	npm publish ./build --access=public --dry-run
+
+profile: build
+	rm isolate-*.log
+	time node --prof ./build/jss.js ./test/atom.io.css -
+	node --prof-process --preprocess -j isolate-*.log | npx flamebearer
