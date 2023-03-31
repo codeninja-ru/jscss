@@ -5,7 +5,7 @@ import { attrib, combinator, cssCharset, cssLiteral, hash, importStatement, medi
 import { expression, functionExpression, identifier, moduleItem, numericLiteral, parseComment, parseJsVarStatement } from "./parser";
 import { SequenceError, SyntaxRuleError } from "./parserError";
 import { andRule, anyBlock, anyString, block, comma, commaList, dollarSign, firstOf, ignoreSpacesAndComments, isBlockNode, keyword, lazyBlock, LazyBlockParser, leftHandRecurciveRule, literalKeyword, loop, noLineTerminatorHere, noSpacesHere, notAllowed, oneOfSymbols, optional, probe, rawValue, returnRawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
-import { is$NextToken, is$Token, isCssToken, isSymbolNextToken, makeIsSymbolNextTokenProbe } from "./predicats";
+import { is$NextToken, is$Token, isCssToken, isLiteralNextToken, isSymbolNextToken, makeIsSymbolNextTokenProbe } from "./predicats";
 import { isSourceFragment } from "./sourceFragment";
 import { BlockNode, CssRawNode, FontFaceNode, JsRawNode, JssAtRuleNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssSelectorNode, JssSpreadNode, JssSupportsNode, JssVarDeclarationNode, NodeType, SyntaxTree } from "./syntaxTree";
 import { NextToken, TokenParser } from "./tokenParser";
@@ -343,6 +343,7 @@ function jssVariableStatement(stream : TokenStream) : JssVarDeclarationNode {
         ...(exportKeyword !== undefined ? { exportPos: exportKeyword.position } : {})
     };
 }
+jssVariableStatement.probe = isLiteralNextToken;
 
 function jssBlockStatement(stream : TokenStream) : LazyBlockParser<BlockNode<JssBlockItemNode>> {
     return lazyBlock(TokenType.LazyBlock, strictLoop(firstOf(

@@ -142,3 +142,9 @@ output
     color: #444;
 }
 ```
+
+
+## Optimization todos
+
+1. use d8
+https://floitsch.blogspot.com/2012/03/optimizing-for-v8-introduction.html

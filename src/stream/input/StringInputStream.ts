@@ -1,12 +1,19 @@
-import { LexerError } from 'parser/parserError';
 import { Position } from 'stream/position';
 import { InputStream } from './InputStream';
+
+function readChar(str : string, pos : number) : string {
+    if (pos < str.length) {
+        return str.charAt(pos);
+    } else {
+        throw new Error('reading beyond the end of the stream');
+    }
+}
 
 export class StringInputStream implements InputStream {
     private input = '';
     private pos = 0;
-    protected line : number;
-    protected col : number;
+    private line : number;
+    private col : number;
 
     constructor(input: string, line = 1, col = 1) {
         this.input = input;
@@ -15,20 +22,22 @@ export class StringInputStream implements InputStream {
     }
 
     next(): string {
-        var ch = this.input.charAt(this.pos++);
-        if (ch == '') {
-            throw new LexerError('reading beyond the end of the stream', this)
+        var ch = readChar(this.input, this.pos++);
+        if (ch == "\n") {
+            this.line++;
+            this.col = 1;
+        } else {
+            this.col++;
         }
-        if (ch == "\n") this.line++, this.col = 1; else this.col++;
         return ch;
     }
 
     peek(): string {
-        return this.input.charAt(this.pos);
+        return readChar(this.input, this.pos);
     }
 
     isEof(): boolean {
-        return this.peek() == '';
+        return this.pos >= this.input.length;
     }
 
     readUntil(str: string) : string {

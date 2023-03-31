@@ -4,6 +4,7 @@ import { Token } from "token";
 import { lexer } from "lexer/lexer";
 import { ArraySourceFragment, SourceFragment } from "./sourceFragment";
 import { FileInputStream } from "stream/input/FileInputStream";
+import { UnexpectedEndError } from "./parserError";
 
 // TODO free method to safe mem?
 export interface TokenStream {
@@ -45,15 +46,27 @@ export class ArrayTokenStream implements TokenStream {
     }
 
     take(idx: number): Token {
-        return this.tokens[idx];
+        if (idx < this.tokens.length) {
+            return this.tokens[idx];
+        } else {
+            throw new UnexpectedEndError(this);
+        }
     }
 
     next(): Token {
-        return this.tokens[this.pos++];
+        if (this.pos < this.tokens.length) {
+            return this.tokens[this.pos++];
+        } else {
+            throw new UnexpectedEndError(this);
+        }
     }
 
     peek() : Token {
-        return this.tokens[this.pos];
+        if (this.pos < this.tokens.length) {
+            return this.tokens[this.pos];
+        } else {
+            throw new UnexpectedEndError(this);
+        }
     }
 
     movePosition(newPos: number): void {

@@ -281,7 +281,8 @@ export function firstOf(...parsers: TokenParser[]) : TokenParser {
         let sequenceErrors = [];
         let blockErrors = [];
         const nextToken = NextNotSpaceToken.fromStream(stream);
-        for (const parser of parsers) {
+        for (var i = 0; i < parsers.length; i++) {
+            const parser = parsers[i];
             try {
                 if (parser.probe) {
                     if (nextToken.exists && !parser.probe(nextToken)) {
@@ -349,12 +350,13 @@ export function oneOfSymbols(...chars: SyntaxSymbol[]) : TokenParser<SymbolToken
 
     const sortedChars = chars.sort((a, b) => b.name.length - a.name.length);
     let groupByLength = [] as SyntaxSymbol[][];
-    sortedChars.forEach((item) => {
+    for(var i = 0; i < sortedChars.length; i++) {
+        const item = sortedChars[i];
         const len = item.name.length;
         const array = groupByLength[len] ? groupByLength[len] : [];
         array.push(item);
         groupByLength[len] = array;
-    });
+    }
 
     groupByLength = groupByLength.reverse();
 
@@ -365,7 +367,8 @@ export function oneOfSymbols(...chars: SyntaxSymbol[]) : TokenParser<SymbolToken
             throw new ParserError(`one of ${chars.map((item) => item.name).join(', ')} is expected`, firstToken);
         }
 
-        for (const group of groupByLength) {
+        for (var i = 0; i < groupByLength.length; i++) {
+            const group = groupByLength[i];
             const len = group[0].name.length;
             let acc = firstToken.value;
             const groupStream = new LookAheadTokenStream(stream);
