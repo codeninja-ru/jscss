@@ -7,10 +7,11 @@ export type Reader = () => Token | null;
 
 export function makeSpaceReader(stream: InputStream): Reader {
     return function() {
-        if (stream.peek().charCodeAt(0) <= 32) {
+        if (KindOfSpaceInputStream.isKindOfSpace(stream.peek())) {
+            const pos = stream.position();
             return {
                 type: TokenType.Space,
-                position: stream.position(),
+                position: pos,
                 value: readToEnd(new KindOfSpaceInputStream(stream)),
             } as SpaceToken;
         }
