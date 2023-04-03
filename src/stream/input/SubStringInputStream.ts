@@ -11,7 +11,7 @@ export class SubStringInputStream extends StringInputStream implements InputStre
     static fromBlockToken(token : OneOfBlockToken) : InputStream {
         return new SubStringInputStream(
             token.value.slice(1, token.value.length - 1),
-            { line: token.position.line, col: token.position.col + 1 }
+            new Position(token.position.line, token.position.col + 1)
         );
     }
 }

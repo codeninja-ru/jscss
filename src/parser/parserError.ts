@@ -64,10 +64,7 @@ function lastToken(stream : TokenStream) : Token {
         return { // NOTE a stub comment for empty stream
             type: TokenType.Space,
             value: '',
-            position: {
-                col: 0,
-                line: 0,
-            }
+            position: new Position(0, 0),
         };
     }
 }

@@ -24,10 +24,7 @@ export interface FlushableTokenStream extends TokenStream {
     currentTokenPosition() : Position;
 }
 
-const ZERO_POSITION = {
-    line: 1,
-    col: 1,
-} as Position;
+const ZERO_POSITION = new Position(1, 1);
 
 export class ArrayTokenStream implements TokenStream {
     private pos : number = 0;

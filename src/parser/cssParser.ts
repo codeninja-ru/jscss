@@ -3,6 +3,7 @@
 // https://www.w3.org/TR/mediaqueries-3/#syntax
 
 import { Keywords } from "keywords";
+import { Position } from "stream/position";
 import { Symbols } from "symbols";
 import { LiteralToken, TokenType } from "token";
 import { ParserError } from "./parserError";
@@ -553,7 +554,7 @@ export function mediaStatement(stream : TokenStream) : CssMediaNode {
         type: NodeType.CssMedia,
         mediaList: mediaListItems,
         items: rules.items,
-        position: {line: 1, col: 1}, // NOTE: it's going to be fixed in the startsWithDog
+        position: new Position(1, 1), // NOTE: it's going to be fixed in the startsWithDog
     };
 }
 

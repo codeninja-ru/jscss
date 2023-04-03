@@ -13,6 +13,7 @@ import { isSpaceOrComment, peekAndSkipSpaces, peekNextToken, TokenStreamReader }
 // @ts-ignore
 import { instance } from 'optim/cache';
 import { isRoundBracketNextToken, isStringNextToken, isSymbolNextToken } from "./predicats";
+import { Position } from "stream/position";
 
 export function noLineTerminatorHere(stream : TokenStream) : void {
     while(!stream.eof()) {
@@ -206,7 +207,7 @@ export function sequenceWithPosition(...parsers: TokenParser[]) : TokenParserArr
                 } else if (parsedResult === undefined) { // option() can return undefined for example
                     result.push({
                         value: undefined,
-                        position: {line: 0, col: 0},
+                        position: new Position(0, 0),
                     });
                 } else {
                     const sourceFragment = new LeftTrimSourceFragment(parserStream.sourceFragment(pos));

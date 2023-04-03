@@ -38,7 +38,7 @@ export class StackLine {
         const fullLine = /at (.+)\((.+):(\d+):(\d+)\)$/gm.exec(stackLine);
         if (fullLine) {
             const [,moduleName, filePath, line, column] = fullLine;
-            return new StackLine(moduleName.trim(), filePath, {line: Number(line), col: Number(column)});
+            return new StackLine(moduleName.trim(), filePath, new Position(Number(line), Number(column)));
         }
 
         const shortLine = /at (.+):(\d+):(\d+)$/gm.exec(stackLine);

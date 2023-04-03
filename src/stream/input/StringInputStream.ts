@@ -1,28 +1,31 @@
 import { Position } from 'stream/position';
 import { InputStream } from './InputStream';
 
-function readChar(str : string, pos : number) : string {
-    if (pos < str.length) {
-        return str.charAt(pos);
-    } else {
-        throw new Error('reading beyond the end of the stream');
-    }
-}
-
 export class StringInputStream implements InputStream {
-    private input = '';
-    private pos = 0;
+    private input : string = '';
+    private pos : number = 0;
     private line : number;
     private col : number;
+    private len : number;
 
     constructor(input: string, line = 1, col = 1) {
         this.input = input;
         this.line = line;
         this.col = col;
+        this.len = input.length; // deopt fix
     }
 
+    private readChar(pos : number) : string {
+        if (pos < this.len) {
+            return this.input.charAt(pos);
+        } else {
+            throw new Error('reading beyond the end of the stream');
+        }
+    }
+
+
     next(): string {
-        var ch = readChar(this.input, this.pos++);
+        var ch = this.readChar(this.pos++);
         if (ch == "\n") {
             this.line++;
             this.col = 1;
@@ -33,18 +36,18 @@ export class StringInputStream implements InputStream {
     }
 
     peek(): string {
-        return readChar(this.input, this.pos);
+        return this.readChar(this.pos);
     }
 
     isEof(): boolean {
-        return this.pos >= this.input.length;
+        return this.pos >= this.len;
     }
 
     readUntil(str: string) : string {
         const idx = this.input.indexOf(str, this.pos);
         if (idx == -1) {
             const result = this.input.substr(this.pos);
-            this.pos = this.input.length;
+            this.pos = this.len;
             return result;
         }
 
@@ -62,9 +65,6 @@ export class StringInputStream implements InputStream {
     }
 
     position() : Position {
-        return {
-            line: this.line,
-            col: this.col,
-        }
+        return new Position(this.line, this.col);
     }
 }
