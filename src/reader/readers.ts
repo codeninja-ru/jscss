@@ -5,6 +5,15 @@ import { CommaToken, SpaceToken, SymbolToken, Token, TokenType } from "token";
 
 export type Reader = () => Token | null;
 
+function readUntil(input: InputStream, checkFn : (ch : string) => boolean): string {
+    var result = '';
+    while (!input.isEof() && checkFn(input.peek())) {
+        result += input.next();
+    }
+
+    return result;
+}
+
 export function makeSpaceReader(stream: InputStream): Reader {
     return function() {
         if (KindOfSpaceInputStream.isKindOfSpace(stream.peek())) {
@@ -12,7 +21,7 @@ export function makeSpaceReader(stream: InputStream): Reader {
             return {
                 type: TokenType.Space,
                 position: pos,
-                value: readToEnd(new KindOfSpaceInputStream(stream)),
+                value: readUntil(stream, KindOfSpaceInputStream.isKindOfSpace),
             } as SpaceToken;
         }
 

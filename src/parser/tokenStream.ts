@@ -3,8 +3,8 @@ import { Position } from "stream/position";
 import { Token } from "token";
 import { lexer } from "lexer/lexer";
 import { ArraySourceFragment, SourceFragment } from "./sourceFragment";
-import { FileInputStream } from "stream/input/FileInputStream";
 import { UnexpectedEndError } from "./parserError";
+import fs from 'fs';
 
 // TODO free method to safe mem?
 export interface TokenStream {
@@ -35,7 +35,8 @@ export class ArrayTokenStream implements TokenStream {
     }
 
     static fromFile(filePath : string) : TokenStream {
-        return new ArrayTokenStream(lexer(new FileInputStream(filePath)));
+        //return new ArrayTokenStream(lexer(new FileInputStream(filePath)));
+        return new ArrayTokenStream(lexer(new StringInputStream(fs.readFileSync(filePath).toString())));
     }
 
     constructor(private tokens : Token[], startStreamPosition = ZERO_POSITION) {

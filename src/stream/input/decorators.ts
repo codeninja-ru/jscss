@@ -18,7 +18,7 @@ export class TillEndOfLineStream extends AbstractInputStreamDecorator implements
 }
 
 export class KindOfSpaceInputStream extends AbstractInputStreamDecorator implements InputStream {
-    static isKindOfSpace(ch: string) {
+    static isKindOfSpace(ch: string) : boolean {
         return ch.charCodeAt(0) <= 32;
     }
 

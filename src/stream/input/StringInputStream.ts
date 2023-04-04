@@ -6,26 +6,16 @@ export class StringInputStream implements InputStream {
     private pos : number = 0;
     private line : number;
     private col : number;
-    private len : number;
 
     constructor(input: string, line = 1, col = 1) {
         this.input = input;
         this.line = line;
         this.col = col;
-        this.len = input.length; // deopt fix
     }
-
-    private readChar(pos : number) : string {
-        if (pos < this.len) {
-            return this.input.charAt(pos);
-        } else {
-            throw new Error('reading beyond the end of the stream');
-        }
-    }
-
 
     next(): string {
-        var ch = this.readChar(this.pos++);
+        var ch = this.peek();
+        this.pos++;
         if (ch == "\n") {
             this.line++;
             this.col = 1;
@@ -36,18 +26,22 @@ export class StringInputStream implements InputStream {
     }
 
     peek(): string {
-        return this.readChar(this.pos);
+        if (this.pos < this.input.length) {
+            return this.input.charAt(this.pos);
+        } else {
+            throw new Error('reading beyond the end of the stream');
+        }
     }
 
     isEof(): boolean {
-        return this.pos >= this.len;
+        return this.input.length <= this.pos;
     }
 
     readUntil(str: string) : string {
         const idx = this.input.indexOf(str, this.pos);
         if (idx == -1) {
             const result = this.input.substr(this.pos);
-            this.pos = this.len;
+            this.pos = this.input.length;
             return result;
         }
 

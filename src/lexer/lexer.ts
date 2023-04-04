@@ -27,7 +27,7 @@ export function lexer(stream: InputStream) : Token[] {
     while (!stream.isEof()) {
         for (var reader of readers) {
             var token = reader();
-            if (token) {
+            if (token != null) {
                 tokens.push(token);
                 break;
             }
