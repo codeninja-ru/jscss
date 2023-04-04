@@ -239,4 +239,17 @@ function process(css) {
             makeLiteralToken('sh')
         ])
     });
+
+    test('empty string', () => {
+        const tokens = lexer(new StringInputStream(''));
+        expect(tokens).toEqual([]);
+    });
+
+    test('empty blocks', () => {
+        const tokens = lexer(new StringInputStream('{}'));
+        expect(tokens).toEqual([
+            makeLazyBlockToken('{}'),
+        ]);
+    });
+
 });
