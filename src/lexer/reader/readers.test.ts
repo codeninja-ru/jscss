@@ -22,7 +22,7 @@ describe('makeStringReader()', () => {
         const streamNotOpened = new StringInputStream("test string '");
         const streamLineBreaked = new StringInputStream("'test \n string'");
 
-        expect(() => makeStringReader("'")(streamNotClosed)).toThrow('(1:14) : unexpected end of the string');
+        expect(() => makeStringReader("'")(streamNotClosed)).toThrow('(1:13) : unexpected end of the string');
         expect(() => makeStringReader("'")(streamLineBreaked)).toThrow('(2:1) : unexpected end of the string');
         expect(makeStringReader("'")(streamNotOpened)).toBeNull();
 

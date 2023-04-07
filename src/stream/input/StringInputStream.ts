@@ -16,11 +16,13 @@ export class StringInputStream implements InputStream {
     next(): string {
         var ch = this.peek();
         this.pos++;
-        if (ch == "\n") {
-            this.line++;
-            this.col = 1;
-        } else {
-            this.col++;
+        if (!this.isEof()) {
+            if (ch == "\n") {
+                this.line++;
+                this.col = 1;
+            } else {
+                this.col++;
+            }
         }
         return ch;
     }
