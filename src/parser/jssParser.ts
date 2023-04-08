@@ -4,7 +4,7 @@ import { HiddenToken, LiteralToken, TokenType } from "token";
 import { attrib, combinator, cssCharset, cssLiteral, hash, importStatement, mediaQuery, mediaQueryList, pageStatement, term } from "./cssParser";
 import { expression, functionExpression, identifier, moduleItem, numericLiteral, parseComment, parseJsVarStatement } from "./parser";
 import { SequenceError, SyntaxRuleError } from "./parserError";
-import { andRule, anyBlock, anyString, block, commaList, dollarSign, firstOf, ignoreSpacesAndComments, isBlockNode, keyword, lazyBlock, LazyBlockParser, leftHandRecurciveRule, literalKeyword, loop, noLineTerminatorHere, noSpacesHere, notAllowed, oneOfSimpleSymbols, oneOfSymbols, optional, probe, rawValue, returnRawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
+import { andRule, anyBlock, anyString, block, commaList, dollarSign, firstOf, ignoreSpacesAndComments, isBlockNode, keyword, lazyBlock, LazyBlockParser, leftHandRecurciveRule, literalKeyword, loop, noLineTerminatorHere, noSpacesHere, notAllowed, oneOfSimpleSymbols, optional, probe, rawValue, returnRawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
 import { is$NextToken, is$Token, isCssToken, isLiteralNextToken, isSymbolNextToken, makeIsSymbolNextTokenProbe } from "./predicats";
 import { isSourceFragment } from "./sourceFragment";
 import { BlockNode, CssRawNode, FontFaceNode, JsRawNode, JssAtRuleNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssSelectorNode, JssSpreadNode, JssSupportsNode, JssVarDeclarationNode, NodeType, SyntaxTree } from "./syntaxTree";
@@ -249,10 +249,10 @@ jssIdent.probe = function(token : NextToken) : boolean {
 export function simpleSelector(stream : TokenStream) : string {
     const elementName = optional(returnRawValue(
         firstOf(jssIdent,
-                oneOfSymbols(
+                oneOfSimpleSymbols([
                     Symbols.astersik, // universal selecotr
-                    Symbols.and, // nesting selector
-                ))));
+                    Symbols.bitwiseAnd, // nesting selector
+                ]))));
     const cssClass = probe(
         sequence(symbol(Symbols.dot), noSpacesHere, jssIdent),
         makeIsSymbolNextTokenProbe(Symbols.dot)
