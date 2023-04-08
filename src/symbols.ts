@@ -1,45 +1,43 @@
 import { Token, TokenType } from "token";
 
+
 export class SyntaxSymbol {
     constructor(readonly name: string) {
     }
-}
-
-export class SingleSymbol extends SyntaxSymbol {
     equal(token : Token) : boolean {
         return token.type == TokenType.Symbol && token.value === this.name;
     }
 }
 
 export const Symbols = {
-    eq: new SingleSymbol('='),
-    astersik: new SingleSymbol('*'),
-    lt: new SingleSymbol('>'),
-    gt: new SingleSymbol('<'),
+    eq: new SyntaxSymbol('='),
+    astersik: new SyntaxSymbol('*'),
+    lt: new SyntaxSymbol('>'),
+    gt: new SyntaxSymbol('<'),
     lteq: new SyntaxSymbol('>='),
     gteq: new SyntaxSymbol('<='),
-    tilde: new SingleSymbol('~'),
-    minus: new SingleSymbol('-'),
-    plus: new SingleSymbol('+'),
-    at: new SingleSymbol('@'),
-    dot: new SingleSymbol('.'),
-    comma: new SingleSymbol(','),
-    question: new SingleSymbol('?'),
-    colon: new SingleSymbol(':'),
-    semicolon: new SingleSymbol(';'),
-    div: new SingleSymbol('/'),
-    backslash: new SingleSymbol('\\'),
-    percent: new SingleSymbol('%'),
-    numero: new SingleSymbol('#'),
+    tilde: new SyntaxSymbol('~'),
+    minus: new SyntaxSymbol('-'),
+    plus: new SyntaxSymbol('+'),
+    at: new SyntaxSymbol('@'),
+    dot: new SyntaxSymbol('.'),
+    comma: new SyntaxSymbol(','),
+    question: new SyntaxSymbol('?'),
+    colon: new SyntaxSymbol(':'),
+    semicolon: new SyntaxSymbol(';'),
+    div: new SyntaxSymbol('/'),
+    backslash: new SyntaxSymbol('\\'),
+    percent: new SyntaxSymbol('%'),
+    numero: new SyntaxSymbol('#'),
 
     and: new SyntaxSymbol('&&'),
     or: new SyntaxSymbol('||'),
     coalesce: new SyntaxSymbol('??'),
     bitwiseAnd: new SyntaxSymbol('&'),
-    bitwiseOr: new SingleSymbol('|'),
-    bitwiseNot: new SingleSymbol('~'),
-    bitwiseXor: new SingleSymbol('^'),
-    not: new SingleSymbol('!'),
+    bitwiseOr: new SyntaxSymbol('|'),
+    bitwiseNot: new SyntaxSymbol('~'),
+    bitwiseXor: new SyntaxSymbol('^'),
+    not: new SyntaxSymbol('!'),
 
     arrow: new SyntaxSymbol('=>'),
 

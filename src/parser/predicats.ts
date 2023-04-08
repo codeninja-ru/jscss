@@ -1,4 +1,4 @@
-import { SingleSymbol, Symbols, SyntaxSymbol } from "symbols";
+import { Symbols, SyntaxSymbol } from "symbols";
 import { LiteralToken, Token, TokenType } from "token";
 import { NextToken, ProbeFn } from "./tokenParser";
 
@@ -49,7 +49,7 @@ export function isSymbolNextToken(nextToken : NextToken) : boolean {
     return nextToken.token.type == TokenType.Symbol;
 }
 
-export function makeIsSymbolNextTokenProbe(symbol : SingleSymbol) : ProbeFn {
+export function makeIsSymbolNextTokenProbe(symbol : SyntaxSymbol) : ProbeFn {
     return (nextToken : NextToken) : boolean => {
         return symbol.equal(nextToken.token);
     };

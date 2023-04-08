@@ -1,5 +1,5 @@
 import { Position } from "stream/position";
-import { SingleSymbol, Symbols, SyntaxSymbol } from "symbols";
+import { Symbols, SyntaxSymbol } from "symbols";
 import { SpaceToken, Token, TokenType } from "token";
 import { ParserError } from "./parserError";
 import { anyLiteral, anySpace, anySymbol, firstOf, optional, repeatUntil, returnRawValue, returnRawValueWithPosition, sequence, skip, strictLoop, symbol } from "./parserUtils";
@@ -62,7 +62,7 @@ export interface QuoteMarkdownNode extends MarkdownNode {
 }
 
 export const MarkdownSymbols = {
-    numero: new SingleSymbol('#'),
+    numero: new SyntaxSymbol('#'),
     quote: new SyntaxSymbol('```'),
 }
 
