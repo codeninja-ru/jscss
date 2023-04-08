@@ -1,9 +1,13 @@
 import fs from 'fs';
+import { InputStream } from './InputStream';
 import { StringInputStream } from "./StringInputStream";
 
-export class FileInputStream extends StringInputStream {
-    constructor(filePath : string) {
+export class FileInputStream {
+    private constructor() {
+    }
+
+    static fromFile(filePath : string) : InputStream {
         const content = fs.readFileSync(filePath).toString() ;
-        super(content);
+        return new StringInputStream(content);
     }
 }

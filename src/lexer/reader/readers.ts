@@ -30,27 +30,13 @@ export function spaceReader(stream: InputStream) : ReaderResult {
 export function commaReader(stream: InputStream) : ReaderResult {
     var ch = stream.peek();
     if (ch == ',') {
-        stream.next();
-        return {
-            type: TokenType.Comma,
-            position: stream.position(),
-            value: ','
-        } as CommaToken;
-    }
-
-    return null;
-}
-
-export function semicolonReader(stream: InputStream) : ReaderResult {
-    var ch = stream.peek();
-    if (ch == ';') {
         const pos = stream.position();
         stream.next();
         return {
-            type: TokenType.Symbol,
+            type: TokenType.Comma,
             position: pos,
-            value: ';'
-        } as SymbolToken;
+            value: ','
+        } as CommaToken;
     }
 
     return null;
@@ -113,7 +99,7 @@ export function makeStringReader(quatation: "'" | '"') : Reader {
     };
 }
 
-export const JS_SYMBOLS = ".=<>-*+&|^@%?:#!~\\<>";
+export const JS_SYMBOLS = ".=<>-*+&|^@%?:#!~\\<>;";
 
 export function makeSymbolReader(allowedSymbols = JS_SYMBOLS): Reader {
     return function(stream : InputStream) : ReaderResult {

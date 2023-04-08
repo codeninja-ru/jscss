@@ -27,7 +27,7 @@ describe('README.md', () => {
     it('tests all the examples in README.md', () => {
         expect(fs.existsSync(README_FILEPATH)).toBeTruthy();
 
-        const tokens = new ArrayTokenStream(lexerMarkdown(new FileInputStream(README_FILEPATH)));
+        const tokens = new ArrayTokenStream(lexerMarkdown(FileInputStream.fromFile(README_FILEPATH)));
         const syntaxTree = parseMarkdown(tokens);
         expect(syntaxTree).toBeDefined();
 
