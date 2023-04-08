@@ -1,19 +1,17 @@
 import { Keyword } from "keywords";
-import { SubStringInputStream } from "stream/input/SubStringInputStream";
-import { Symbols, SyntaxSymbol } from "symbols";
-import { CommaToken, isToken, LiteralToken, SpaceToken, SquareBracketsToken, StringToken, SymbolToken, TemplateStringToken, Token, TokenType } from "token";
 import { lexer } from "lexer/lexer";
+import { SubStringInputStream } from "stream/input/SubStringInputStream";
+import { Position } from "stream/position";
+import { Symbols, SyntaxSymbol } from "symbols";
+import { isToken, LiteralToken, SpaceToken, SquareBracketsToken, StringToken, SymbolToken, TemplateStringToken, Token, TokenType } from "token";
 import { BlockParserError, EmptyStreamError, ParserError, SequenceError, UnexpectedEndError } from "./parserError";
+import { isRoundBracketNextToken, isStringNextToken, isSymbolNextToken } from "./predicats";
 import { LeftTrimSourceFragment, SourceFragment } from "./sourceFragment";
 import { BlockNode, BlockType, IgnoreNode, LazyNode, NodeType } from "./syntaxTree";
-import { NextNotSpaceToken, NextToken, ParsedSourceWithPosition, ProbeFn, TokenParser, TokenParserArrayWithPosition } from "./tokenParser";
+import { NextNotSpaceToken, ParsedSourceWithPosition, ProbeFn, TokenParser, TokenParserArrayWithPosition } from "./tokenParser";
 import { ArrayTokenStream, FlushableTokenStream, LookAheadTokenStream, TokenStream } from "./tokenStream";
 import { isSpaceOrComment, peekAndSkipSpaces, peekNextToken, TokenStreamReader } from "./tokenStreamReader";
 
-// @ts-ignore
-import { instance } from 'optim/cache';
-import { isRoundBracketNextToken, isStringNextToken, isSymbolNextToken } from "./predicats";
-import { Position } from "stream/position";
 
 export function noLineTerminatorHere(stream : TokenStream) : void {
     while(!stream.eof()) {
@@ -66,15 +64,15 @@ export function literalKeyword(keyword: string,
     };
 }
 
-export function comma(stream: TokenStream) : CommaToken {
+export function comma(stream: TokenStream) : SymbolToken {
     const token = peekAndSkipSpaces(stream);
-    if (token.type == TokenType.Comma) {
+    if (Symbols.comma.equal(token)) {
         return token;
     }
 
     throw new ParserError(`, is expected`, token);
 }
-comma.probe = (nextToken : NextToken) => nextToken.token.type == TokenType.Comma;
+comma.probe = isSymbolNextToken;
 
 export function commaList(parser: TokenParser, canListBeEmpty : boolean = false) : TokenParser {
     return list(parser, comma, canListBeEmpty);
@@ -407,7 +405,33 @@ export function oneOfSymbols(...chars: SyntaxSymbol[]) : TokenParser<SymbolToken
             }
         }
 
-        throw new ParserError(`one of ${chars.map((item) => item.name).join(', ')} is expected`, firstToken);
+        throw new ParserError(`one of ${charsForErrorReports} is expected`, firstToken);
+    };
+}
+oneOfSymbols.probe = isSymbolNextToken;
+
+export function oneOfSimpleSymbols(chars: SyntaxSymbol[], peekNextToken = peekAndSkipSpaces) : TokenParser<SymbolToken> {
+
+    let charsForErrorReports = '';
+    for(var i = 0; i < chars.length; i++) {
+        if (chars[i].name.length > 1) {
+            throw new Error('only sinle char symbols are supported, use oneOfSymbols()')
+        }
+        charsForErrorReports += chars[i].name;
+    }
+
+    return function(stream: TokenStream) : SymbolToken {
+        const token = peekNextToken(stream);
+
+        if (token.type == TokenType.Symbol) {
+            for (var i = 0; i < chars.length; i++) {
+                if (chars[i].name == token.value) {
+                    return token;
+                }
+            }
+        }
+
+        throw new ParserError(`one of ${charsForErrorReports} is expected`, token);
     };
 }
 oneOfSymbols.probe = isSymbolNextToken;
@@ -440,12 +464,12 @@ export function anyLiteral(stream: TokenStream, peekNext = peekAndSkipSpaces) : 
     throw new ParserError(`literal is expected`, token);
 }
 
-export function anySymbol(stream : TokenStream, peekNext = peekAndSkipSpaces) : SymbolToken | CommaToken {
+export function anySymbol(stream : TokenStream, peekNext = peekAndSkipSpaces) : SymbolToken {
     const token = peekNext(stream);
-    if (token.type == TokenType.Symbol || token.type == TokenType.Comma) {
+    if (token.type == TokenType.Symbol) {
         return token;
     }
-    throw new ParserError(`symbol or comma is expected`, token);
+    throw new ParserError(`symbol is expected`, token);
 }
 
 export function anySpace(stream : TokenStream, peekNext = peekNextToken) : SpaceToken {

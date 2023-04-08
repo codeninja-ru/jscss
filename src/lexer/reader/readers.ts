@@ -1,6 +1,6 @@
 import { LexerError } from "parser/parserError";
 import { BlockInputStream, InputStream, KindOfSpaceInputStream, LiteralInputStream, readToEnd } from "stream/input";
-import { CommaToken, SpaceToken, SymbolToken, Token, TokenType } from "token";
+import { SpaceToken, SymbolToken, Token, TokenType } from "token";
 
 export type ReaderResult = Token | null;
 export type Reader = (stream : InputStream) => ReaderResult;
@@ -22,21 +22,6 @@ export function spaceReader(stream: InputStream) : ReaderResult {
             position: pos,
             value: readUntil(stream, KindOfSpaceInputStream.isKindOfSpace),
         } as SpaceToken;
-    }
-
-    return null;
-}
-
-export function commaReader(stream: InputStream) : ReaderResult {
-    var ch = stream.peek();
-    if (ch == ',') {
-        const pos = stream.position();
-        stream.next();
-        return {
-            type: TokenType.Comma,
-            position: pos,
-            value: ','
-        } as CommaToken;
     }
 
     return null;
@@ -99,7 +84,7 @@ export function makeStringReader(quatation: "'" | '"') : Reader {
     };
 }
 
-export const JS_SYMBOLS = ".=<>-*+&|^@%?:#!~\\<>;";
+export const JS_SYMBOLS = ";.,=<>-*+&|^@%?:#!~\\<>"; //TODO sort according statistic of usage
 
 export function makeSymbolReader(allowedSymbols = JS_SYMBOLS): Reader {
     return function(stream : InputStream) : ReaderResult {

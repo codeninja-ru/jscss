@@ -2,8 +2,7 @@ import { Position } from "stream/position";
 
 export type Token = SpaceToken | CommentToken | CssCommentToken |
     MultilineCommentToken | BlockToken |
-    LiteralToken | LazyBlockToken |
-    CommaToken | StringToken |
+    LiteralToken | LazyBlockToken | StringToken |
     SymbolToken | TemplateStringToken |
     RoundBracketsToken | SquareBracketsToken;
 
@@ -15,7 +14,6 @@ export enum TokenType {
     Block,
     LazyBlock,
     Literal,
-    Comma, // TODO remove and use Symbol instead
     String,
     Symbol,
     TemplateString,
@@ -71,10 +69,6 @@ export interface LazyBlockToken extends BaseToken { //TODO merge with block
 export interface LiteralToken extends BaseToken {
     type: TokenType.Literal;
     readonly value: string;
-}
-
-export interface CommaToken extends BaseToken {
-    type: TokenType.Comma
 }
 
 export interface StringToken extends BaseToken {

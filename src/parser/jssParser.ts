@@ -4,7 +4,7 @@ import { HiddenToken, LiteralToken, TokenType } from "token";
 import { attrib, combinator, cssCharset, cssLiteral, hash, importStatement, mediaQuery, mediaQueryList, pageStatement, term } from "./cssParser";
 import { expression, functionExpression, identifier, moduleItem, numericLiteral, parseComment, parseJsVarStatement } from "./parser";
 import { SequenceError, SyntaxRuleError } from "./parserError";
-import { andRule, anyBlock, anyString, block, comma, commaList, dollarSign, firstOf, ignoreSpacesAndComments, isBlockNode, keyword, lazyBlock, LazyBlockParser, leftHandRecurciveRule, literalKeyword, loop, noLineTerminatorHere, noSpacesHere, notAllowed, oneOfSymbols, optional, probe, rawValue, returnRawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
+import { andRule, anyBlock, anyString, block, commaList, dollarSign, firstOf, ignoreSpacesAndComments, isBlockNode, keyword, lazyBlock, LazyBlockParser, leftHandRecurciveRule, literalKeyword, loop, noLineTerminatorHere, noSpacesHere, notAllowed, oneOfSimpleSymbols, oneOfSymbols, optional, probe, rawValue, returnRawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
 import { is$NextToken, is$Token, isCssToken, isLiteralNextToken, isSymbolNextToken, makeIsSymbolNextTokenProbe } from "./predicats";
 import { isSourceFragment } from "./sourceFragment";
 import { BlockNode, CssRawNode, FontFaceNode, JsRawNode, JssAtRuleNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssSelectorNode, JssSpreadNode, JssSupportsNode, JssVarDeclarationNode, NodeType, SyntaxTree } from "./syntaxTree";
@@ -134,7 +134,8 @@ function jssPropertyValue(stream : TokenStream) : any {
                 }
 
                 if (token.type == TokenType.Symbol) {
-                    return oneOfSymbols(
+                    return oneOfSimpleSymbols([
+                        Symbols.comma,
                         Symbols.plus,
                         Symbols.minus,
                         Symbols.astersik,
@@ -146,12 +147,8 @@ function jssPropertyValue(stream : TokenStream) : any {
                         Symbols.percent,
                         Symbols.colon,
                         Symbols.question,
-                        Symbols.and,
-                    )(stream);
-                }
-
-                if (token.type == TokenType.Comma) {
-                    return comma(stream);
+                        Symbols.bitwiseAnd,
+                    ])(stream);
                 }
 
                 return firstOf(

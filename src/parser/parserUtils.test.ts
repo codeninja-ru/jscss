@@ -4,7 +4,7 @@ import { StringInputStream } from "stream/input";
 import { Symbols } from "symbols";
 import { LiteralToken, TokenType } from "token";
 import { BlockParserError, ParserError, SequenceError } from "./parserError";
-import { anyLiteral, anyString, block, commaList, firstOf, ignoreSpacesAndComments, keyword, longestOf, map, noLineTerminatorHere, noSpacesHere, notAllowed, oneOfSymbols, optional, probe, regexpLiteral, repeatUntil, sequence, symbol } from "./parserUtils";
+import { anyLiteral, anyString, block, commaList, firstOf, ignoreSpacesAndComments, keyword, longestOf, map, noLineTerminatorHere, noSpacesHere, notAllowed, oneOfSimpleSymbols, oneOfSymbols, optional, probe, regexpLiteral, repeatUntil, sequence, symbol } from "./parserUtils";
 import { isLiteralNextToken } from "./predicats";
 import { BlockType, NodeType } from "./syntaxTree";
 import { ArrayTokenStream, TokenStream } from "./tokenStream";
@@ -268,6 +268,55 @@ describe('parserUtils', () => {
             });
 
             expect(() => oneOfSymbols(Symbols.plus, Symbols.eq2, Symbols.eq3)(ArrayTokenStream.fromString('test'))).toThrowError('(1:1) : one of ===, ==, + is expected');
+        });
+    });
+
+    describe('oneOfSimpleSymbols()', () => {
+        it('parses a list of symbols', () => {
+            expect(oneOfSimpleSymbols([Symbols.eq,
+                                Symbols.comma,
+                                Symbols.semicolon
+                               ])(ArrayTokenStream.fromString('=')))
+                .toEqual({
+                    type: TokenType.Symbol,
+                    position: {col: 1, line: 1},
+                    value: '='
+                });
+
+            expect(oneOfSimpleSymbols([
+                Symbols.comma,
+                Symbols.plus,
+                Symbols.minus,
+                Symbols.astersik,
+                Symbols.not,
+                Symbols.div,
+                Symbols.backslash,
+                Symbols.dot,
+                Symbols.numero,
+                Symbols.percent,
+                Symbols.colon,
+                Symbols.question,
+                Symbols.bitwiseAnd,
+            ])(ArrayTokenStream.fromString(' ,')))
+                .toEqual({
+                    type: TokenType.Symbol,
+                    position: {col: 2, line: 1},
+                    value: ','
+                });
+
+            expect(() => oneOfSimpleSymbols([Symbols.eq,
+                                Symbols.comma,
+                                Symbols.semicolon
+                               ])(ArrayTokenStream.fromString('!')))
+                .toThrowError('one of =,; is expected');
+        });
+
+        it('cannot parse long symbols', () => {
+            expect(() => oneOfSimpleSymbols([Symbols.eq,
+                                Symbols.comma,
+                                Symbols.eq2
+                               ]))
+                .toThrowError('only sinle char symbols are supported, use oneOfSymbols()');
         });
 
 

@@ -1,4 +1,4 @@
-import { blockReader, commaReader, literalReader, makeBracketsReader, makeStringReader, makeSymbolReader, spaceReader, templateStringReader, unexpectedReader } from 'lexer/reader/readers';
+import { blockReader, literalReader, makeBracketsReader, makeStringReader, makeSymbolReader, spaceReader, templateStringReader, unexpectedReader } from 'lexer/reader/readers';
 import { InputStream } from 'stream/input';
 import { Token } from 'token/Token';
 import { AbstractLexer } from './AbstractLexer';
@@ -7,7 +7,6 @@ import { commentReader, cssCommentReader } from './reader/comments';
 class JssLexer extends AbstractLexer {
     protected readers = [
         spaceReader,
-        commaReader,
         cssCommentReader, // it's in coflit with makeSymbol, so we put it first
         makeSymbolReader(),
         literalReader,

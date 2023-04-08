@@ -1,4 +1,4 @@
-import { CommaToken, LazyBlockToken, LiteralToken, RoundBracketsToken, SpaceToken, SquareBracketsToken, StringToken, SymbolToken, TokenType } from "./Token";
+import { LazyBlockToken, LiteralToken, RoundBracketsToken, SpaceToken, SquareBracketsToken, StringToken, SymbolToken, TokenType } from "./Token";
 
 export function makeLiteralToken(value: string, pos = expect.anything()): LiteralToken  {
     return {
@@ -56,9 +56,9 @@ export function makeSquareBracketsToken(value: string): SquareBracketsToken {
     }
 }
 
-export function makeCommaToken(value: string = ','): CommaToken {
+export function makeCommaToken(value: string = ',') : SymbolToken {
     return {
-        type: TokenType.Comma,
+        type: TokenType.Symbol,
         position: expect.anything(),
         value,
     };

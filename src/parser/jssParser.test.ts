@@ -1,3 +1,4 @@
+import { TokenType } from "token";
 import { jssIdent, parseJssScript } from "./jssParser";
 import { NodeType } from "./syntaxTree";
 import { ArrayTokenStream, LookAheadTokenStream } from "./tokenStream";
@@ -337,9 +338,9 @@ import * as _ from '/reader/readers';`).toEqual([
 
     it('parse jssIdent', () => {
         expect(jssIdent(ArrayTokenStream.fromString('background-${propName}')))
-            .toEqual({"position": {"col": 1, "line": 1}, "type": 13, "value": "background-${propName}"});
+            .toEqual({"position": {"col": 1, "line": 1}, "type": TokenType.HiddenToken, "value": "background-${propName}"});
         expect(jssIdent(ArrayTokenStream.fromString('${propName}')))
-            .toEqual({"position": {"col": 1, "line": 1}, "type": 13, "value": "${propName}"});
+            .toEqual({"position": {"col": 1, "line": 1}, "type": TokenType.HiddenToken, "value": "${propName}"});
     });
 
     it('parses vars in propertyName in ${} and []', () => {

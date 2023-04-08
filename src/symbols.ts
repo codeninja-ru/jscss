@@ -1,10 +1,10 @@
-import { Token, TokenType } from "token";
+import { SymbolToken, Token, TokenType } from "token";
 
 
 export class SyntaxSymbol {
     constructor(readonly name: string) {
     }
-    equal(token : Token) : boolean {
+    equal(token : Token) : token is SymbolToken {
         return token.type == TokenType.Symbol && token.value === this.name;
     }
 }

@@ -63,6 +63,7 @@ export default function (program: ts.Program) {
                                 case 'strictLoop':
                                 case 'loop':
                                 case 'oneOfSymbols':
+                                case 'oneOfSimpleSymbols':
                                 case 'commaList':
                                 case 'returnRawValueWithPosition':
                                 case 'returnRawValue':
