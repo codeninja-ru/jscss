@@ -1,8 +1,11 @@
 import { SymbolToken, Token, TokenType } from "token";
 
+type SingleCharSymbol = '~' | '@' | '#' | '%' | '^' | '&' | '*' | '<' | '>'
+    | '"' | '\'' | '/' | '\\' | '?' | '!' | '|' | '`' | '.' | ',' | ';' | ':'
+    | '+' | '-' | '=';
 
 export class SyntaxSymbol {
-    constructor(readonly name: string) {
+    constructor(readonly name: SingleCharSymbol) {
     }
     equal(token : Token) : token is SymbolToken {
         return token.type == TokenType.Symbol && token.value === this.name;
@@ -19,8 +22,8 @@ export const Symbols = {
     astersik: new SyntaxSymbol('*'),
     lt: new SyntaxSymbol('>'),
     gt: new SyntaxSymbol('<'),
-    lteq: new SyntaxSymbol('>='),
-    gteq: new SyntaxSymbol('<='),
+    lteq: new MultiSymbol('>='),
+    gteq: new MultiSymbol('<='),
     tilde: new SyntaxSymbol('~'),
     minus: new SyntaxSymbol('-'),
     plus: new SyntaxSymbol('+'),
@@ -35,42 +38,35 @@ export const Symbols = {
     percent: new SyntaxSymbol('%'),
     numero: new SyntaxSymbol('#'),
 
-    and: new SyntaxSymbol('&&'),
-    or: new SyntaxSymbol('||'),
-    coalesce: new SyntaxSymbol('??'),
+    and: new MultiSymbol('&&'),
+    or: new MultiSymbol('||'),
+    coalesce: new MultiSymbol('??'),
     bitwiseAnd: new SyntaxSymbol('&'),
     bitwiseOr: new SyntaxSymbol('|'),
     bitwiseNot: new SyntaxSymbol('~'),
     bitwiseXor: new SyntaxSymbol('^'),
     not: new SyntaxSymbol('!'),
 
-    arrow: new SyntaxSymbol('=>'),
+    arrow: new MultiSymbol('=>'),
 
-    eq2: new SyntaxSymbol('=='),
-    eq3: new SyntaxSymbol('==='),
-    notEq2: new SyntaxSymbol('!='),
-    notEq3: new SyntaxSymbol('!=='),
-    astersik2: new SyntaxSymbol('**'),
-    minus2: new SyntaxSymbol('--'),
-    plus2: new SyntaxSymbol('++'),
-    dot3: new SyntaxSymbol('...'),
+    eq2: new MultiSymbol('=='),
+    eq3: new MultiSymbol('==='),
+    notEq2: new MultiSymbol('!='),
+    notEq3: new MultiSymbol('!=='),
+    astersik2: new MultiSymbol('**'),
+    minus2: new MultiSymbol('--'),
+    plus2: new MultiSymbol('++'),
+    dot3: new MultiSymbol('...'),
 
-    shiftLeft: new SyntaxSymbol('<<'),
-    shiftRight: new SyntaxSymbol('>>'),
-    shiftRight3: new SyntaxSymbol('>>>'),
+    shiftLeft: new MultiSymbol('<<'),
+    shiftRight: new MultiSymbol('>>'),
+    shiftRight3: new MultiSymbol('>>>'),
 
-    eq2and: new SyntaxSymbol('&&='),
-    eq2or: new SyntaxSymbol('||='),
-    eq2questions: new SyntaxSymbol('??='),
+    eq2and: new MultiSymbol('&&='),
+    eq2or: new MultiSymbol('||='),
+    eq2questions: new MultiSymbol('??='),
 
-    optionalChain: new SyntaxSymbol('?.'),
+    optionalChain: new MultiSymbol('?.'),
 }
 
-export const AssignmentOperator = ['*=', '/=', '%=', '+=', '-=', '<<=', '>>=', '>>>=', '&=', '^=', '|=', '**='].map((item) => new SyntaxSymbol(item));
-
-export const LogicalSymbols = {
-    and: new SyntaxSymbol('&&'),
-    or: new SyntaxSymbol('||'),
-    coalesce: new SyntaxSymbol('??'),
-
-}
+export const AssignmentOperator = ['*=', '/=', '%=', '+=', '-=', '<<=', '>>=', '>>>=', '&=', '^=', '|=', '**='].map((item) => new MultiSymbol(item));

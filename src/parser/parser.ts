@@ -2,7 +2,7 @@ import { Keywords, ReservedWords } from "keywords";
 import { AssignmentOperator, Symbols } from "symbols";
 import { LiteralToken, TokenType } from "token";
 import { ParserError, UnexpectedEndError } from "./parserError";
-import { anyLiteral, anyString, anyTempateStringLiteral, block, notAllowed, comma, commaList, firstOf, keyword, anyBlock, leftHandRecurciveRule, longestOf, loop, noLineTerminatorHere, oneOfSymbols, optional, rawValue, regexpLiteral, roundBracket, sequence, squareBracket, strictLoop, symbol } from "./parserUtils";
+import { anyLiteral, anyString, anyTempateStringLiteral, block, notAllowed, comma, commaList, firstOf, keyword, anyBlock, leftHandRecurciveRule, longestOf, loop, noLineTerminatorHere, oneOfSymbols, optional, rawValue, regexpLiteral, roundBracket, sequence, squareBracket, strictLoop, symbol, multiSymbol } from "./parserUtils";
 import { isLiteralNextToken } from "./predicats";
 import { CommentNode, IfNode, JsModuleNode, JsRawNode, JssScriptNode, MultiNode, Node, NodeType, SyntaxTree, VarDeclaraionNode } from "./syntaxTree";
 import { NextToken, TokenParser } from "./tokenParser";
@@ -105,7 +105,7 @@ function callExpression(stream: TokenStream) : void {
 function optionalChain(stream: TokenStream) : void {
     leftHandRecurciveRule(
         sequence(
-            symbol(Symbols.optionalChain),
+            multiSymbol(Symbols.optionalChain),
             //?. Arguments[?Yield, ?Await]
             //?. [ Expression[+In, ?Yield, ?Await] ]
             //?. IdentifierName
@@ -538,7 +538,7 @@ function exponentiationExpression(stream : TokenStream) : void {
         // UnaryExpression[?Yield, ?Await]
         unaryExpression,
         // UpdateExpression[?Yield, ?Await] ** ExponentiationExpression[?Yield, ?Await]
-        sequence(symbol(Symbols.astersik2), exponentiationExpression),
+        sequence(multiSymbol(Symbols.astersik2), exponentiationExpression),
     )(stream);
 }
 
@@ -547,7 +547,7 @@ function logicalAndExpression(stream : TokenStream) : void {
         // BitwiseORExpression[?In, ?Yield, ?Await]
         bitwiseOrExpression,
         // LogicalANDExpression[?In, ?Yield, ?Await] && BitwiseORExpression[?In, ?Yield, ?Await]
-        sequence(symbol(Symbols.and), bitwiseOrExpression),
+        sequence(multiSymbol(Symbols.and), bitwiseOrExpression),
     )(stream);
 }
 
@@ -556,7 +556,7 @@ function logicalOrExpression(stream : TokenStream) : void {
         // LogicalANDExpression[?In, ?Yield, ?Await]
         logicalAndExpression,
         // LogicalORExpression[?In, ?Yield, ?Await] || LogicalANDExpression[?In, ?Yield, ?Await]
-        sequence(symbol(Symbols.or), logicalAndExpression)
+        sequence(multiSymbol(Symbols.or), logicalAndExpression)
     )(stream);
 }
 
@@ -565,7 +565,7 @@ function coalesceExpression(stream : TokenStream) : void {
         // CoalesceExpressionHead[?In, ?Yield, ?Await] ?? BitwiseORExpression[?In, ?Yield, ?Await]
         bitwiseOrExpression,
         sequence(
-            symbol(Symbols.coalesce), bitwiseOrExpression
+            multiSymbol(Symbols.coalesce), bitwiseOrExpression
         )
     )(stream);
 }
@@ -599,7 +599,7 @@ function yeildExpression(stream : TokenStream) : void {
 function arrowFunction(stream : TokenStream) : void {
     // ArrowParameters[?Yield, ?Await] [no LineTerminator here] => ConciseBody[?In]
     firstOf(bindingIdentifier, roundBracket)(stream);
-    symbol(Symbols.arrow)(stream);
+    multiSymbol(Symbols.arrow)(stream);
     firstOf(anyBlock, assignmentExpression)(stream);
 }
 
@@ -607,7 +607,7 @@ function asyncArrowFunction(stream : TokenStream) : void {
     // async [no LineTerminator here] AsyncArrowBindingIdentifier[?Yield] [no LineTerminator here] => AsyncConciseBody[?In]
     keyword(Keywords._async)(stream);
     bindingIdentifier(stream);
-    symbol(Symbols.arrow)(stream);
+    multiSymbol(Symbols.arrow)(stream);
     firstOf(anyBlock, assignmentExpression)(stream);
 }
 

@@ -2,7 +2,7 @@ import { Keyword } from "keywords";
 import { lexer } from "lexer/lexer";
 import { SubStringInputStream } from "stream/input/SubStringInputStream";
 import { Position } from "stream/position";
-import { Symbols, SyntaxSymbol } from "symbols";
+import { MultiSymbol, Symbols, SyntaxSymbol } from "symbols";
 import { isToken, LiteralToken, SpaceToken, SquareBracketsToken, StringToken, SymbolToken, TemplateStringToken, Token, TokenType } from "token";
 import { BlockParserError, EmptyStreamError, ParserError, SequenceError, UnexpectedEndError } from "./parserError";
 import { isRoundBracketNextToken, isStringNextToken, isSymbolNextToken } from "./predicats";
@@ -345,10 +345,10 @@ export function optional(parser: TokenParser) : TokenParser {
     };
 }
 
-export function oneOfSymbols(...chars: SyntaxSymbol[]) : TokenParser<SymbolToken> {
+export function oneOfSymbols(...chars: MultiSymbol[]) : TokenParser<SymbolToken> {
 
     const sortedChars = chars.sort((a, b) => b.name.length - a.name.length);
-    let groupByLength = [] as SyntaxSymbol[][];
+    let groupByLength = [] as MultiSymbol[][];
     let charsForErrorReports = '';
     let len = 0;
     for(var i = 0; i < sortedChars.length; i++) {
@@ -416,9 +416,6 @@ export function oneOfSimpleSymbols(chars: SyntaxSymbol[], peekNextToken = peekAn
 
     let charsForErrorReports = '';
     for(var i = 0; i < chars.length; i++) {
-        if (chars[i].name.length > 1) {
-            throw new Error('only sinle char symbols are supported, use oneOfSymbols()')
-        }
         charsForErrorReports += chars[i].name;
     }
 
@@ -493,6 +490,23 @@ export function dollarSign(stream: TokenStream) : LiteralToken {
 }
 
 export function symbol(ch: SyntaxSymbol,
+                       peekFn : TokenStreamReader = peekAndSkipSpaces) : TokenParser<SymbolToken> {
+    return function(stream: TokenStream) : SymbolToken {
+        const token = peekFn(stream);
+
+        if (ch.equal(token)) {
+            return {
+                type: TokenType.Symbol,
+                position: token.position,
+                value: ch.name,
+            };
+        }
+
+        throw new ParserError(`${ch.name} is expected`, token);
+    };
+}
+
+export function multiSymbol(ch: MultiSymbol,
                        peekFn : TokenStreamReader = peekAndSkipSpaces) : TokenParser<SymbolToken> {
     return function(stream: TokenStream) : SymbolToken {
         const token = peekFn(stream);

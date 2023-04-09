@@ -1,6 +1,6 @@
 import { Symbols } from "symbols";
 import { ParserError, SequenceError, UnexpectedEndError } from "./parserError";
-import { anyLiteral, anyString, firstOf, leftHandRecurciveRule, map, noSpacesHere, oneOfSymbols, optional, returnRawValue, sequence, symbol } from "./parserUtils";
+import { anyLiteral, anyString, firstOf, leftHandRecurciveRule, map, multiSymbol, noSpacesHere, oneOfSymbols, optional, returnRawValue, sequence, symbol } from "./parserUtils";
 import { TokenParser } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
 import { peekAndSkipSpaces, TokenStreamReader } from "./tokenStreamReader";
@@ -82,7 +82,7 @@ function option(name : string) : TokenParser {
 function longOption(name : string) : TokenParser {
     return function(stream : TokenStream) : string {
         const [,,optionName] = sequence(
-            symbol(Symbols.minus2),
+            multiSymbol(Symbols.minus2),
             noSpacesHere,
             anyLiteral,
         )(stream);

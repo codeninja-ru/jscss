@@ -1,8 +1,8 @@
 import { Position } from "stream/position";
-import { Symbols, SyntaxSymbol } from "symbols";
+import { MultiSymbol, Symbols, SyntaxSymbol } from "symbols";
 import { SpaceToken, Token, TokenType } from "token";
 import { ParserError } from "./parserError";
-import { anyLiteral, anySpace, anySymbol, firstOf, optional, repeatUntil, returnRawValue, returnRawValueWithPosition, sequence, skip, strictLoop, symbol } from "./parserUtils";
+import { anyLiteral, anySpace, anySymbol, firstOf, multiSymbol, optional, repeatUntil, returnRawValue, returnRawValueWithPosition, sequence, skip, strictLoop, symbol } from "./parserUtils";
 import { TokenStream } from "./tokenStream";
 import { peekNoLineTerminatorHere } from "./tokenStreamReader";
 
@@ -63,7 +63,7 @@ export interface QuoteMarkdownNode extends MarkdownNode {
 
 export const MarkdownSymbols = {
     numero: new SyntaxSymbol('#'),
-    quote: new SyntaxSymbol('```'),
+    quote: new MultiSymbol('```'),
 }
 
 type HeaderMarkdownNode = H1MarkdownNode | H2MarkdownNode | H3MarkdownNode | H4MarkdownNode | H5MarkdownNode | H6MarkdownNode;
@@ -139,7 +139,7 @@ function endOfLine(stream : TokenStream) : void {
 }
 
 function sourceCode(stream : TokenStream) : SourceCodeMarkdownNode {
-    symbol(MarkdownSymbols.quote)(stream);
+    multiSymbol(MarkdownSymbols.quote)(stream);
     const lang = anyLiteral(stream, peekNoLineTerminatorHere);
 
     const value = returnRawValueWithPosition(
@@ -149,11 +149,11 @@ function sourceCode(stream : TokenStream) : SourceCodeMarkdownNode {
                 anySymbol,
                 anySpace,
             ),
-            symbol(MarkdownSymbols.quote)
+            multiSymbol(MarkdownSymbols.quote)
         )
     )(stream);
 
-    symbol(MarkdownSymbols.quote)(stream);
+    multiSymbol(MarkdownSymbols.quote)(stream);
 
     return {
         type: MarkdownNodeType.SOURCE_CODE,
@@ -210,8 +210,8 @@ function p(stream : TokenStream) : PMarkdownNode {
             firstOf(
                 endOfBlock,
                 sequence(endOfLine, firstOf(
-                    symbol(MarkdownSymbols.quote),
-                    symbol(Symbols.numero),
+                    multiSymbol(MarkdownSymbols.quote),
+                    multiSymbol(Symbols.numero),
                 ))
             )
         )

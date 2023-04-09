@@ -4,7 +4,7 @@ import { StringInputStream } from "stream/input";
 import { Symbols } from "symbols";
 import { LiteralToken, TokenType } from "token";
 import { BlockParserError, ParserError, SequenceError } from "./parserError";
-import { anyLiteral, anyString, block, commaList, firstOf, ignoreSpacesAndComments, keyword, longestOf, map, noLineTerminatorHere, noSpacesHere, notAllowed, oneOfSimpleSymbols, oneOfSymbols, optional, probe, regexpLiteral, repeatUntil, sequence, symbol } from "./parserUtils";
+import { anyLiteral, anyString, block, commaList, firstOf, ignoreSpacesAndComments, keyword, longestOf, map, multiSymbol, noLineTerminatorHere, noSpacesHere, notAllowed, oneOfSimpleSymbols, oneOfSymbols, optional, probe, regexpLiteral, repeatUntil, sequence, symbol } from "./parserUtils";
 import { isLiteralNextToken } from "./predicats";
 import { BlockType, NodeType } from "./syntaxTree";
 import { ArrayTokenStream, TokenStream } from "./tokenStream";
@@ -219,14 +219,14 @@ describe('parserUtils', () => {
         });
 
         it('parses several char symbols', () => {
-            expect(symbol(Symbols.plus2)(ArrayTokenStream.fromString('++-test'))).toEqual({
+            expect(multiSymbol(Symbols.plus2)(ArrayTokenStream.fromString('++-test'))).toEqual({
                 type: TokenType.Symbol,
                 position: {col: 1, line: 1},
                 value: '++'
             });
 
-            expect(() => symbol(Symbols.plus2)(ArrayTokenStream.fromString('-test'))).toThrowError('(1:1) : ++ is expected');
-            expect(() => symbol(Symbols.plus2)(ArrayTokenStream.fromString('+test'))).toThrowError('(1:1) : ++ is expected');
+            expect(() => multiSymbol(Symbols.plus2)(ArrayTokenStream.fromString('-test'))).toThrowError('(1:1) : ++ is expected');
+            expect(() => multiSymbol(Symbols.plus2)(ArrayTokenStream.fromString('+test'))).toThrowError('(1:1) : ++ is expected');
         });
 
     });
@@ -316,15 +316,6 @@ describe('parserUtils', () => {
                                ])(ArrayTokenStream.fromString('!')))
                 .toThrowError('one of =,; is expected');
         });
-
-        it('cannot parse long symbols', () => {
-            expect(() => oneOfSimpleSymbols([Symbols.eq,
-                                Symbols.comma,
-                                Symbols.eq2
-                               ]))
-                .toThrowError('only sinle char symbols are supported, use oneOfSymbols()');
-        });
-
 
     });
 
@@ -499,11 +490,11 @@ describe('parserUtils', () => {
     it('symbol()', () => {
         const tokens = lexer(new StringInputStream(`**`))
         const stream = new ArrayTokenStream(tokens);
-        const node = symbol(Symbols.astersik2)(stream);
+        const node = multiSymbol(Symbols.astersik2)(stream);
         expect(node.value).toEqual('**');
         expect(stream.currentPosition()).toEqual(2);
 
-        expect(symbol(Symbols.minus2)(ArrayTokenStream.fromString('--'))).toEqual({
+        expect(multiSymbol(Symbols.minus2)(ArrayTokenStream.fromString('--'))).toEqual({
             type: TokenType.Symbol,
             value: '--',
             position: {line: 1, col: 1},
@@ -531,7 +522,7 @@ describe('parserUtils', () => {
             const literal = anyLiteral(stream);
             expect(literal.value).toEqual('i');
             noLineTerminatorHere(stream);
-            const node = symbol(Symbols.plus2)(stream);
+            const node = multiSymbol(Symbols.plus2)(stream);
             expect(node.value).toEqual('++');
         });
 
@@ -542,7 +533,7 @@ describe('parserUtils', () => {
             const literal = anyLiteral(stream);
             expect(literal.value).toEqual('i');
             noLineTerminatorHere(stream);
-            const node = symbol(Symbols.plus2)(stream);
+            const node = multiSymbol(Symbols.plus2)(stream);
             expect(node.value).toEqual('++');
         });
 
