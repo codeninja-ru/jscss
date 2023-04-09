@@ -266,8 +266,14 @@ describe('parserUtils', () => {
                 position: {col: 1, line: 1},
                 value: '='
             });
+            expect(oneOfSymbols(Symbols.eq, Symbols.eq2, Symbols.eq3)(ArrayTokenStream.fromString('==+-test'))).toEqual({
+                type: TokenType.Symbol,
+                position: {col: 1, line: 1},
+                value: '=='
+            });
 
             expect(() => oneOfSymbols(Symbols.plus, Symbols.eq2, Symbols.eq3)(ArrayTokenStream.fromString('test'))).toThrowError('(1:1) : one of ===, ==, + is expected');
+            expect(() => oneOfSymbols(Symbols.plus, Symbols.eq2, Symbols.eq3)(ArrayTokenStream.fromString('=test'))).toThrowError('(1:1) : one of ===, ==, + is expected');
         });
     });
 

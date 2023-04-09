@@ -9,6 +9,11 @@ export class SyntaxSymbol {
     }
 }
 
+export class MultiSymbol {
+    constructor(readonly name: string) {
+    }
+}
+
 export const Symbols = {
     eq: new SyntaxSymbol('='),
     astersik: new SyntaxSymbol('*'),

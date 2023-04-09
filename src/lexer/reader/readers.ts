@@ -1,5 +1,5 @@
 import { LexerError } from "parser/parserError";
-import { BlockInputStream, InputStream, KindOfSpaceInputStream, LiteralInputStream, readToEnd } from "stream/input";
+import { BlockInputStream, InputStream, LiteralInputStream, readToEnd } from "stream/input";
 import { SpaceToken, SymbolToken, Token, TokenType } from "token";
 
 export type ReaderResult = Token | null;
@@ -13,14 +13,17 @@ function readUntil(input: InputStream, checkFn : (ch : string) => boolean): stri
 
     return result;
 }
+function isKindOfSpace(ch: string) : boolean {
+    return ch.charCodeAt(0) <= 32;
+}
 
 export function spaceReader(stream: InputStream) : ReaderResult {
-    if (KindOfSpaceInputStream.isKindOfSpace(stream.peek())) {
+    if (isKindOfSpace(stream.peek())) {
         const pos = stream.position();
         return {
             type: TokenType.Space,
             position: pos,
-            value: readUntil(stream, KindOfSpaceInputStream.isKindOfSpace),
+            value: readUntil(stream, isKindOfSpace),
         } as SpaceToken;
     }
 

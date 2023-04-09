@@ -2,9 +2,9 @@ import { Keywords, ReservedWords } from "keywords";
 import { Symbols } from "symbols";
 import { HiddenToken, LiteralToken, TokenType } from "token";
 import { attrib, combinator, cssCharset, cssLiteral, hash, importStatement, mediaQuery, mediaQueryList, pageStatement, term } from "./cssParser";
-import { expression, functionExpression, identifier, moduleItem, numericLiteral, parseComment, parseJsVarStatement } from "./parser";
-import { SequenceError, SyntaxRuleError } from "./parserError";
-import { andRule, anyBlock, anyString, block, commaList, dollarSign, firstOf, ignoreSpacesAndComments, isBlockNode, keyword, lazyBlock, LazyBlockParser, leftHandRecurciveRule, literalKeyword, loop, noLineTerminatorHere, noSpacesHere, notAllowed, oneOfSimpleSymbols, optional, probe, rawValue, returnRawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
+import { expression, functionExpression, identifier, moduleItem, parseComment, parseJsVarStatement } from "./parser";
+import { ParserError, SequenceError, SyntaxRuleError } from "./parserError";
+import { andRule, anyBlock, anyLiteral, anyString, block, commaList, dollarSign, firstOf, ignoreSpacesAndComments, isBlockNode, keyword, lazyBlock, LazyBlockParser, leftHandRecurciveRule, literalKeyword, loop, noLineTerminatorHere, noSpacesHere, notAllowed, oneOfSimpleSymbols, optional, probe, rawValue, returnRawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
 import { is$NextToken, is$Token, isCssToken, isLiteralNextToken, isSymbolNextToken, makeIsSymbolNextTokenProbe } from "./predicats";
 import { isSourceFragment } from "./sourceFragment";
 import { BlockNode, CssRawNode, FontFaceNode, JsRawNode, JssAtRuleNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssSelectorNode, JssSpreadNode, JssSupportsNode, JssVarDeclarationNode, NodeType, SyntaxTree } from "./syntaxTree";
@@ -108,17 +108,45 @@ export function jssPropertyName(stream : TokenStream) : any {
             jssIdent.probe,
         ),
         anyString,
-        numericLiteral,
+        //numericLiteral,
         // ComputedPropertyName[?Yield, ?Await]
         block(TokenType.SquareBrackets, returnRawValueWithPosition(expression)),
     )(stream);
 }
 
+/**
+ *
+ *   return firstOf(
+ *       templatePlaceholder, // template string ${}
+ *       cssLiteral,
+ *       anyString,
+ *       numericLiteral,
+ *       roundBracket,
+ *       ////TODO url
+
+ *       oneOfSimpleSymbols(
+ *           Symbols.comma,
+ *           Symbols.plus,
+ *           Symbols.minus,
+ *           Symbols.astersik,
+ *           Symbols.not,
+ *           Symbols.div,
+ *           Symbols.backslash,
+ *           Symbols.dot,
+ *           Symbols.numero,
+ *           Symbols.percent,
+ *           Symbols.colon,
+ *           Symbols.question,
+ *           Symbols.bitwiseAnd,
+ *       ),
+ *   )(stream);
+ * */
 function jssPropertyValue(stream : TokenStream) : any {
 
         return returnRawValueWithPosition(loop( //jssPropertyValue
             (stream : TokenStream) => {
-                const token = peekAndSkipSpaces(new LookAheadTokenStream(stream));
+                const parserStream = new LookAheadTokenStream(stream);
+                const token = peekAndSkipSpaces(parserStream);
                 if (token.type == TokenType.Literal) {
                     if (token.value == '$') {
                         return templatePlaceholder(stream);
@@ -134,47 +162,29 @@ function jssPropertyValue(stream : TokenStream) : any {
                 }
 
                 if (token.type == TokenType.Symbol) {
-                    return oneOfSimpleSymbols([
-                        Symbols.comma,
-                        Symbols.plus,
-                        Symbols.minus,
-                        Symbols.astersik,
-                        Symbols.not,
-                        Symbols.div,
-                        Symbols.backslash,
-                        Symbols.dot,
-                        Symbols.numero,
-                        Symbols.percent,
-                        Symbols.colon,
-                        Symbols.question,
-                        Symbols.bitwiseAnd,
-                    ])(stream);
+                    switch(token.value) {
+                        case ',':
+                        case '+':
+                        case '-':
+                        case '*':
+                        case '!':
+                        case '/':
+                        case '\\':
+                        case '.':
+                        case '#':
+                        case '%':
+                        case ':':
+                        case '?':
+                        case '&':
+                            parserStream.flush();
+                            return token;
+                        default:
+                            throw new ParserError('unexpected symbol in jssPropertyValue', token);
+
+                    }
                 }
 
-                return firstOf(
-                    templatePlaceholder, // template string ${}
-                    cssLiteral,
-                    //anyString,
-                    numericLiteral,
-                    //roundBracket,
-                    ////TODO url
-
-                    //oneOfSymbols(
-                    //    Symbols.plus,
-                    //    Symbols.minus,
-                    //    Symbols.astersik,
-                    //    Symbols.not,
-                    //    Symbols.div,
-                    //    Symbols.backslash,
-                    //    Symbols.dot,
-                    //    Symbols.numero,
-                    //    Symbols.percent,
-                    //    Symbols.colon,
-                    //    Symbols.question,
-                    //    Symbols.and,
-                    //),
-                    //comma,
-                )(stream);
+                return anyLiteral(stream);
             }
         ))(stream);
 }
