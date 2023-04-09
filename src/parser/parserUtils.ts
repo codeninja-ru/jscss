@@ -350,12 +350,16 @@ export function oneOfSymbols(...chars: SyntaxSymbol[]) : TokenParser<SymbolToken
     const sortedChars = chars.sort((a, b) => b.name.length - a.name.length);
     let groupByLength = [] as SyntaxSymbol[][];
     let charsForErrorReports = '';
+    let len = 0;
     for(var i = 0; i < sortedChars.length; i++) {
         const item = sortedChars[i];
-        const len = item.name.length;
-        const array = groupByLength[len] ? groupByLength[len] : [];
-        array.push(item);
-        groupByLength[len] = array;
+
+        if (len != item.name.length) {
+            groupByLength.push([item])
+        } else {
+            groupByLength[groupByLength.length - 1].push(item);
+        }
+        len = item.name.length;
 
         // NOTE some wierd optimization due to a "wrong map" deop issue
         if (i > 0) {
@@ -364,8 +368,6 @@ export function oneOfSymbols(...chars: SyntaxSymbol[]) : TokenParser<SymbolToken
             charsForErrorReports += item.name;
         }
     }
-
-    groupByLength = groupByLength.reverse();
 
     return function(stream: TokenStream) : SymbolToken {
         const firstToken = peekAndSkipSpaces(stream);
