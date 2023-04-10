@@ -8,23 +8,23 @@ export function isSpace(token : Token) : boolean {
     return token.type == TokenType.Space;
 }
 
+//TODO why is it here?
 export function isComment(token : Token) : boolean {
     switch(token.type) {
         case TokenType.Comment:
         case TokenType.MultilineComment:
-        case TokenType.CssComment:
             return true;
         default:
             return false;
     }
 }
 
+//TODO why is it here?
 export function isSpaceOrComment(token : Token) : boolean {
     switch(token.type) {
         case TokenType.Space:
         case TokenType.Comment:
         case TokenType.MultilineComment:
-        case TokenType.CssComment:
             return true;
         default:
             return false;

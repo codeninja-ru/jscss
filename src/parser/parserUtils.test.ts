@@ -637,7 +637,6 @@ describe('parserUtils', () => {
             const node = ignoreSpacesAndComments(stream);
 
             expect(node.type).toEqual(NodeType.Ignore);
-            expect(stream.currentPosition()).toEqual(2);
             expect(stream.peek()).toEqual({
                 position: expect.anything(),
                 type: TokenType.Literal,

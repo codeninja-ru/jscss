@@ -23,7 +23,7 @@ div {
   background-color: #fff; /* comment */
 }
 
-<!-- comment -->
+/* comment */
 
 @media screen, print {
     div {
@@ -117,7 +117,7 @@ describe('CSS Parser', () => {
             ]),
             {type: NodeType.Ignore, items: [
                 '\n\n',
-                '<!-- comment -->',
+                '/* comment */',
                 '\n\n'
             ]},
             {

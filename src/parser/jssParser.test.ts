@@ -439,8 +439,7 @@ background-color: #f8f8f8;
         });
     });
 
-    it('parses css expt', () => {
-        debugger;
+    it('parses css expr', () => {
         parseCode(`.className{padding-right: 8px${'\\'}9;}`)
             .toEqual([
                 { type: NodeType.JssBlock, selectors: [

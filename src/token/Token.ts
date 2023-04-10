@@ -1,6 +1,6 @@
 import { Position } from "stream/position";
 
-export type Token = SpaceToken | CommentToken | CssCommentToken |
+export type Token = SpaceToken | CommentToken |
     MultilineCommentToken | BlockToken |
     LiteralToken | LazyBlockToken | StringToken |
     SymbolToken | TemplateStringToken |
@@ -10,7 +10,6 @@ export enum TokenType {
     Space,
     Comment,
     MultilineComment,
-    CssComment,
     Block,
     LazyBlock,
     Literal,
@@ -47,11 +46,6 @@ export interface CommentToken extends BaseToken {
 
 export interface MultilineCommentToken extends BaseToken { //TODO merge with comment
     type: TokenType.MultilineComment,
-    readonly value: string;
-}
-
-export interface CssCommentToken extends BaseToken { //TODO merge with comment
-    type: TokenType.CssComment;
     readonly value: string;
 }
 

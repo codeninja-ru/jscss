@@ -2,11 +2,10 @@ import { blockReader, literalReader, makeBracketsReader, makeStringReader, makeS
 import { InputStream } from 'stream/input';
 import { Token } from 'token/Token';
 import { BasicLexer } from './BasicLexer';
-import { commentReader, cssCommentReader } from './reader/comments';
+import { commentReader } from './reader/comments';
 
 const lexer = new BasicLexer([
     spaceReader,
-    cssCommentReader, // it's in coflit with makeSymbol, so we put it first
     makeSymbolReader(),
     literalReader,
     blockReader,

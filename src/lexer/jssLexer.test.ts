@@ -188,14 +188,6 @@ function process(css) {
         ]);
     });
 
-    test('css comments', () => {
-        const script = '<!-- this is a comment -->';
-        const tokens = jssLexer(new StringInputStream(script));
-        expect(tokens).toEqual([
-            { type: TokenType.CssComment, value: '<!-- this is a comment -->', position: expect.anything()}
-        ]);
-    });
-
     test('css important', () => {
         const script = '!important';
         const tokens = jssLexer(new StringInputStream(script));

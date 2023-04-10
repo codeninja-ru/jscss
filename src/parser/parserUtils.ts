@@ -723,13 +723,43 @@ export function block(expectedTokenType : OneOfBlockTokenType, parser : TokenPar
     };
 }
 
+function endOfHtmlComment(stream : TokenStream) : void {
+    symbol(Symbols.minus, peekNextToken)(stream);
+    symbol(Symbols.minus, peekNextToken)(stream);
+    symbol(Symbols.lt, peekNextToken)(stream);
+}
+
+function htmlStyleComment(stream : TokenStream) : void {
+    symbol(Symbols.gt, peekNextToken)(stream);
+    symbol(Symbols.not, peekNextToken)(stream);
+    symbol(Symbols.minus, peekNextToken)(stream);
+    symbol(Symbols.minus, peekNextToken)(stream);
+
+    while(!stream.eof()) {
+        if (optional(endOfHtmlComment)(stream)) {
+            break;
+        }
+
+        stream.next();
+    }
+}
+
 export function ignoreSpacesAndComments(stream : TokenStream) : IgnoreNode {
     const result = [];
     var token;
     while(!stream.eof()) {
         token = stream.peek();
         if (isSpaceOrComment(token)) {
-            result.push(stream.next().value);
+            stream.next();
+            result.push(token.value);
+        } else if (Symbols.gt.equal(token)) {
+            const htmlComment = optional(htmlStyleComment)(stream);
+
+            if (htmlComment) {
+                result.push(htmlComment);
+            } else {
+                break;
+            }
         } else {
             break;
         }
