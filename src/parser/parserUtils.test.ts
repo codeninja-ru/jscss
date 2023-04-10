@@ -1,5 +1,5 @@
 import { Keyword, Keywords } from "keywords";
-import { lexer } from "lexer/lexer";
+import { jssLexer } from "lexer/jssLexer";
 import { StringInputStream } from "stream/input";
 import { Symbols } from "symbols";
 import { LiteralToken, TokenType } from "token";
@@ -21,7 +21,7 @@ function extractValues(array : any[]) : any[] {
 
 describe('parserUtils', () => {
     it('keyword', () => {
-        const tokens = lexer(new StringInputStream(`var`))
+        const tokens = jssLexer(new StringInputStream(`var`))
         const node = keyword(Keywords._var)(new ArrayTokenStream(tokens));
         expect(node.value).toEqual('var');
     });
@@ -39,13 +39,13 @@ describe('parserUtils', () => {
 
     describe('commaList()', () => {
         it('correct simple rule', () => {
-            const tokens = lexer(new StringInputStream(`var, var , var var`))
+            const tokens = jssLexer(new StringInputStream(`var, var , var var`))
             const node = commaList(keyword(Keywords._var))(new ArrayTokenStream(tokens));
             expect(node.map((item : LiteralToken) => item.value)).toEqual(['var', 'var', 'var']);
         });
 
         it('complex rule', () => {
-            const tokens = lexer(new StringInputStream(`var if, var if async, var var`))
+            const tokens = jssLexer(new StringInputStream(`var if, var if async, var var`))
             const stream = new ArrayTokenStream(tokens);
             const node = commaList(
                 longestOf(
@@ -65,14 +65,14 @@ describe('parserUtils', () => {
         });
 
         it('invalid simple rule', () => {
-            const tokens = lexer(new StringInputStream(`xvar, var  var`))
+            const tokens = jssLexer(new StringInputStream(`xvar, var  var`))
             expect(() => {
                 commaList(keyword(Keywords._var))(new ArrayTokenStream(tokens));
             }).toThrowError("(1:1) : list of elements is expected");
         });
 
         it('interapted in the middle', () => {
-            const tokens = lexer(new StringInputStream(`var, xvar, var`))
+            const tokens = jssLexer(new StringInputStream(`var, xvar, var`))
             const stream = new ArrayTokenStream(tokens);
             const node = commaList(keyword(Keywords._var))(stream);
             expect(extractValues(node)).toEqual(['var']);
@@ -97,7 +97,7 @@ describe('parserUtils', () => {
 
     describe('firstOf()', () => {
         it('correct simple rules', () => {
-            const tokens = lexer(new StringInputStream(`var var`))
+            const tokens = jssLexer(new StringInputStream(`var var`))
             const stream = new ArrayTokenStream(tokens);
             const node = firstOf(
                 keyword(Keywords._if),
@@ -109,7 +109,7 @@ describe('parserUtils', () => {
         });
 
         it('parses with probe', () => {
-            const tokens = lexer(new StringInputStream(`var var`))
+            const tokens = jssLexer(new StringInputStream(`var var`))
             const stream = new ArrayTokenStream(tokens);
             const node = firstOf(
                 probe(
@@ -127,7 +127,7 @@ describe('parserUtils', () => {
         });
 
         it('none of rules is matched', () => {
-            const tokens = lexer(new StringInputStream(`instanceof`))
+            const tokens = jssLexer(new StringInputStream(`instanceof`))
             const stream = new ArrayTokenStream(tokens);
             expect(() => {
                 firstOf(
@@ -140,7 +140,7 @@ describe('parserUtils', () => {
         });
 
         it('block rule and BlockParserError', () => {
-            const tokens = lexer(new StringInputStream(`instanceof`))
+            const tokens = jssLexer(new StringInputStream(`instanceof`))
             const stream = new ArrayTokenStream(tokens);
             expect(() => {
                 firstOf(
@@ -363,7 +363,7 @@ describe('parserUtils', () => {
 
     describe('longestOf', () => {
         it('correct simple rules', () => {
-            const tokens = lexer(new StringInputStream(`var var`))
+            const tokens = jssLexer(new StringInputStream(`var var`))
             const stream = new ArrayTokenStream(tokens);
             const node = longestOf(
                 keyword(Keywords._if),
@@ -375,7 +375,7 @@ describe('parserUtils', () => {
         });
 
         it('longest sequence', () => {
-            const tokens = lexer(new StringInputStream(`if async var`))
+            const tokens = jssLexer(new StringInputStream(`if async var`))
             const stream = new ArrayTokenStream(tokens);
             const node = longestOf(
                 keyword(Keywords._if),
@@ -398,7 +398,7 @@ describe('parserUtils', () => {
         });
 
         it('recursive sequence', () => {
-            const tokens = lexer(new StringInputStream(`if + if + if + var`))
+            const tokens = jssLexer(new StringInputStream(`if + if + if + var`))
             const stream = new ArrayTokenStream(tokens);
 
             const rule1 = function(stream : TokenStream) : any {
@@ -418,7 +418,7 @@ describe('parserUtils', () => {
         });
 
         it('none of rules is matched', () => {
-            const tokens = lexer(new StringInputStream(`instanceof`))
+            const tokens = jssLexer(new StringInputStream(`instanceof`))
             const stream = new ArrayTokenStream(tokens);
             expect(() => {
                 longestOf(
@@ -433,7 +433,7 @@ describe('parserUtils', () => {
 
     describe('optional()', () => {
         it('value is present', () => {
-            const tokens = lexer(new StringInputStream(`var`))
+            const tokens = jssLexer(new StringInputStream(`var`))
             const stream = new ArrayTokenStream(tokens);
             const node = optional(keyword(Keywords._var))(stream);
             expect(node.value).toEqual('var');
@@ -441,7 +441,7 @@ describe('parserUtils', () => {
         });
 
         it('value is not present', () => {
-            const tokens = lexer(new StringInputStream(`no var`))
+            const tokens = jssLexer(new StringInputStream(`no var`))
             const stream = new ArrayTokenStream(tokens);
             const node = optional(keyword(Keywords._var))(stream);
             expect(node).toBeUndefined();
@@ -451,7 +451,7 @@ describe('parserUtils', () => {
 
     describe('sequence()', () => {
         it('correct sequence', () => {
-            const tokens = lexer(new StringInputStream(`var if const no`))
+            const tokens = jssLexer(new StringInputStream(`var if const no`))
             const stream = new ArrayTokenStream(tokens);
             const node = sequence(keyword(Keywords._var), keyword(Keywords._if), keyword(Keywords._const))(stream);
             expect(extractValues(node)).toEqual(['var', 'if', 'const']);
@@ -459,7 +459,7 @@ describe('parserUtils', () => {
         });
 
         it('invalid sequence (error in the middle of a sequence)', () => {
-            const tokens = lexer(new StringInputStream(`var no if const`))
+            const tokens = jssLexer(new StringInputStream(`var no if const`))
             const stream = new ArrayTokenStream(tokens);
             expect(() => {
                 sequence(keyword(Keywords._var), keyword(Keywords._if), keyword(Keywords._const))(stream);
@@ -471,7 +471,7 @@ describe('parserUtils', () => {
         });
 
         it('invalid sequence (error in the first rule of a sequence)', () => {
-            const tokens = lexer(new StringInputStream(`vor no if const`))
+            const tokens = jssLexer(new StringInputStream(`vor no if const`))
             const stream = new ArrayTokenStream(tokens);
             expect(() => {
                 sequence(keyword(Keywords._var), keyword(Keywords._if), keyword(Keywords._const))(stream);
@@ -488,7 +488,7 @@ describe('parserUtils', () => {
     });
 
     it('symbol()', () => {
-        const tokens = lexer(new StringInputStream(`**`))
+        const tokens = jssLexer(new StringInputStream(`**`))
         const stream = new ArrayTokenStream(tokens);
         const node = multiSymbol(Symbols.astersik2)(stream);
         expect(node.value).toEqual('**');
@@ -502,7 +502,7 @@ describe('parserUtils', () => {
     });
 
     it('oneOfSymbols()', () => {
-        const tokens = lexer(new StringInputStream(`**`))
+        const tokens = jssLexer(new StringInputStream(`**`))
         const stream = new ArrayTokenStream(tokens);
         const node = oneOfSymbols(
             Symbols.astersik,
@@ -516,7 +516,7 @@ describe('parserUtils', () => {
 
     describe('noLineTerminatorHere()', () => {
         it('noLineTerminatorHere() without spaces', () => {
-            const tokens = lexer(new StringInputStream(`i++`))
+            const tokens = jssLexer(new StringInputStream(`i++`))
             const stream = new ArrayTokenStream(tokens);
 
             const literal = anyLiteral(stream);
@@ -527,7 +527,7 @@ describe('parserUtils', () => {
         });
 
         it('noLineTerminatorHere() with spaces', () => {
-            const tokens = lexer(new StringInputStream(`i  ++`))
+            const tokens = jssLexer(new StringInputStream(`i  ++`))
             const stream = new ArrayTokenStream(tokens);
 
             const literal = anyLiteral(stream);
@@ -538,7 +538,7 @@ describe('parserUtils', () => {
         });
 
         it('noLineTerminatorHere() with lineTerminator', () => {
-            const tokens = lexer(new StringInputStream(`i \n ++`))
+            const tokens = jssLexer(new StringInputStream(`i \n ++`))
             const stream = new ArrayTokenStream(tokens);
 
             const literal = anyLiteral(stream);
@@ -551,7 +551,7 @@ describe('parserUtils', () => {
 
     describe('block()', () => {
         it('parses block with simple content', () => {
-            const tokens = lexer(new StringInputStream(`(1,2,3,4)`))
+            const tokens = jssLexer(new StringInputStream(`(1,2,3,4)`))
             const stream = new ArrayTokenStream(tokens);
 
             const node = block(
@@ -565,7 +565,7 @@ describe('parserUtils', () => {
         });
 
         it('parses curly bracket block', () => {
-            const tokens = lexer(new StringInputStream(`{1,2,3,4}`))
+            const tokens = jssLexer(new StringInputStream(`{1,2,3,4}`))
             const stream = new ArrayTokenStream(tokens);
 
             const node = block(
@@ -579,7 +579,7 @@ describe('parserUtils', () => {
         });
 
         it('empty block', () => {
-            const tokens = lexer(new StringInputStream(`[]`))
+            const tokens = jssLexer(new StringInputStream(`[]`))
             const stream = new ArrayTokenStream(tokens);
 
             const node = block(
@@ -593,7 +593,7 @@ describe('parserUtils', () => {
         });
 
         it('wrong block type', () => {
-            const tokens = lexer(new StringInputStream(`[hi]`));
+            const tokens = jssLexer(new StringInputStream(`[hi]`));
             const stream = new ArrayTokenStream(tokens);
 
             expect(() => {
@@ -605,7 +605,7 @@ describe('parserUtils', () => {
         });
 
         it('wrong block content', () => {
-            const tokens = lexer(new StringInputStream(`[###]`));
+            const tokens = jssLexer(new StringInputStream(`[###]`));
             const stream = new ArrayTokenStream(tokens);
 
             expect(() => {
@@ -620,7 +620,7 @@ describe('parserUtils', () => {
 
     describe('ignoreSpacesAndComments()', () => {
         it('spaces and comments', () => {
-            const tokens = lexer(new StringInputStream(`  \n /* test */no!`));
+            const tokens = jssLexer(new StringInputStream(`  \n /* test */no!`));
             const stream = new ArrayTokenStream(tokens);
             const node = ignoreSpacesAndComments(stream);
 
@@ -632,7 +632,7 @@ describe('parserUtils', () => {
         });
 
         it('html comment', () => {
-            const tokens = lexer(new StringInputStream(`  \n <!-- test -->no`));
+            const tokens = jssLexer(new StringInputStream(`  \n <!-- test -->no`));
             const stream = new ArrayTokenStream(tokens);
             const node = ignoreSpacesAndComments(stream);
 
@@ -650,7 +650,7 @@ describe('parserUtils', () => {
         });
 
         it('nor space, neither a comment', () => {
-            const tokens = lexer(new StringInputStream(`no`));
+            const tokens = jssLexer(new StringInputStream(`no`));
             const stream = new ArrayTokenStream(tokens);
             expect(() => {
                 ignoreSpacesAndComments(stream);
@@ -667,7 +667,7 @@ describe('parserUtils', () => {
     });
 
     describe('map()', () => {
-        const tokens = lexer(new StringInputStream(`var test`))
+        const tokens = jssLexer(new StringInputStream(`var test`))
         const stream = new ArrayTokenStream(tokens);
         const value = map(sequence(
             keyword(Keywords._var),

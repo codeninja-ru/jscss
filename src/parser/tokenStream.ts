@@ -1,7 +1,7 @@
 import { StringInputStream } from "stream/input";
 import { Position } from "stream/position";
 import { Token } from "token";
-import { lexer } from "lexer/lexer";
+import { jssLexer } from "lexer/jssLexer";
 import { ArraySourceFragment, SourceFragment } from "./sourceFragment";
 import { UnexpectedEndError } from "./parserError";
 import fs from 'fs';
@@ -31,12 +31,12 @@ export class ArrayTokenStream implements TokenStream {
     readonly startStreamPosition: Position;
 
     static fromString(str : string, line = 1, col = 1) : TokenStream {
-        return new ArrayTokenStream(lexer(new StringInputStream(str, line, col)));
+        return new ArrayTokenStream(jssLexer(new StringInputStream(str, line, col)));
     }
 
     static fromFile(filePath : string) : TokenStream {
         //return new ArrayTokenStream(lexer(new FileInputStream(filePath)));
-        return new ArrayTokenStream(lexer(new StringInputStream(fs.readFileSync(filePath).toString())));
+        return new ArrayTokenStream(jssLexer(new StringInputStream(fs.readFileSync(filePath).toString())));
     }
 
     constructor(private tokens : Token[], startStreamPosition = ZERO_POSITION) {

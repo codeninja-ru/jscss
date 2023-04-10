@@ -1,22 +1,18 @@
 import { InputStream } from 'stream/input';
 import { Token } from 'token/Token';
-import { AbstractLexer } from './AbstractLexer';
+import { BasicLexer } from './BasicLexer';
 import { literalReader, spaceReader, unexpectedReader, makeSymbolReader, makeStringReader } from './reader/readers';
 
-class ArgLexer extends AbstractLexer {
-    protected readers = [
-        spaceReader,
-        makeSymbolReader("-/\\.:"),
-        literalReader,
-        makeStringReader("'"),
-        makeStringReader('"'),
+const lexer = new BasicLexer([
+    spaceReader,
+    makeSymbolReader("-/\\.:"),
+    literalReader,
+    makeStringReader("'"),
+    makeStringReader('"'),
 
-        // keep it always in the end
-        unexpectedReader,
-    ];
-}
-
-const lexer = new ArgLexer();
+    // keep it always in the end
+    unexpectedReader,
+]);
 
 export function argLexer(stream : InputStream) : Token[] {
     return lexer.parse(stream);

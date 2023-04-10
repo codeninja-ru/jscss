@@ -1,6 +1,6 @@
 import { StringInputStream } from "stream/input";
 import { TokenType } from "token";
-import { makeBracketsReader, makeStringReader, makeSymbolReader, templateStringReader } from "./readers";
+import { makeBracketsReader, makeStringReader, makeSymbolReader, templateStringReader, unexpectedReader } from "./readers";
 
 describe('makeStringReader()', () => {
     test('correct strings', () => {
@@ -39,12 +39,32 @@ describe('makeBracketsReader', () => {
         const stream = new StringInputStream('[1, 2, 3, [...array], 4] rest of the stream');
         expect(makeBracketsReader('[', ']')(stream)).toEqual({ type: TokenType.SquareBrackets, value: '[1, 2, 3, [...array], 4]', position: expect.anything()  });
     });
+
+    test('brackets do not match', () => {
+        {
+            const stream = new StringInputStream('((1, 2)');
+            expect(() => makeBracketsReader('(', ')')(stream))
+                .toThrowError('(1:7) : brackets do not match');
+        }
+        {
+            const stream = new StringInputStream('(1, 2');
+            expect(() => makeBracketsReader('(', ')')(stream))
+                .toThrowError('(1:5) : brackets do not match');
+        }
+    });
+
 });
 
 describe('templateStringReader', () => {
     test('simple template', () => {
         const stream = new StringInputStream('`hello, \\`${userName}\\`` rest of the stream');
         expect(templateStringReader(stream)).toEqual({ type: TokenType.TemplateString, value: '`hello, \\`${userName}\\``', position: expect.anything()  });
+    });
+
+    test('unexpected end of the string', () => {
+        const stream = new StringInputStream('`hello');
+        expect(() => templateStringReader(stream))
+            .toThrowError('(1:6) : unexpected end of the template string')
     });
 
 });
@@ -58,4 +78,12 @@ describe('makeSymbolReader()', () => {
             value: '+',
         });
     });
+});
+
+describe('unexpectedReader()', () => {
+    it('throws an exeption', () => {
+        expect(() => unexpectedReader(new StringInputStream('test')))
+            .toThrowError("(1:1) : unexpected symbol 't' code: ");
+    });
+
 });

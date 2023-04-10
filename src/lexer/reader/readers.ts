@@ -53,38 +53,50 @@ export function blockReader(stream: InputStream) : ReaderResult {
     return null;
 }
 
-export function makeStringReader(quatation: "'" | '"') : Reader {
-    const ESCAPE_SYMBOL = '\\';
-    return function(stream : InputStream) : ReaderResult {
-        if (stream.peek() == quatation) {
-            const pos = stream.position();
-            var result = stream.next();
-            var isEscapeMode = false;
-            while (!stream.isEof()) {
-                var ch = stream.next();
-                if (ch == '\n') {
-                    break;
-                }
-                result += ch;
-                if (!isEscapeMode && ch == quatation) {
-                    return {
-                        type: TokenType.String,
-                        position: pos,
-                        value: result,
-                    } as Token;
-                }
-                if (ch == ESCAPE_SYMBOL) {
-                    isEscapeMode = !isEscapeMode;
-                } else {
-                    isEscapeMode = false;
-                }
-            }
+const ESCAPE_SYMBOL = '\\';
 
-            throw new LexerError('unexpected end of the string', stream);
+function readString(stream : InputStream,
+                    quatation : string,
+                    tokenType: TokenType,
+                    errorMessage = 'unexpected end of the string') : ReaderResult {
+    if (stream.peek() == quatation) {
+        const pos = stream.position();
+        var result = stream.next();
+        var isEscapeMode = false;
+        while (!stream.isEof()) {
+            var ch = stream.next();
+            if (ch == '\n') {
+                break;
+            }
+            result += ch;
+            if (!isEscapeMode && ch == quatation) {
+                return {
+                    type: tokenType,
+                    position: pos,
+                    value: result,
+                } as Token;
+            }
+            if (ch == ESCAPE_SYMBOL) {
+                isEscapeMode = !isEscapeMode;
+            } else {
+                isEscapeMode = false;
+            }
         }
 
-        return null;
+        throw new LexerError(errorMessage, stream);
+    }
+
+    return null;
+}
+
+export function makeStringReader(quatation: "'" | '"') : Reader {
+    return function(stream : InputStream) : ReaderResult {
+        return readString(stream, quatation, TokenType.String);
     };
+}
+
+export function regexReader(stream : InputStream) : ReaderResult {
+    return readString(stream, '/', TokenType.SlashBrackets);
 }
 
 export const JS_SYMBOLS = ";.,=<>-*+&|^@%?:#!~\\<>"; //TODO sort according statistic of usage
@@ -128,14 +140,13 @@ export function makeBracketsReader(startBracket: '(' | '[', endBracket: ')' | ']
                     } as Token;
                 }
             }
-            throw new LexerError('brackets does not match', stream);
+            throw new LexerError('brackets do not match', stream);
         }
 
         return null;
     };
 }
 
-const ESCAPE_SYMBOL = '\\';
 export function templateStringReader(stream: InputStream) : ReaderResult {
     if (stream.peek() == '`') {
         var result = stream.next();
@@ -156,7 +167,7 @@ export function templateStringReader(stream: InputStream) : ReaderResult {
             }
         }
 
-        throw new LexerError('unexpected end of the string', stream);
+        throw new LexerError('unexpected end of the template string', stream);
     }
 
     return null;

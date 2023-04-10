@@ -41,6 +41,7 @@ profile: build
 deopt: build
 #		--trace-elements-transitions \
 # node --v8-option to see more v8 options
+	rm isolate-*-v8.log
 	node --trace-deopt \
 		--log-deopt \
 		--trace-deopt-verbose \

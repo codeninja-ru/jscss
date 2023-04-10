@@ -1,5 +1,5 @@
 import { Keyword } from "keywords";
-import { lexer } from "lexer/lexer";
+import { jssLexer } from "lexer/jssLexer";
 import { SubStringInputStream } from "stream/input/SubStringInputStream";
 import { Position } from "stream/position";
 import { MultiSymbol, Symbols, SyntaxSymbol } from "symbols";
@@ -652,7 +652,7 @@ export function lazyBlock(expectedTokenType : OneOfBlockTokenType, parser : Toke
         if (token.type == expectedTokenType) {
             return new class implements LazyBlockParser<ReturnType<TokenParser>> {
                 parse() : ReturnType<TokenParser> {
-                    const tokens = lexer(SubStringInputStream.fromBlockToken(token));
+                    const tokens = jssLexer(SubStringInputStream.fromBlockToken(token));
                     const tokenStream = new ArrayTokenStream(tokens, token.position);
                     const blockType = getBlockType(token);
                     let result;
@@ -700,7 +700,7 @@ export function block(expectedTokenType : OneOfBlockTokenType, parser : TokenPar
     return function(stream : TokenStream) : ReturnType<TokenParser> {
         const token = peekAndSkipSpaces(stream);
         if (token.type == expectedTokenType) {
-            const tokens = lexer(SubStringInputStream.fromBlockToken(token));
+            const tokens = jssLexer(SubStringInputStream.fromBlockToken(token));
             const tokenStream = new ArrayTokenStream(tokens, token.position);
             const blockType = getBlockType(token);
             let result;

@@ -1,5 +1,6 @@
 import { Position } from "stream/position";
 import { Token } from "token";
+import { UnexpectedEndError } from "./parserError";
 import { LookAheadTokenStream, TokenStream } from "./tokenStream";
 import { peekAndSkipSpaces } from "./tokenStreamReader";
 
@@ -44,7 +45,11 @@ export class NextNotSpaceToken implements NextToken {
             const nextToken = peekAndSkipSpaces(new LookAheadTokenStream(stream));
             return new NextNotSpaceToken(nextToken);
         } catch(e) {
-            return NO_NEXT_TOKEN;
+            if (e instanceof UnexpectedEndError) {
+                return NO_NEXT_TOKEN;
+            }
+
+            throw e;
         }
     }
 

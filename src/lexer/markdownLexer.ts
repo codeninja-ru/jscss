@@ -1,7 +1,7 @@
 import { literalReader, Reader, spaceReader, unexpectedReader } from 'lexer/reader/readers';
 import { InputStream } from 'stream/input/InputStream';
 import { SymbolToken, Token, TokenType } from 'token/Token';
-import { AbstractLexer } from './AbstractLexer';
+import { BasicLexer } from './BasicLexer';
 import { ReaderResult } from './reader/readers';
 
 export function makeSymbolRegReader(reg = /[^\s\w]/) : Reader {
@@ -21,18 +21,14 @@ export function makeSymbolRegReader(reg = /[^\s\w]/) : Reader {
     };
 }
 
-class MarkdownLexer extends AbstractLexer {
-    protected readers = [
-        spaceReader,
-        makeSymbolRegReader(),
-        literalReader,
+const lexer = new BasicLexer([
+    spaceReader,
+    makeSymbolRegReader(),
+    literalReader,
 
-        // keep it always in the end
-        unexpectedReader,
-    ];
-}
-
-const lexer = new MarkdownLexer();
+    // keep it always in the end
+    unexpectedReader,
+]);
 
 export function lexerMarkdown(stream : InputStream) : Token[] {
     return lexer.parse(stream);

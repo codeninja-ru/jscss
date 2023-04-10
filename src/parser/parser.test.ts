@@ -1,12 +1,12 @@
 import { StringInputStream } from "stream/input";
-import { lexer } from "lexer/lexer";
+import { jssLexer } from "lexer/jssLexer";
 import { parseJsModule, parseJsScript, parseJsStatement, parseJsVarStatement } from "./parser";
 import { Node, NodeType } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { ArrayTokenStream, LookAheadTokenStream } from "./tokenStream";
 
 function testParserFunction(fn : TokenParser , script : string) : Node {
-    const tokens = lexer(new StringInputStream(script))
+    const tokens = jssLexer(new StringInputStream(script))
     const stream = new LookAheadTokenStream(new ArrayTokenStream(tokens));
     const node = fn(stream);
     expect(stream.sourceFragment().value).toEqual(script);
@@ -26,7 +26,7 @@ describe('parsers', () => {
 
     describe('parseJsVarStatement()', () => {
         it('simple', () => {
-            const tokens = lexer(new StringInputStream(`const a = 1;`))
+            const tokens = jssLexer(new StringInputStream(`const a = 1;`))
             const stream = new ArrayTokenStream(tokens);
             const node = parseJsVarStatement(stream);
             expect(node).toEqual({"type": NodeType.VarStatement, items: [
@@ -36,7 +36,7 @@ describe('parsers', () => {
         });
 
         it('function', () => {
-            const tokens = lexer(new StringInputStream(`let fn = function(test) {};`))
+            const tokens = jssLexer(new StringInputStream(`let fn = function(test) {};`))
             const stream = new LookAheadTokenStream(new ArrayTokenStream(tokens));
             const node = parseJsVarStatement(stream);
             expect(node).toEqual({"type": NodeType.VarStatement, items: [
@@ -47,7 +47,7 @@ describe('parsers', () => {
         });
 
         it('destracting', () => {
-            const tokens = lexer(new StringInputStream(`let {a, b} = fn(kek)[1].test`))
+            const tokens = jssLexer(new StringInputStream(`let {a, b} = fn(kek)[1].test`))
             const stream = new LookAheadTokenStream(new ArrayTokenStream(tokens));
             const node = parseJsVarStatement(stream);
             expect(node).toEqual({"type": NodeType.VarStatement, items: [
@@ -58,7 +58,7 @@ describe('parsers', () => {
         });
 
         it('multilple assignment', () => {
-            const tokens = lexer(new StringInputStream(`var t1 = 1, t2 = .2, t3 = 3;`))
+            const tokens = jssLexer(new StringInputStream(`var t1 = 1, t2 = .2, t3 = 3;`))
             const stream = new LookAheadTokenStream(new ArrayTokenStream(tokens));
             const node = parseJsVarStatement(stream);
             expect(node).toEqual({"type": NodeType.VarStatement, items: [
@@ -71,7 +71,7 @@ describe('parsers', () => {
         });
 
         it('arrow function', () => {
-            const tokens = lexer(new StringInputStream(`let fn = (test) => {};`))
+            const tokens = jssLexer(new StringInputStream(`let fn = (test) => {};`))
             const stream = new LookAheadTokenStream(new ArrayTokenStream(tokens));
             const node = parseJsVarStatement(stream);
             expect(node.type).toEqual(NodeType.VarStatement);
@@ -87,7 +87,7 @@ describe('parseJsStatement', () => {
 for (var i = 0; i < 10; i++) {
    chopok(i);
 }`;
-        const tokens = lexer(new StringInputStream(script))
+        const tokens = jssLexer(new StringInputStream(script))
         const stream = new LookAheadTokenStream(new ArrayTokenStream(tokens));
         const node = parseJsStatement(stream);
         expect(stream.sourceFragment().value).toEqual(script);
@@ -122,7 +122,7 @@ console.log('hi');
 
     it('parse a simple expression', () => {
         const script = `alert(1);`;
-        const tokens = lexer(new StringInputStream(script))
+        const tokens = jssLexer(new StringInputStream(script))
         const stream = new LookAheadTokenStream(new ArrayTokenStream(tokens));
         const node = parseJsScript(stream);
         expect(stream.sourceFragment().value).toEqual(script);
