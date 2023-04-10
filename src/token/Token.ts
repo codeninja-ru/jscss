@@ -19,7 +19,6 @@ export enum TokenType {
     TemplateString,
     RoundBrackets,
     SquareBrackets,
-    SlashBrackets,
     HiddenToken, // Hidden token for internal operation
 }
 
