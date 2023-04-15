@@ -59,6 +59,7 @@ export default function (program: ts.Program) {
                                 case 'sequence':
                                 case 'sequenceWithPosition':
                                 case 'symbol':
+                                case 'literalKeyword':
                                 case 'lazyBlock':
                                 case 'strictLoop':
                                 case 'loop':

@@ -1,3 +1,4 @@
+import { Keyword } from "keywords";
 import { Symbols, SyntaxSymbol } from "symbols";
 import { LiteralToken, Token, TokenType } from "token";
 import { NextToken, ProbeFn } from "./tokenParser";
@@ -35,6 +36,13 @@ export function isLiteralToken(token : Token) : token is LiteralToken {
 
 export function isLiteralNextToken(nextToken : NextToken) : boolean {
     return isLiteralToken(nextToken.token);
+}
+
+export function makeIsKeywordNextTokenProbe(keyword : Keyword) : ProbeFn {
+    return (nextToken : NextToken) : boolean => {
+        return nextToken.token.type == TokenType.Literal
+            && keyword.equal(nextToken.token);
+    };
 }
 
 export function isStringNextToken(nextToken : NextToken) : boolean {

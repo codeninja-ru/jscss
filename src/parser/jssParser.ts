@@ -5,7 +5,7 @@ import { attrib, combinator, cssCharset, cssLiteral, hash, importStatement, medi
 import { expression, functionExpression, identifier, moduleItem, parseComment, parseJsVarStatement } from "./parser";
 import { ParserError, SequenceError, SyntaxRuleError } from "./parserError";
 import { andRule, anyBlock, anyLiteral, anyString, block, commaList, dollarSign, firstOf, ignoreSpacesAndComments, isBlockNode, keyword, lazyBlock, LazyBlockParser, leftHandRecurciveRule, literalKeyword, loop, multiSymbol, noLineTerminatorHere, noSpacesHere, notAllowed, oneOfSimpleSymbols, optional, probe, rawValue, returnRawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
-import { is$NextToken, is$Token, isCssToken, isLiteralNextToken, isSymbolNextToken, makeIsSymbolNextTokenProbe } from "./predicats";
+import { is$NextToken, is$Token, isCssToken, isLiteralNextToken, isSymbolNextToken, makeIsKeywordNextTokenProbe, makeIsSymbolNextTokenProbe } from "./predicats";
 import { isSourceFragment } from "./sourceFragment";
 import { BlockNode, CssRawNode, FontFaceNode, JsRawNode, JssAtRuleNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssSelectorNode, JssSpreadNode, JssSupportsNode, JssVarDeclarationNode, NodeType, SyntaxTree } from "./syntaxTree";
 import { NextToken, TokenParser } from "./tokenParser";
@@ -453,6 +453,7 @@ function fontFace(stream : TokenStream) : FontFaceNode {
         items: block.parse().items,
     }
 }
+fontFace.probe = makeIsKeywordNextTokenProbe(Keywords.cssFont);
 
 function atRule(stream : TokenStream) : JssAtRuleNode {
     const start = cssLiteral(stream);
@@ -566,7 +567,7 @@ function supportsStatement(stream : TokenStream) : JssSupportsNode {
  * all rules that stat with @
  * */
 function startsWithDog(...rules : TokenParser<any>[]) : TokenParser {
-    return function(stream : TokenStream) : ReturnType<TokenParser> {
+    return probe(function(stream : TokenStream) : ReturnType<TokenParser> {
         const dog = symbol(Symbols.at)(stream);
         noSpacesHere(stream);
         let result = firstOf(
@@ -582,9 +583,8 @@ function startsWithDog(...rules : TokenParser<any>[]) : TokenParser {
         }
 
         return result;
-    };
+    }, makeIsSymbolNextTokenProbe(Symbols.at));
 }
-startsWithDog.probe = makeIsSymbolNextTokenProbe(Symbols.at);
 
 export function stylesheetItem(stream : TokenStream) : ReturnType<TokenParser> {
     return firstOf(

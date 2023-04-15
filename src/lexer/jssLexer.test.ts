@@ -1,4 +1,5 @@
 import { StringInputStream } from "stream/input";
+import { Position } from "stream/position";
 import { TokenType } from "token";
 import { makeCommaToken, makeLazyBlockToken, makeLiteralToken, makeRoundBracketsToken, makeSpaceToken, makeSquareBracketsToken, makeStringToken, makeSymbolToken } from "token/helpers";
 import { jssLexer } from "./jssLexer";
@@ -244,4 +245,129 @@ function process(css) {
         ]);
     });
 
+});
+
+describe('tricky cases', () => {
+    it('ignores brackets in multiline comments', () => {
+        const code = `( { /* 1) test */ });`;
+        const tokens = jssLexer(new StringInputStream(code));
+
+        expect(tokens).toEqual([
+            {
+                type: TokenType.RoundBrackets,
+                value: "( { /* 1) test */ })",
+                position: new Position(1, 1)
+            },
+            {
+                type: TokenType.Symbol,
+                value: ";",
+                position: new Position(1, 10)
+            },
+        ]);
+    });
+
+    it('ignores brackets in single comments', () => {
+        const code = `( { // 1) test \n});`;
+        const tokens = jssLexer(new StringInputStream(code));
+        expect(tokens).toEqual([
+            {
+                type: TokenType.RoundBrackets,
+                value: "( { // 1) test \n})",
+                position: new Position(1, 1)
+            },
+            {
+                type: TokenType.Symbol,
+                value: ";",
+                position: new Position(2, 3)
+            },
+        ]);
+    });
+
+    it('ignores strings', () => {
+        {
+            const code = `('1)')`;
+            const tokens = jssLexer(new StringInputStream(code));
+            expect(tokens).toEqual([
+                {
+                    type: TokenType.RoundBrackets,
+                    value: "('1)')",
+                    position: new Position(1, 1)
+                },
+            ]);
+        }
+        {
+            const code = `("1)")`;
+            const tokens = jssLexer(new StringInputStream(code));
+            expect(tokens).toEqual([
+                {
+                    type: TokenType.RoundBrackets,
+                    value: '("1)")',
+                    position: new Position(1, 1)
+                },
+            ]);
+        }
+        {
+            const code = `(\`1)\`)`;
+            const tokens = jssLexer(new StringInputStream(code));
+            expect(tokens).toEqual([
+                {
+                    type: TokenType.RoundBrackets,
+                    value: `(\`1)\`)`,
+                    position: new Position(1, 1)
+                },
+            ]);
+        }
+
+    });
+
+    it('ignores escapes', () => {
+            const code = `(/[a-b]\\(/)`;
+            const tokens = jssLexer(new StringInputStream(code));
+            expect(tokens).toEqual([
+                {
+                    type: TokenType.RoundBrackets,
+                    value: `(/[a-b]\\(/)`,
+                    position: new Position(1, 1)
+                },
+            ]);
+    });
+
+    it('tries to detect urls', () => {
+        const code = 'url(http://www.w3.org/1999/xhtml);';
+        const tokens = jssLexer(new StringInputStream(code));
+        expect(tokens).toEqual([
+            {
+                type: TokenType.Literal,
+                value: "url",
+                position: new Position(1, 1)
+            },
+            {
+                type: TokenType.RoundBrackets,
+                value: "(http://www.w3.org/1999/xhtml)",
+                position: new Position(1, 4)
+            },
+            {
+                type: TokenType.Symbol,
+                value: ";",
+                position: new Position(1, 34)
+            },
+        ]);
+    });
+
+    it('badurl', () => {
+        const code = `url(//testurl.local)`;
+        const token = jssLexer(new StringInputStream(code));
+        expect(token).toEqual([
+            {
+                type: TokenType.Literal,
+                value: "url",
+                position: new Position(1, 1)
+            },
+            {
+                type: TokenType.RoundBrackets,
+                value: "(//testurl.local)",
+                position: new Position(1, 4)
+            },
+        ]);
+    });
 });

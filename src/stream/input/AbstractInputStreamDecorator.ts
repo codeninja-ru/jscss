@@ -8,7 +8,7 @@ export abstract class AbstractInputStreamDecorator implements InputStream {
         this.stream = stream;
     }
     
-    readUntil(searchString: string): string | null {
+    readUntil(searchString: string): string {
         return this.stream.readUntil(searchString);
     }
 

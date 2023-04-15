@@ -474,5 +474,4 @@ background-color: #f8f8f8;
         ]);
     });
 
-
 });

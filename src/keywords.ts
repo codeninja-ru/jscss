@@ -5,6 +5,7 @@ export class Keyword {
     }
 
     equal(token: LiteralToken): boolean {
+        //TODO make it case insecitive
         return token.value.toLowerCase() == this.name;
     }
 }
@@ -72,4 +73,5 @@ export const Keywords = {
     cssAnd: new Keyword('and'),
     cssNamespace: new Keyword('namespace'),
     cssKeyframes: new Keyword('keyframes'),
+    cssFont: new Keyword('font'),
 }

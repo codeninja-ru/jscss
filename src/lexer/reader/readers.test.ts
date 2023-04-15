@@ -17,6 +17,12 @@ describe('makeStringReader()', () => {
 
     });
 
+    it('parse brackets in strings', () => {
+        const stream = new StringInputStream(`")"test`);
+        expect(makeStringReader('"')(stream))
+            .toEqual({ "type": TokenType.String, "value": `")"`, position: {line: 1, col: 1} });
+    });
+
     test('incorect strings', () => {
         const streamNotClosed = new StringInputStream("'test string ");
         const streamNotOpened = new StringInputStream("test string '");
@@ -52,6 +58,67 @@ describe('makeBracketsReader', () => {
                 .toThrowError('(1:5) : brackets do not match');
         }
     });
+
+    test('single line comments', () => {
+        const stream = new StringInputStream('( // )\n)test');
+        expect(makeBracketsReader('(', ')')(stream))
+            .toEqual({ type: TokenType.RoundBrackets, value: '( // )\n)', position: expect.anything()  });
+    });
+
+    test('multi-line comments', () => {
+        const stream = new StringInputStream('( /* ) */)test');
+        expect(makeBracketsReader('(', ')')(stream))
+            .toEqual({ type: TokenType.RoundBrackets, value: '( /* ) */)', position: expect.anything()  });
+    });
+
+    test('string 1', () => {
+        const stream = new StringInputStream(`(')')test`);
+        expect(makeBracketsReader('(', ')')(stream))
+            .toEqual({ type: TokenType.RoundBrackets, value: `(')')`, position: expect.anything()  });
+    });
+
+    test('string 1, not closed', () => {
+        const stream = new StringInputStream(`(')`);
+        expect(() => makeBracketsReader('(', ')')(stream))
+            .toThrowError('(1:3) : string is not closed, line: 1');
+    });
+
+    test('string 1 + escape', () => {
+        const stream = new StringInputStream(`(')\\'')test`);
+        expect(makeBracketsReader('(', ')')(stream))
+            .toEqual({ type: TokenType.RoundBrackets, value: `(')\\'')`, position: expect.anything()  });
+    });
+
+    test('string 2', () => {
+        const stream = new StringInputStream(`(")")test`);
+        expect(makeBracketsReader('(', ')')(stream))
+            .toEqual({ type: TokenType.RoundBrackets, value: `(")")`, position: expect.anything()  });
+    });
+
+    test('string 2 + escape', () => {
+        const stream = new StringInputStream(`(")\\"")test`);
+        expect(makeBracketsReader('(', ')')(stream))
+            .toEqual({ type: TokenType.RoundBrackets, value: `(")\\"")`, position: expect.anything()  });
+    });
+
+    test('escape', () => {
+        const stream = new StringInputStream(`(\\))`);
+        expect(makeBracketsReader('(', ')')(stream))
+            .toEqual({ type: TokenType.RoundBrackets, value: `(\\))`, position: expect.anything()  });
+    });
+
+    test('escape 2', () => {
+        const stream = new StringInputStream(`(\\(/)test`);
+        expect(makeBracketsReader('(', ')')(stream))
+            .toEqual({ type: TokenType.RoundBrackets, value: `(\\(/)`, position: expect.anything()  });
+    });
+
+    test('several strings', () => {
+        const stream = new StringInputStream(`(">": { dir: "parentNode", first: true },)`);
+        expect(makeBracketsReader('(', ')')(stream))
+            .toEqual({ type: TokenType.RoundBrackets, value: `(">": { dir: "parentNode", first: true },)`, position: expect.anything()  });
+    });
+
 
 });
 

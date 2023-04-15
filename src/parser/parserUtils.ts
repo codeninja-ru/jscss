@@ -4,7 +4,7 @@ import { SubStringInputStream } from "stream/input/SubStringInputStream";
 import { Position } from "stream/position";
 import { MultiSymbol, Symbols, SyntaxSymbol } from "symbols";
 import { isToken, LiteralToken, SpaceToken, SquareBracketsToken, StringToken, SymbolToken, TemplateStringToken, Token, TokenType } from "token";
-import { BlockParserError, EmptyStreamError, ParserError, SequenceError, UnexpectedEndError } from "./parserError";
+import { BlockParserError, EmptyStreamError, LexerError, ParserError, SequenceError, UnexpectedEndError } from "./parserError";
 import { isRoundBracketNextToken, isStringNextToken, isSymbolNextToken } from "./predicats";
 import { LeftTrimSourceFragment, SourceFragment } from "./sourceFragment";
 import { BlockNode, BlockType, IgnoreNode, LazyNode, NodeType } from "./syntaxTree";
@@ -55,6 +55,7 @@ export function keyword(keyword: Keyword,
 export function literalKeyword(keyword: string,
                         peekFn : TokenStreamReader = peekAndSkipSpaces): TokenParser<LiteralToken> {
     return function(stream: TokenStream) : LiteralToken {
+        //TODO make it case insecitive
         const token = peekFn(stream);
         if (token.type == TokenType.Literal && token.value == keyword) {
             return token;
@@ -298,6 +299,8 @@ export function firstOf(...parsers: TokenParser[]) : TokenParser {
                     blockErrors.push(e);
                 } else if (e instanceof SequenceError){
                     sequenceErrors.push(e);
+                } else if (e instanceof LexerError) {
+                    throw e;
                 }
             }
         }

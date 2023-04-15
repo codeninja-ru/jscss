@@ -4,6 +4,6 @@ export interface InputStream {
     next(): string;
     peek(): string;
     isEof(): boolean;
-    readUntil(searchString: string) : string | null;
+    readUntil(searchString: string) : string;
     position() : Position;
 }

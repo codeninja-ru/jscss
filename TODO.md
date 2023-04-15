@@ -143,6 +143,10 @@ output
 }
 ```
 
+## do not skip brackets content
+The lexer currently skips content of ()[]{} for lazy parsing, but it causes some trables when there are comment with unpaired brackets.
+
+I belive the only way to fix this properyly is to parse code properly without shortcuts.
 
 ## Optimization todos
 

@@ -1,5 +1,5 @@
 import { LexerError } from "parser/parserError";
-import { BlockInputStream, InputStream, LiteralInputStream, readToEnd } from "stream/input";
+import { BlockInputStream, InputStream, LiteralInputStream, readToEnd, TillEndOfLineStream } from "stream/input";
 import { SpaceToken, SymbolToken, Token, TokenType } from "token";
 
 export type ReaderResult = Token | null;
@@ -13,6 +13,7 @@ function readUntil(input: InputStream, checkFn : (ch : string) => boolean): stri
 
     return result;
 }
+
 function isKindOfSpace(ch: string) : boolean {
     return ch.charCodeAt(0) <= 32;
 }
@@ -81,7 +82,7 @@ export function makeStringReader(quatation: "'" | '"') : Reader {
                 }
             }
 
-            throw new LexerError('unexpected end of the string', stream);
+            throw new LexerError(`unexpected end of the string, started at (${pos.line} : ${pos.col})`, stream);
         }
 
         return null;
@@ -107,6 +108,72 @@ export function makeSymbolReader(allowedSymbols = JS_SYMBOLS): Reader {
     };
 }
 
+function readSkippingComment(stream : InputStream) : string {
+    if (stream.isEof()) {
+        throw new LexerError('unexpected end of brackets', stream);
+    }
+    const ch = stream.peek();
+
+    if (ch == '/') {
+        stream.next();
+        return ch + readToEnd(new TillEndOfLineStream(stream));
+    } else if (ch == '*') {
+        stream.next();
+        return ch + stream.readUntil('*/');
+    } else {
+        return '';
+    }
+}
+
+function readSkippingStrings(stringChar : string,
+                             stream : InputStream) : string {
+    let result = stringChar;
+    let isEscape = false;
+    const pos = stream.position();
+
+    while(!stream.isEof()) {
+        const ch = stream.next();
+        result += ch;
+
+        if (!isEscape && ch == stringChar) {
+            return result;
+        } else if (ch == ESCAPE_SYMBOL && !isEscape) {
+            isEscape = true;
+        } else {
+            isEscape = false;
+        }
+    }
+
+    throw new LexerError('string is not closed, line: ' + pos.line, stream);
+}
+
+export function simpleRoundBracketsReader(stream : InputStream) : ReaderResult {
+    if (stream.peek() == '(') {
+        let result = '';
+        let level = 0;
+        const pos = stream.position();
+        while (!stream.isEof()) {
+            var ch = stream.next();
+            if (ch == '(') {
+                level++;
+            } else if (ch == ')') {
+                level--;
+            }
+            result += ch;
+            if (level == 0) {
+                return {
+                    type: TokenType.RoundBrackets,
+                    position: pos,
+                    value: result
+                } as Token;
+            }
+        }
+        throw new LexerError('brackets do not match', stream);
+    }
+
+    return null;
+}
+
 export function makeBracketsReader(startBracket: '(' | '[', endBracket: ')' | ']'): Reader {
     return function(stream : InputStream) : ReaderResult {
         if (stream.peek() == startBracket) {
@@ -115,7 +182,16 @@ export function makeBracketsReader(startBracket: '(' | '[', endBracket: ')' | ']
             const pos = stream.position();
             while (!stream.isEof()) {
                 var ch = stream.next();
-                if (ch == startBracket) {
+                if (ch == '/' && level > 0) {
+                    ch = ch + readSkippingComment(stream);
+                } else if (ch == '\'' || ch == '"' || ch == '`') {
+                    ch = readSkippingStrings(ch, stream);
+                } else if (ch == '\\') {
+                    if (stream.isEof()) {
+                        throw new LexerError(`unexpected end. ${endBracket} is expected`, stream);
+                    }
+                    ch += stream.next();
+                } else if (ch == startBracket) {
                     level++;
                 } else if (ch == endBracket) {
                     level--;

@@ -24,7 +24,7 @@ export function commentReader(stream : InputStream) : ReaderResult {
             } as Token;
         } else if (ch == '*') {
             stream.next();
-            var comment = stream.readUntil('*/')
+            var comment = stream.readUntil('*/');
             return {
                 type: TokenType.MultilineComment,
                 position: pos,

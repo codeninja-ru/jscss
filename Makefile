@@ -35,7 +35,7 @@ publish-test: publish-build
 
 profile: build
 	rm isolate-*.log
-	time node --prof ./build/jss.js ./test/atom.io.css -
+	time node --prof $(JSS) ./test/atom.io.css -
 	node --prof-process --preprocess -j isolate-*.log | npx flamebearer
 
 deopt: build
