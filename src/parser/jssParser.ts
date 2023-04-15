@@ -5,7 +5,7 @@ import { attrib, combinator, cssCharset, cssLiteral, hash, importStatement, medi
 import { expression, functionExpression, identifier, moduleItem, parseComment, parseJsVarStatement } from "./parser";
 import { ParserError, SequenceError, SyntaxRuleError } from "./parserError";
 import { andRule, anyBlock, anyLiteral, anyString, block, commaList, dollarSign, firstOf, ignoreSpacesAndComments, isBlockNode, keyword, lazyBlock, LazyBlockParser, leftHandRecurciveRule, literalKeyword, loop, multiSymbol, noLineTerminatorHere, noSpacesHere, notAllowed, oneOfSimpleSymbols, optional, probe, rawValue, returnRawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
-import { is$NextToken, is$Token, isCssToken, isLiteralNextToken, isSymbolNextToken, makeIsKeywordNextTokenProbe, makeIsSymbolNextTokenProbe } from "./predicats";
+import { is$NextToken, is$Token, isCssToken, isLiteralNextToken, isSquareBracketNextToken, isSymbolNextToken, makeIsKeywordNextTokenProbe, makeIsSymbolNextTokenProbe } from "./predicats";
 import { isSourceFragment } from "./sourceFragment";
 import { BlockNode, CssRawNode, FontFaceNode, JsRawNode, JssAtRuleNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssSelectorNode, JssSpreadNode, JssSupportsNode, JssVarDeclarationNode, NodeType, SyntaxTree } from "./syntaxTree";
 import { NextToken, TokenParser } from "./tokenParser";
@@ -282,7 +282,7 @@ export function simpleSelector(stream : TokenStream) : string {
     }
 }
 simpleSelector.probe = (nextToken : NextToken) : boolean => jssIdent.probe(nextToken)
-    || isSymbolNextToken(nextToken);
+    || isSymbolNextToken(nextToken) || isSquareBracketNextToken(nextToken);
 
 export function jssSelector(stream : TokenStream) : JssSelectorNode {
     const firstSelector = returnRawValueWithPosition(simpleSelector)(stream);

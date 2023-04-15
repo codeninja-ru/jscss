@@ -53,6 +53,10 @@ export function isRoundBracketNextToken(nextToken : NextToken) : boolean {
     return nextToken.token.type == TokenType.RoundBrackets;
 }
 
+export function isSquareBracketNextToken(nextToken : NextToken) : boolean {
+    return nextToken.token.type == TokenType.SquareBrackets;
+}
+
 export function isSymbolNextToken(nextToken : NextToken) : boolean {
     return nextToken.token.type == TokenType.Symbol;
 }

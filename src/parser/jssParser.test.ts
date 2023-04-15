@@ -437,6 +437,24 @@ background-color: #f8f8f8;
     }
 ]);
         });
+
+        it('parses [] with pseudo classes', () => {
+            parseCode(`[type="number"]:hover{}`)
+                .toEqual([
+                    {
+                        type: NodeType.JssBlock,
+                        selectors: [
+                            {
+                                type: NodeType.JssSelector,
+                                items: ["[type=\"number\"]:hover"],
+                                position: {line: 1, col: 1},
+                            }
+                        ],
+                        items: [],
+                        position: {line: 1, col: 1},
+                    }
+                ]);
+        });
     });
 
     it('parses css expr', () => {
@@ -473,5 +491,4 @@ background-color: #f8f8f8;
             }
         ]);
     });
-
 });
