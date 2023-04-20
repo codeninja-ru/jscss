@@ -118,7 +118,7 @@ Output:
 ``` javascript
 let columns = [];
 for (var i = 1; i < 3; i++) {
-    const column = new {
+    const column = @block {
         .column_${i} {
             width: ${100% / 3};
             background: ${#333 + i};
@@ -140,6 +140,61 @@ output
 .className {
     font-size: 20px;
     color: #444;
+}
+```
+
+## css generating in loops
+
+```jsslang
+for (var i = 1; i <= 12; i++) {
+    .column_${i} {
+        left: ${60 * i}px;
+    }
+}
+```
+
+output
+```css
+.column_1 {
+    left: 60px;
+}
+
+.column_2 {
+    left: 120px;
+}
+
+...
+
+.column_12 {
+    left: 720px;
+}
+```
+
+## css generating in loops 2
+
+```jsslang
+const columns = [1, 2, 3].map((idx) => @block {
+    .column_${idx} {
+       left: ${60 * idx}px;
+    };
+});
+
+...columns;
+```
+
+output
+
+```css
+.column_1 {
+    left: 60px;
+}
+
+.column_2 {
+    left: 120px;
+}
+
+.column_2 {
+    left: 180px;
 }
 ```
 

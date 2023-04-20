@@ -35,7 +35,7 @@ self.push(\`background\`, \`$\{bgColor\}\`);
 return self;
 }).bind(self)(self));
 
-export _styles;`);
+_styles;`);
         expect(result.value).toMatch(/\/\/# sourceMappingURL=data:application\/json;charset=utf\-8;base64,[\w\+]+=*$/);
 
         expect(evalTestCode(CSS).toCss()).toEqual(`@import 'main.css';
@@ -406,8 +406,6 @@ body {
             {name: 'div', value: { display: 'block' }}
         ]);
     });
-
-
 });
 
 describe('confict solving', () => {
@@ -422,4 +420,3 @@ p:after {
 }`);
     });
 });
-

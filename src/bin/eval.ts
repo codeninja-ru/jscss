@@ -26,7 +26,7 @@ export function evalCode(sourceCode : GeneratedCode,
     };
 
     try {
-        const script = new vm.Script(sourceCode.value.replace('export _styles', '_styles'), {
+        const script = new vm.Script(sourceCode.value, {
             filename: fileName,
         });
 

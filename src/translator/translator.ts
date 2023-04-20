@@ -24,9 +24,42 @@ function templateEscape(str : string) : string {
 }
 
 export interface GeneratedCode {
-    value: string;
-    sourceMap: string;
-    sourceMapGen: SourceMapGenerator,
+    readonly value: string;
+    readonly sourceMap: string;
+    readonly sourceMapGen: SourceMapGenerator;
+}
+
+export class SourceNodeGenereatedCode implements GeneratedCode {
+    private code : string;
+    private map : SourceMapGenerator;
+    private sourceMappingUrl : SourceMappingUrl;
+
+    constructor(sourceNode : SourceNode,
+                sourceFileName : string) {
+
+        const {code, map} = sourceNode.toStringWithSourceMap({
+            file: sourceFileName,
+        });
+        this.code = code;
+        this.map = map;
+
+        this.sourceMappingUrl = new SourceMappingUrl(map);
+    }
+
+    get value() : string {
+        return this.code
+            + '\n' + EXPORT_VAR_NAME + ';'
+            + '\n//# sourceMappingURL='
+            + this.sourceMappingUrl.toUrl();
+    }
+
+    get sourceMap() : string {
+        return this.map.toString();
+    }
+
+    get sourceMapGen() : SourceMapGenerator {
+        return this.map;
+    }
 }
 
 function cssSelectors2js(selectors : JssSelectorNode[], fileName : string) : SourceNode {
@@ -264,18 +297,7 @@ var ${EXPORT_VAR_NAME} = ${EXPORT_VAR_NAME} ? ${EXPORT_VAR_NAME} : new JssStyles
 var self = null;\n\n`,
         //...result,
         ...result,
-        `\nexport ${EXPORT_VAR_NAME};`
     ]);
 
-    const {code, map} = source.toStringWithSourceMap({
-        file: sourceFileName,
-    });
-
-    const sourceMappingUrl = new SourceMappingUrl(map);
-
-    return {
-        value: code + '\n//# sourceMappingURL=' + sourceMappingUrl.toUrl(),
-        sourceMap: map.toString(),
-        sourceMapGen: map,
-    };
+    return new SourceNodeGenereatedCode(source, sourceFileName);
 }
