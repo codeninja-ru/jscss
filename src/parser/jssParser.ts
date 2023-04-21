@@ -4,7 +4,7 @@ import { HiddenToken, LiteralToken, TokenType } from "token";
 import { attrib, combinator, cssCharset, cssLiteral, hash, importStatement, mediaQuery, mediaQueryList, pageStatement, term } from "./cssParser";
 import { expression, functionExpression, identifier, moduleItem, parseComment, parseJsVarStatement } from "./parser";
 import { ParserError, SequenceError, SyntaxRuleError } from "./parserError";
-import { andRule, anyBlock, anyLiteral, anyString, block, commaList, dollarSign, firstOf, ignoreSpacesAndComments, isBlockNode, keyword, lazyBlock, LazyBlockParser, leftHandRecurciveRule, literalKeyword, loop, multiSymbol, noLineTerminatorHere, noSpacesHere, notAllowed, oneOfSimpleSymbols, optional, probe, rawValue, returnRawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
+import { andRule, anyBlock, anyLiteral, anyString, block, commaList, dollarSign, firstOf, ignoreSpacesAndComments, isBlockNode, keyword, lazyBlock, LazyBlockParser, leftHandRecurciveRule, literalKeyword, loop, multiSymbol, noLineTerminatorHere, noSpacesHere, notAllowed, oneOfSimpleSymbols, optional, probe, rawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
 import { is$NextToken, is$Token, isCssToken, isLiteralNextToken, isSquareBracketNextToken, isSymbolNextToken, makeIsKeywordNextTokenProbe, makeIsSymbolNextTokenProbe } from "./predicats";
 import { isSourceFragment } from "./sourceFragment";
 import { BlockNode, CssRawNode, FontFaceNode, JsRawNode, JssAtRuleNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssSelectorNode, JssSpreadNode, JssSupportsNode, JssVarDeclarationNode, NodeType, SyntaxTree } from "./syntaxTree";
@@ -52,18 +52,29 @@ function withVendorPrefix(keywordParser : TokenParser) : TokenParser {
 }
 
 function pseudo(stream : TokenStream) : string {
-    return returnRawValue(sequence(
-        symbol(Symbols.colon),
-        optional(symbol(Symbols.colon, peekNextToken)),
-        jssIdent,
-        optional( //functionalCall
-            sequence(
-                noSpacesHere,
-                roundBracket //TODO parse
-            )
+    symbol(Symbols.colon)(stream);
+    let result = ':';
+    const optColon = optional(symbol(Symbols.colon, peekNextToken))(stream);
+    if (optColon) {
+        result += ':';
+    }
+    const name = jssIdent(stream);
+    result += name.value;
+    const funcCall = optional( //functionalCall
+        sequence(
+            noSpacesHere,
+            roundBracket //TODO parse
         )
-    ))(stream);
+    )(stream);
+
+    if (funcCall) {
+        result += funcCall[1].value;
+    }
+
+
+    return result;
 }
+pseudo.probe = makeIsSymbolNextTokenProbe(Symbols.colon);
 
 function toRawNode(parser : TokenParser) : TokenParser<JsRawNode> {
     return function(stream : TokenStream) : JsRawNode {
@@ -256,29 +267,47 @@ jssIdent.probe = function(token : NextToken) : boolean {
     return is$Token(token.token) || isCssToken(token.token);
 }
 
+function elementName(stream : TokenStream) : string {
+    const token = firstOf(jssIdent,
+            oneOfSimpleSymbols([
+                Symbols.astersik, // universal selecotr
+                Symbols.bitwiseAnd, // nesting selector
+            ]))(stream);
+
+    return token.value;
+}
+elementName.probe = function(token : NextToken) : boolean {
+    return jssIdent.probe(token)
+        || (Symbols.astersik.equal(token.token) || Symbols.bitwiseAnd.equal(token.token));
+}
+
+function cssClass(stream : TokenStream) : string {
+    const dot = symbol(Symbols.dot)(stream);
+    noSpacesHere(stream);
+    const name = jssIdent(stream);
+
+    return dot.value + name.value;
+}
+cssClass.probe = makeIsSymbolNextTokenProbe(Symbols.dot);
+
 export function simpleSelector(stream : TokenStream) : string {
-    const elementName = optional(returnRawValue(
-        firstOf(jssIdent,
-                oneOfSimpleSymbols([
-                    Symbols.astersik, // universal selecotr
-                    Symbols.bitwiseAnd, // nesting selector
-                ]))));
-    const cssClass = probe(
-        sequence(symbol(Symbols.dot), noSpacesHere, jssIdent),
-        makeIsSymbolNextTokenProbe(Symbols.dot)
-    );
+    const optionalElementName = optional(elementName);
     const rest = firstOf(
         hash,
         cssClass,
         attrib,
         pseudo,
     );
+    const restNoSpace = function(stream : TokenStream) : string {
+        noSpacesHere(stream);
+        return rest(stream);
+    };
 
-    const name = elementName(stream);
+    const name = optionalElementName(stream);
     if (name) {
-        return name + returnRawValue(loop(sequence(noSpacesHere, rest)))(stream);
+        return name + loop(restNoSpace)(stream).join('');
     } else {
-        return returnRawValue(rest)(stream) + returnRawValue(loop(sequence(noSpacesHere, rest)))(stream);
+        return rest(stream) + loop(restNoSpace)(stream).join('');
     }
 }
 simpleSelector.probe = (nextToken : NextToken) : boolean => jssIdent.probe(nextToken)
@@ -287,14 +316,18 @@ simpleSelector.probe = (nextToken : NextToken) : boolean => jssIdent.probe(nextT
 export function jssSelector(stream : TokenStream) : JssSelectorNode {
     const firstSelector = returnRawValueWithPosition(simpleSelector)(stream);
     let result = [firstSelector.value];
+    const optionalCombinator = optional(combinator);
+    const optionalSelector = optional(simpleSelector);
     while(!stream.eof()) {
-        const comb = optional(combinator)(stream);
-        const sel = optional(simpleSelector)(stream);
+        const comb = optionalCombinator(stream);
+        const sel = optionalSelector(stream);
 
         if (comb && sel) {
-            result.push(comb, sel);
+            result.push(comb.value, sel);
         } else if (sel) {
             result.push(sel);
+        } else if (comb) {
+            throw new ParserError(`unexpected combinator`, comb);
         } else {
             break;
         }

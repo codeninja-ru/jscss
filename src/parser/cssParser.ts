@@ -5,9 +5,9 @@
 import { Keywords } from "keywords";
 import { Position } from "stream/position";
 import { Symbols } from "symbols";
-import { LiteralToken, TokenType } from "token";
+import { LiteralToken, SymbolToken, TokenType } from "token";
 import { ParserError } from "./parserError";
-import { anyString, block, commaList, firstOf, ignoreSpacesAndComments, keyword, leftHandRecurciveRule, list, loop, noSpacesHere, oneOfSymbols, optional, rawValue, regexpLiteral, returnRawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, squareBracket, strictLoop, symbol } from "./parserUtils";
+import { anyString, block, commaList, firstOf, ignoreSpacesAndComments, keyword, leftHandRecurciveRule, list, loop, noSpacesHere, oneOfSimpleSymbols, optional, rawValue, regexpLiteral, returnRawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, squareBracket, strictLoop, symbol } from "./parserUtils";
 import { isCssToken, isSymbolNextToken, makeIsSymbolNextTokenProbe, makeIsTokenTypeNextTokenProbe } from "./predicats";
 import { BlockNode, CssBlockNode, CssCharsetNode, CssDeclarationNode, CssImportNode, CssMediaNode, CssSelectorNode, NodeType, StringNode } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
@@ -319,7 +319,7 @@ export function expr(stream : TokenStream) : void {
     term(stream);
     loop(
         sequence(
-            optional(oneOfSymbols(Symbols.div, Symbols.comma)),
+            optional(oneOfSimpleSymbols([Symbols.div, Symbols.comma])),
             term,
         )
     )(stream);
@@ -393,7 +393,7 @@ export function term(stream : TokenStream) : void {
  *
  * */
 function unaryOperator(stream : TokenStream) : void {
-    oneOfSymbols(Symbols.plus, Symbols.minus)(stream);
+    oneOfSimpleSymbols([Symbols.plus, Symbols.minus])(stream);
 }
 
 /**
@@ -409,7 +409,7 @@ export function selector(stream : TokenStream) : CssSelectorNode {
         const sel = optional(simpleSelector)(stream);
 
         if (comb && sel) {
-            result.push(comb, sel);
+            result.push(comb.value, sel);
         } else if (sel) {
             result.push(sel);
         } else {
@@ -431,12 +431,12 @@ export function selector(stream : TokenStream) : CssSelectorNode {
   ;
  *
  * */
-export function combinator(stream : TokenStream) : void {
-    oneOfSymbols(
+export function combinator(stream : TokenStream) : SymbolToken {
+    return oneOfSimpleSymbols([
         Symbols.plus,
         Symbols.lt,
         Symbols.tilde,
-    )(stream);
+    ])(stream);
 }
 combinator.probe = isSymbolNextToken;
 
@@ -476,12 +476,12 @@ export function simpleSelector(stream : TokenStream) : string {
  *
  * */
 export function hash(stream : TokenStream) : string {
-    return returnRawValue(sequence(
-        symbol(Symbols.numero),
-        noSpacesHere,
-        // nmchar		[_a-z0-9-]|{nonascii}|{escape} //TODO test out
-        cssLiteral,
-    ))(stream);
+    symbol(Symbols.numero)(stream);
+    noSpacesHere(stream);
+    // nmchar		[_a-z0-9-]|{nonascii}|{escape} //TODO test out
+    const name = cssLiteral(stream);
+
+    return '#' + name.value;
 }
 hash.probe = makeIsSymbolNextTokenProbe(Symbols.numero);
 
@@ -494,7 +494,7 @@ hash.probe = makeIsSymbolNextTokenProbe(Symbols.numero);
  *
  * */
 export function attrib(stream : TokenStream) : string {
-    return returnRawValue(squareBracket)(stream); //TODO parse the content
+    return squareBracket(stream).value; //TODO parse the content
 }
 attrib.probe = makeIsTokenTypeNextTokenProbe(TokenType.SquareBrackets);
 

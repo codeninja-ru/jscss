@@ -65,7 +65,7 @@ export class SourceNodeGenereatedCode implements GeneratedCode {
 function cssSelectors2js(selectors : JssSelectorNode[], fileName : string) : SourceNode {
     const chunks = makeNullSourceNode('[');
     chunks.add(selectors.map((item) => {
-        const selector = item.items.map(templateEscape).join('');
+        const selector = item.items.map(templateEscape).join(' ');
         return tag`\`${makeSourceNode(item.position, fileName, selector)}\``;
     }).join(','));
     chunks.add(']');

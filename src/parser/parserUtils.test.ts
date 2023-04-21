@@ -436,7 +436,7 @@ describe('parserUtils', () => {
             const tokens = jssLexer(new StringInputStream(`var`))
             const stream = new ArrayTokenStream(tokens);
             const node = optional(keyword(Keywords._var))(stream);
-            expect(node.value).toEqual('var');
+            expect(node?.value).toEqual('var');
             expect(stream.currentPosition()).toEqual(1);
         });
 

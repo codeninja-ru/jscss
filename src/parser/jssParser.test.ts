@@ -42,7 +42,7 @@ describe('parseJssScript()', () => {
             {type: NodeType.JssBlock, selectors: [
                 {
                     type: NodeType.JssSelector,
-                    items: [".className", " >", " a:hover"],
+                    items: [".className", ">", "a:hover"],
                     position: {line: 6, col: 1},
                 },
             ],
@@ -65,7 +65,7 @@ describe('parseJssScript()', () => {
                 {type: NodeType.JssBlock, selectors: [
                     {
                         type: NodeType.JssSelector,
-                        items: [".subClass", " +", " a:hover"],
+                        items: [".subClass", "+", "a:hover"],
                         position: {line: 13, col: 5},
                     },
                 ], items: [
@@ -89,7 +89,7 @@ describe('parseJssScript()', () => {
             { type: NodeType.JssBlock, selectors: [
                 {
                     type: NodeType.JssSelector,
-                    items: ["${name}", " .className"],
+                    items: ["${name}", ".className"],
                     position: {line: 1, col: 1}
                 }
             ], items: [
@@ -355,7 +355,7 @@ $\{propName\}: #333;
     { type: NodeType.JssBlock, selectors: [
         {
             type: NodeType.JssSelector,
-            items: ["div", " a:hover"],
+            items: ["div", "a:hover"],
             position: expect.anything(),
         }
     ], items: [
@@ -403,7 +403,7 @@ background-color: #f8f8f8;
     { type: NodeType.JssBlock, selectors: [
         {
             type: NodeType.JssSelector,
-            items: [".markdown-body", " table", " tr:nth-child(2n)"],
+            items: [".markdown-body", "table", "tr:nth-child(2n)"],
             position: {line: 1, col: 1}
         }
     ], items: [
@@ -424,7 +424,7 @@ background-color: #f8f8f8;
     { type: NodeType.JssBlock, selectors: [
         {
             type: NodeType.JssSelector,
-            items: [".form-checkbox-details-trigger:checked", " ~", " *", " .form-checkbox-details"],
+            items: [".form-checkbox-details-trigger:checked", "~", "*", ".form-checkbox-details"],
             position: {line: 1, col: 1}
         },
     ], items: [

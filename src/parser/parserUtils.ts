@@ -131,10 +131,10 @@ export function returnRawValue(parser : TokenParser) : TokenParser<string> {
 export function list(parser: TokenParser,
                      separator: TokenParser,
                      canListBeEmpty : boolean = false) : TokenParser {
+    const flushedParser = flushed(parser);
+    const optionalSeperator = optional(separator);
     return function(stream: TokenStream) : ReturnType<TokenParser> {
         let result = [];
-        const optionalSeperator = optional(separator);
-        const flushedParser = flushed(parser);
         while (!stream.eof()) {
             try {
                 result.push(flushedParser(stream));
@@ -171,10 +171,10 @@ export function sequenceName(name: string,
 export function sequence(...parsers: TokenParser[]) : TokenParser<any[]> {
     return function(stream: TokenStream) : ReturnType<TokenParser>[] {
         const parserStream = new LookAheadTokenStream(stream);
-        const result = [];
+        const results = [];
         for (var i = 0; i < parsers.length; i++) {
             try {
-                result.push(parsers[i](parserStream));
+                results.push(parsers[i](parserStream));
             } catch(e) {
                 if (i > 0) {
                     throw new SequenceError(e, i);
@@ -186,7 +186,7 @@ export function sequence(...parsers: TokenParser[]) : TokenParser<any[]> {
 
         // TODO flush might be not needed if we call sequence inside firstOf/or
         parserStream.flush();
-        return result;
+        return results;
     };
 }
 
@@ -320,8 +320,9 @@ export function firstOf(...parsers: TokenParser[]) : TokenParser {
     };
 }
 
-export function optional(parser: TokenParser) : TokenParser {
-    return function(stream: TokenStream) : ReturnType<TokenParser> {
+// TODO and string to ReturnType when parser returns void
+export function optional<P extends TokenParser>(parser: P) : TokenParser<ReturnType<P> | undefined> {
+    return function(stream: TokenStream) : ReturnType<P> | undefined {
         if (parser.probe) {
             const nextToken = NextNotSpaceToken.fromStream(stream);
 
@@ -575,8 +576,8 @@ export function squareBracket(stream: TokenStream) : SquareBracketsToken {
     throw new ParserError(`squere brackets were expected`, token);
 }
 
-export function roundBracket(stream: TokenStream) : LazyNode {
-    const token = peekAndSkipSpaces(stream);
+export function roundBracket(stream: TokenStream, peekNext = peekAndSkipSpaces) : LazyNode {
+    const token = peekNext(stream);
 
     if (token.type == TokenType.RoundBrackets) {
         return {

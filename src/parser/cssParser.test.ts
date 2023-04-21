@@ -80,7 +80,7 @@ describe('CSS Parser', () => {
                 {type: NodeType.Ignore, items: expect.anything()},
             ]),
             {type: NodeType.Ignore, items: expect.anything()},
-            cssBlock(cssSelector([".className", " >", " div#id#name[attr=value]:href"], [" a:href"]), [
+            cssBlock(cssSelector([".className", ">", " div#id#name[attr=value]:href"], [" a:href"]), [
                 {type: NodeType.Ignore, items: expect.anything()},
                 {type: NodeType.CssDeclaration,
                  prop: "color",
@@ -98,7 +98,7 @@ describe('CSS Parser', () => {
                 {type: NodeType.Ignore, items: expect.anything()},
             ]),
             {type: NodeType.Ignore, items: expect.anything()},
-            cssBlock(cssSelector([".className", " +", " div#id#name[attr=value]:href"], [" a:href"]), [
+            cssBlock(cssSelector([".className", "+", " div#id#name[attr=value]:href"], [" a:href"]), [
                 {type: NodeType.Ignore, items: expect.anything()},
                 {type: NodeType.CssDeclaration,
                  prop: "color",
@@ -160,10 +160,12 @@ describe('CSS Parser', () => {
 
     it('selector', () => {
         expect(testParser(selector, 'div')).toEqual({type: NodeType.CssSelector, items: ["div"]});
-        expect(testParser(selector, 'div > .className')).toEqual({type: NodeType.CssSelector, items: ["div", " >", " .className"]});
-        expect(testParser(selector, 'div + .className')).toEqual({type: NodeType.CssSelector, items: ["div", " +", " .className"]});
+        expect(testParser(selector, 'div > .className')).toEqual({type: NodeType.CssSelector, items: ["div", ">", " .className"]});
+        expect(testParser(selector, 'div + .className')).toEqual({type: NodeType.CssSelector, items: ["div", "+", " .className"]});
         expect(testParser(selector, 'div .className')).toEqual({type: NodeType.CssSelector, items: ["div", " .className"]});
-        expect(testParser(selector, '.className > div#id#name[attr=items]:href')).toEqual({type: NodeType.CssSelector, items: [".className", " >", " div#id#name[attr=items]:href"]});
+        expect(testParser(selector, '.className > div#id#name[attr=items]:href'))
+            .toEqual({type: NodeType.CssSelector,
+                      items: [".className", ">", " div#id#name[attr=items]:href"]});
     });
 
     it('rulesetStatement', () => {
