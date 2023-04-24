@@ -86,6 +86,16 @@ div a:hover {
 ])
     });
 
+    it('parses vars in propertyValue', () => {
+        expect(evalTestCode(`const value = 'fff';
+div a:hover {
+\${'color'}: #\${value};
+}`).toArray()).toEqual([
+    {name: 'div a:hover', value: { "color": "#fff" }},
+])
+    });
+
+
     it('can access parents objects by this keyword', () => {
         expect(evalTestCode(`.className1 .className2 {
   font-size: 10px;
