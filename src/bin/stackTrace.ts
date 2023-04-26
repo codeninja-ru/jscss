@@ -150,7 +150,7 @@ export class SyntaxErrorStackTrace extends StackTrace implements StackTrace {
     constructor(name : string,
                 errorMessage : string,
                 stack : StackLine[],
-                readonly errorPlace : SyntaxErrorPlace) {
+                errorPlace : SyntaxErrorPlace) {
         super(name, errorMessage, stack, errorPlace)
     }
 

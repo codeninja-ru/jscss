@@ -1,6 +1,6 @@
 import { Keywords, ReservedWords } from "keywords";
 import { Symbols } from "symbols";
-import { HiddenToken, LiteralToken, TokenType } from "token";
+import { HiddenToken, LiteralToken, SymbolToken, TokenType } from "token";
 import { attrib, combinator, cssCharset, cssLiteral, hash, importStatement, mediaQuery, mediaQueryList, pageStatement, term } from "./cssParser";
 import { expression, functionExpression, identifier, moduleItem, parseComment, parseJsVarStatement } from "./parser";
 import { ParserError, SequenceError, SyntaxRuleError } from "./parserError";
@@ -111,7 +111,7 @@ export function jssPropertyName(stream : TokenStream) : any {
                 const name = jssIdent(stream);
                 if (name.value in ReservedWords) {
                     throw new SequenceError(
-                        new SyntaxRuleError(`"${name.value}" is a reseved word, it's not allowed as property name`, name.position)
+                        new SyntaxRuleError(`"${name.value}" is a reseved word, it's not allowed as a property name`, name.position)
                     );
                 }
                 return name;
@@ -267,14 +267,14 @@ jssIdent.probe = function(token : NextToken) : boolean {
     return is$Token(token.token) || isCssToken(token.token);
 }
 
-function elementName(stream : TokenStream) : string {
+function elementName(stream : TokenStream) : HiddenToken | SymbolToken {
     const token = firstOf(jssIdent,
             oneOfSimpleSymbols([
                 Symbols.astersik, // universal selecotr
                 Symbols.bitwiseAnd, // nesting selector
             ]))(stream);
 
-    return token.value;
+    return token;
 }
 elementName.probe = function(token : NextToken) : boolean {
     return jssIdent.probe(token)
@@ -305,7 +305,7 @@ export function simpleSelector(stream : TokenStream) : string {
 
     const name = optionalElementName(stream);
     if (name) {
-        return name + loop(restNoSpace)(stream).join('');
+        return name.value + loop(restNoSpace)(stream).join('');
     } else {
         return rest(stream) + loop(restNoSpace)(stream).join('');
     }
@@ -621,13 +621,23 @@ function startsWithDog(...rules : TokenParser<any>[]) : TokenParser {
 
 export function stylesheetItem(stream : TokenStream) : ReturnType<TokenParser> {
     return firstOf(
-        rulesetStatement,
         function(stream : TokenStream) {
+            const rulesetStream = new LookAheadTokenStream(stream);
             const prop = jssPropertyDefinition(stream);
-            optional(semicolon)(stream);
+            const semi = optional(semicolon)(stream);
 
+            if (semi == undefined) {
+                //NOTE checking for conflicts
+                const block = optional(rulesetStatement)(rulesetStream);
+
+                if (block) {
+                    rulesetStream.flush();
+                    return block;
+                }
+            }
             return prop;
         },
+        rulesetStatement,
         jssVariableStatement,
         startsWithDog(
             cssCharset,

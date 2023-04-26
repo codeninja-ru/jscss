@@ -190,4 +190,33 @@ export _styles;
     });
 
 
+    it('parses syntax token 2', () => {
+        const error = new SyntaxError("Unexpected token ':'");
+        error.name = 'SyntaxError';
+        error.stack = `atom.io.css:1215
+    -webkit-appearance: none;
+                      ^
+
+SyntaxError: Unexpected token ':'
+    at new Script (node:vm:100:7)
+    at evalCode (/Users/vital/projects/jscss/src/bin/eval.ts:29:24)
+    at processInput (/Users/vital/projects/jscss/src/bin/jss.ts:69:9)
+    at processCmdCommand (/Users/vital/projects/jscss/src/bin/jss.ts:103:13)
+    at Object.<anonymous> (/Users/vital/projects/jscss/src/bin/jss.ts:120:5)
+    at Module._compile (node:internal/modules/cjs/loader:1155:14)
+    at Object.Module._extensions..js (node:internal/modules/cjs/loader:1209:10)
+    at Module.load (node:internal/modules/cjs/loader:1033:32)
+    at Function.Module._load (node:internal/modules/cjs/loader:868:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:81:12)`;
+
+
+        const st = StackTrace.fromError(error);
+        expect(st.errorPlace.toString()).toEqual(`atom.io.css:1215
+    -webkit-appearance: none;
+                      ^`);
+
+        const trace = VmScriptStrackTrace.fromStackTrace(st);
+        expect(trace.errorMessage).toEqual("Unexpected token ':'");
+        expect(trace.stack).toEqual([]);
+    });
 });
