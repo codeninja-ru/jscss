@@ -2,11 +2,11 @@ import { Keywords, ReservedWords } from "keywords";
 import { AssignmentOperator, Symbols } from "symbols";
 import { LiteralToken, TokenType } from "token";
 import { ParserError, UnexpectedEndError } from "./parserError";
-import { anyLiteral, anyString, anyTempateStringLiteral, block, notAllowed, comma, commaList, firstOf, keyword, anyBlock, leftHandRecurciveRule, longestOf, loop, noLineTerminatorHere, oneOfSymbols, optional, rawValue, regexpLiteral, roundBracket, sequence, squareBracket, strictLoop, symbol, multiSymbol } from "./parserUtils";
+import { anyBlock, anyLiteral, anyString, anyTempateStringLiteral, block, comma, commaList, firstOf, keyword, leftHandRecurciveRule, longestOf, loop, multiSymbol, noLineTerminatorHere, notAllowed, oneOfSymbols, optional, rawValue, regexpLiteral, roundBracket, sequence, squareBracket, strictLoop, symbol } from "./parserUtils";
 import { isLiteralNextToken } from "./predicats";
-import { CommentNode, IfNode, JsModuleNode, JsRawNode, JssScriptNode, MultiNode, Node, NodeType, SyntaxTree, VarDeclaraionNode } from "./syntaxTree";
+import { IfNode, JsModuleNode, JsRawNode, JssScriptNode, MultiNode, Node, NodeType, VarDeclaraionNode } from "./syntaxTree";
 import { NextToken, TokenParser } from "./tokenParser";
-import { LookAheadTokenStream, TokenStream } from "./tokenStream";
+import { TokenStream } from "./tokenStream";
 import { peekAndSkipSpaces, peekNextToken, peekNoLineTerminatorHere } from "./tokenStreamReader";
 
 function returnRawNode(stream : TokenStream) : JsRawNode {
@@ -315,22 +315,6 @@ function regularExpressionBody(stream: TokenStream) : string {
     }
 
     throw new UnexpectedEndError(stream, `the regexp has been ended unexpectedly`);
-}
-
-export function parseComment(stream: TokenStream) : CommentNode {
-    const token = stream.next();
-
-    switch (token.type) {
-        case TokenType.Comment:
-        case TokenType.MultilineComment:
-            return {
-                type: NodeType.Comment,
-                value: token.value,
-                rawValue: token.value,
-            };
-        default:
-            throw new Error('comment is expected');
-    }
 }
 
 function identifierName(stream : TokenStream) : LiteralToken {
@@ -989,35 +973,4 @@ export function parseJsModule(stream : TokenStream) : JsModuleNode {
         type: NodeType.JsModule,
         items: strictLoop(moduleItem)(stream),
     };
-}
-
-const TOP_LEVEL_PARSERS = [
-    parseComment,
-];
-
-export function parse(stream: TokenStream) : SyntaxTree {
-    let tree = [] as SyntaxTree;
-    while (!stream.eof()) {
-        let node = null;
-        let lastError = null;
-        for (const parser of TOP_LEVEL_PARSERS) {
-            const parserStream = new LookAheadTokenStream(stream);
-            try {
-                node = parser(parserStream);
-                node.rawValue = parserStream.sourceFragment().value;
-                parserStream.flush();
-                break;
-            } catch ( e ) {
-                lastError = e;
-            }
-        }
-
-        if (node == null) {
-            throw lastError;
-        } else {
-            tree.push(node);
-        }
-    }
-
-    return tree;
 }

@@ -2,7 +2,7 @@ import { Keywords, ReservedWords } from "keywords";
 import { Symbols } from "symbols";
 import { HiddenToken, LiteralToken, SymbolToken, TokenType } from "token";
 import { attrib, combinator, cssCharset, cssLiteral, hash, importStatement, mediaQuery, mediaQueryList, pageStatement, term } from "./cssParser";
-import { expression, functionExpression, identifier, moduleItem, parseComment, parseJsVarStatement } from "./parser";
+import { expression, functionExpression, identifier, moduleItem, parseJsVarStatement } from "./parser";
 import { ParserError, SequenceError, SyntaxRuleError } from "./parserError";
 import { andRule, anyBlock, anyLiteral, anyString, block, commaList, dollarSign, endsWithOptionalSemicolon, firstOf, ignoreSpacesAndComments, isBlockNode, keyword, lazyBlock, LazyBlockParser, leftHandRecurciveRule, literalKeyword, loop, multiSymbol, noLineTerminatorHere, noSpacesHere, notAllowed, oneOfSimpleSymbols, optional, probe, rawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
 import { is$NextToken, is$Token, isCssToken, isLiteralNextToken, isSquareBracketNextToken, isSymbolNextToken, makeIsKeywordNextTokenProbe, makeIsSymbolNextTokenProbe } from "./predicats";
@@ -654,10 +654,9 @@ export function stylesheetItem(stream : TokenStream) : ReturnType<TokenParser> {
 function jssStatement(stream : TokenStream) : ReturnType<TokenParser> {
     return firstOf(
         //TODO optimaze the list of statements (it's possible to take sub funstions and put the rules here)
-        ignoreSpacesAndComments, //TODO it's duplicated in stylesheeiItem
+        ignoreSpacesAndComments,
         stylesheetItem,
         moduleItem,
-        parseComment,
     )(stream);
 }
 
