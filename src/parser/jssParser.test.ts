@@ -243,7 +243,7 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
 
     it('does not allow reserved words in selectors', () => {
         expect(() => parseCode('import { display: none; }'))
-            .toThrowError(`(1:1) : "import" is a reseved word, it's not allowed as a property name at index 0`);
+            .toThrowError(`(1:1) : "import" is a reseved word, it's not allowed as a selector at index 0`);
     });
 
     xit('does not allow reserved words in selectors (todo)', () => {

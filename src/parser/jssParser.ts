@@ -4,7 +4,7 @@ import { HiddenToken, LiteralToken, SymbolToken, TokenType } from "token";
 import { attrib, combinator, cssCharset, cssLiteral, hash, importStatement, mediaQuery, mediaQueryList, pageStatement, term } from "./cssParser";
 import { expression, functionExpression, identifier, moduleItem, parseComment, parseJsVarStatement } from "./parser";
 import { ParserError, SequenceError, SyntaxRuleError } from "./parserError";
-import { andRule, anyBlock, anyLiteral, anyString, block, commaList, dollarSign, firstOf, ignoreSpacesAndComments, isBlockNode, keyword, lazyBlock, LazyBlockParser, leftHandRecurciveRule, literalKeyword, loop, multiSymbol, noLineTerminatorHere, noSpacesHere, notAllowed, oneOfSimpleSymbols, optional, probe, rawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
+import { andRule, anyBlock, anyLiteral, anyString, block, commaList, dollarSign, endsWithOptionalSemicolon, firstOf, ignoreSpacesAndComments, isBlockNode, keyword, lazyBlock, LazyBlockParser, leftHandRecurciveRule, literalKeyword, loop, multiSymbol, noLineTerminatorHere, noSpacesHere, notAllowed, oneOfSimpleSymbols, optional, probe, rawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
 import { is$NextToken, is$Token, isCssToken, isLiteralNextToken, isSquareBracketNextToken, isSymbolNextToken, makeIsKeywordNextTokenProbe, makeIsSymbolNextTokenProbe } from "./predicats";
 import { isSourceFragment } from "./sourceFragment";
 import { BlockNode, CssRawNode, FontFaceNode, JsRawNode, JssAtRuleNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssSelectorNode, JssSpreadNode, JssSupportsNode, JssVarDeclarationNode, NodeType, SyntaxTree } from "./syntaxTree";
@@ -234,17 +234,6 @@ function jssPropertyDefinition(stream : TokenStream) : JssDeclarationNode {
     };
 }
 
-function jssDeclaration(stream : TokenStream) : (JssDeclarationNode | JssSpreadNode) {
-    const result = firstOf(
-        jssPropertyDefinition,
-        jssSpreadDefinition,
-    )(stream);
-
-    optional(semicolon)(stream);
-
-    return result;
-}
-
 export function jssIdent(stream : TokenStream) : HiddenToken {
     const result = returnRawValueWithPosition(leftHandRecurciveRule(
         firstOf(
@@ -388,8 +377,24 @@ jssVariableStatement.probe = isLiteralNextToken;
 function jssBlockStatement(stream : TokenStream) : LazyBlockParser<BlockNode<JssBlockItemNode>> {
     return lazyBlock(TokenType.LazyBlock, strictLoop(firstOf(
         ignoreSpacesAndComments,
-        rulesetStatement, //NOTE these two rules are in confilct, I changed order accourding to the priority, but could use longestOne
-        jssDeclaration,
+        function(stream : TokenStream) {
+            const rulesetStream = new LookAheadTokenStream(stream);
+            const prop = jssPropertyDefinition(stream);
+            const semi = optional(semicolon)(stream);
+
+            if (semi == undefined) {
+                //NOTE checking for conflicts
+                const block = optional(rulesetStatement)(rulesetStream);
+
+                if (block) {
+                    rulesetStream.flush();
+                    return block;
+                }
+            }
+            return prop;
+        },
+        rulesetStatement,
+        endsWithOptionalSemicolon(jssSpreadDefinition),
         startsWithDog(
             jssMediaStatement,
             supportsStatement,
@@ -475,7 +480,8 @@ function fontFace(stream : TokenStream) : FontFaceNode {
         lazyBlock(TokenType.LazyBlock, strictLoop(
             firstOf(
                 ignoreSpacesAndComments,
-                jssDeclaration,
+                endsWithOptionalSemicolon(jssPropertyDefinition),
+                endsWithOptionalSemicolon(jssSpreadDefinition),
             )
         ))
     )(stream);
@@ -621,23 +627,9 @@ function startsWithDog(...rules : TokenParser<any>[]) : TokenParser {
 
 export function stylesheetItem(stream : TokenStream) : ReturnType<TokenParser> {
     return firstOf(
-        function(stream : TokenStream) {
-            const rulesetStream = new LookAheadTokenStream(stream);
-            const prop = jssPropertyDefinition(stream);
-            const semi = optional(semicolon)(stream);
-
-            if (semi == undefined) {
-                //NOTE checking for conflicts
-                const block = optional(rulesetStatement)(rulesetStream);
-
-                if (block) {
-                    rulesetStream.flush();
-                    return block;
-                }
-            }
-            return prop;
-        },
         rulesetStatement,
+        endsWithOptionalSemicolon(jssPropertyDefinition),
+        //TODO spread sheet def
         jssVariableStatement,
         startsWithDog(
             cssCharset,

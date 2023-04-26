@@ -850,6 +850,15 @@ export function repeatUntil(parser : TokenParser, until : TokenParser) : TokenPa
     };
 }
 
+export function endsWithOptionalSemicolon<R>(parser : TokenParser<R>) : TokenParser<R> {
+    return probe(function(stream : TokenStream) : R {
+        const result = parser(stream);
+        optional(semicolon)(stream);
+
+        return result;
+    }, parser.probe);
+}
+
 export function skip(parser : TokenParser) : TokenParser {
     return function(stream : TokenStream) : void {
         parser(stream);
