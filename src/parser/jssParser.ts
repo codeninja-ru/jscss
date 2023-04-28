@@ -625,12 +625,18 @@ function startsWithDog(...rules : TokenParser<any>[]) : TokenParser {
     }, makeIsSymbolNextTokenProbe(Symbols.at));
 }
 
-export function stylesheetItem(stream : TokenStream) : ReturnType<TokenParser> {
+/**
+ * implements:
+ * js + css
+ *
+ * */
+function jssStatement(stream : TokenStream) : ReturnType<TokenParser> {
     return firstOf(
+        ignoreSpacesAndComments,
         rulesetStatement,
-        endsWithOptionalSemicolon(jssPropertyDefinition),
         //TODO spread sheet def
         jssVariableStatement,
+        endsWithOptionalSemicolon(jssPropertyDefinition),
         startsWithDog(
             cssCharset,
             importStatement,
@@ -642,20 +648,6 @@ export function stylesheetItem(stream : TokenStream) : ReturnType<TokenParser> {
             fontFace,
             atRule,
         ),
-
-    )(stream);
-}
-
-/**
- * implements:
- * js + css
- *
- * */
-function jssStatement(stream : TokenStream) : ReturnType<TokenParser> {
-    return firstOf(
-        //TODO optimaze the list of statements (it's possible to take sub funstions and put the rules here)
-        ignoreSpacesAndComments,
-        stylesheetItem,
         moduleItem,
     )(stream);
 }

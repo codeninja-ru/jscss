@@ -8,7 +8,7 @@ import { BlockParserError, EmptyStreamError, LexerError, ParserError, SequenceEr
 import { isRoundBracketNextToken, isStringNextToken, isSymbolNextToken } from "./predicats";
 import { LeftTrimSourceFragment, SourceFragment } from "./sourceFragment";
 import { BlockNode, BlockType, IgnoreNode, LazyNode, NodeType } from "./syntaxTree";
-import { NextNotSpaceToken, ParsedSourceWithPosition, ProbeFn, TokenParser, TokenParserArrayWithPosition } from "./tokenParser";
+import { NextNotSpaceToken, NextToken, ParsedSourceWithPosition, ProbeFn, TokenParser, TokenParserArrayWithPosition } from "./tokenParser";
 import { ArrayTokenStream, FlushableTokenStream, LookAheadTokenStream, TokenStream } from "./tokenStream";
 import { isSpaceOrComment, peekAndSkipSpaces, peekNextToken, TokenStreamReader } from "./tokenStreamReader";
 
@@ -651,7 +651,7 @@ export function lazyBlock(expectedTokenType : OneOfBlockTokenType, parser : Toke
             throw new ParserError(`bracket type ${token.value[0]} is unsupported`, token);
         }
     }
-    return function(stream : TokenStream) : LazyBlockParser<ReturnType<TokenParser>> {
+    return probe(function(stream : TokenStream) : LazyBlockParser<ReturnType<TokenParser>> {
         const token = peekAndSkipSpaces(stream);
         if (token.type == expectedTokenType) {
             return new class implements LazyBlockParser<ReturnType<TokenParser>> {
@@ -678,7 +678,9 @@ export function lazyBlock(expectedTokenType : OneOfBlockTokenType, parser : Toke
         }
 
         throw new ParserError(`block is expected`, token);
-    };
+    }, function(nextToken : NextToken) {
+        return nextToken.token.type == expectedTokenType;
+    });
 }
 
 export function isBlockNode(obj : any) : obj is BlockNode {
@@ -701,7 +703,7 @@ export function block(expectedTokenType : OneOfBlockTokenType, parser : TokenPar
             throw new ParserError(`bracket type ${token.value[0]} is unsupported`, token);
         }
     }
-    return function(stream : TokenStream) : ReturnType<TokenParser> {
+    return probe(function(stream : TokenStream) : ReturnType<TokenParser> {
         const token = peekAndSkipSpaces(stream);
         if (token.type == expectedTokenType) {
             const tokens = jssLexer(SubStringInputStream.fromBlockToken(token));
@@ -724,7 +726,9 @@ export function block(expectedTokenType : OneOfBlockTokenType, parser : TokenPar
         }
 
         throw new ParserError(`block is expected`, token);
-    };
+    }, function(nextToken : NextToken) {
+        return nextToken.token.type == expectedTokenType;
+    });
 }
 
 function endOfHtmlComment(stream : TokenStream) : void {
