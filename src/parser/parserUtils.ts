@@ -133,9 +133,17 @@ export function list(parser: TokenParser,
                      canListBeEmpty : boolean = false) : TokenParser {
     const flushedParser = flushed(parser);
     const optionalSeperator = optional(separator);
-    return function(stream: TokenStream) : ReturnType<TokenParser> {
+    return probe(function(stream: TokenStream) : ReturnType<TokenParser> {
         let result = [];
         while (!stream.eof()) {
+            if (parser.probe) {
+                const nextToken = NextNotSpaceToken.fromStream(stream);
+
+                if (!nextToken.procede(parser)) {
+                    // skip parser
+                    break;
+                }
+            }
             try {
                 result.push(flushedParser(stream));
             } catch(e) {
@@ -152,7 +160,7 @@ export function list(parser: TokenParser,
         }
 
         return result;
-    };
+    }, parser.probe);
 }
 
 export type NamedTokenParserResult = {
@@ -173,8 +181,9 @@ export function sequence(...parsers: TokenParser[]) : TokenParser<any[]> {
         const parserStream = new LookAheadTokenStream(stream);
         const results = [];
         for (var i = 0; i < parsers.length; i++) {
+            const parser = parsers[i];
             try {
-                results.push(parsers[i](parserStream));
+                results.push(parser(parserStream));
             } catch(e) {
                 if (i > 0) {
                     throw new SequenceError(e, i);
@@ -187,6 +196,22 @@ export function sequence(...parsers: TokenParser[]) : TokenParser<any[]> {
         // TODO flush might be not needed if we call sequence inside firstOf/or
         parserStream.flush();
         return results;
+    };
+}
+
+export function sequenceVoid(...parsers: TokenParser[]) : TokenParser<void> {
+    return function(stream: TokenStream) : void {
+        for (var i = 0; i < parsers.length; i++) {
+            try {
+                parsers[i](stream);
+            } catch(e) {
+                if (i > 0) {
+                    throw new SequenceError(e, i);
+                } else {
+                    throw e;
+                }
+            }
+        }
     };
 }
 
@@ -284,11 +309,9 @@ export function firstOf(...parsers: TokenParser[]) : TokenParser {
         for (var i = 0; i < parsers.length; i++) {
             const parser = parsers[i];
             try {
-                if (parser.probe) {
-                    if (nextToken.exists && !parser.probe(nextToken)) {
-                        // skip parser
-                        continue;
-                    }
+                if (!nextToken.procede(parser)) {
+                    // skip parser
+                    continue;
                 }
                 let parserStream = new LookAheadTokenStream(stream);
                 const result = parser(parserStream);
@@ -326,10 +349,9 @@ export function optional<P extends TokenParser>(parser: P) : TokenParser<ReturnT
         if (parser.probe) {
             const nextToken = NextNotSpaceToken.fromStream(stream);
 
-            if (nextToken.exists && !parser.probe(nextToken)) {
+            if (!nextToken.procede(parser)) {
                 return undefined;
             }
-
         }
         const parserStream = new LookAheadTokenStream(stream);
 
@@ -755,13 +777,14 @@ function htmlStyleComment(stream : TokenStream) : void {
 export function ignoreSpacesAndComments(stream : TokenStream) : IgnoreNode {
     const result = [];
     var token;
+    const optinalHtmlStyleComment = optional(htmlStyleComment);
     while(!stream.eof()) {
         token = stream.peek();
         if (isSpaceOrComment(token)) {
             stream.next();
             result.push(token.value);
         } else if (Symbols.gt.equal(token)) {
-            const htmlComment = optional(htmlStyleComment)(stream);
+            const htmlComment = optinalHtmlStyleComment(stream);
 
             if (htmlComment) {
                 result.push(htmlComment);

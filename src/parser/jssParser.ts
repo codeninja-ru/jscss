@@ -4,7 +4,7 @@ import { HiddenToken, LiteralToken, SymbolToken, TokenType } from "token";
 import { attrib, combinator, cssCharset, cssLiteral, hash, importStatement, mediaQuery, mediaQueryList, pageStatement, term } from "./cssParser";
 import { expression, functionExpression, identifier, moduleItem, parseJsVarStatement } from "./parser";
 import { ParserError, SequenceError, SyntaxRuleError } from "./parserError";
-import { andRule, anyBlock, anyLiteral, anyString, block, commaList, dollarSign, endsWithOptionalSemicolon, firstOf, ignoreSpacesAndComments, isBlockNode, keyword, lazyBlock, LazyBlockParser, leftHandRecurciveRule, literalKeyword, loop, multiSymbol, noLineTerminatorHere, noSpacesHere, notAllowed, oneOfSimpleSymbols, optional, probe, rawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
+import { andRule, anyBlock, anyLiteral, anyString, block, commaList, dollarSign, endsWithOptionalSemicolon, firstOf, ignoreSpacesAndComments, isBlockNode, keyword, lazyBlock, LazyBlockParser, leftHandRecurciveRule, literalKeyword, loop, multiSymbol, noLineTerminatorHere, noSpacesHere, notAllowed, oneOfSimpleSymbols, optional, probe, rawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, sequenceVoid, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
 import { is$NextToken, is$Token, isCssToken, isLiteralNextToken, isSquareBracketNextToken, isSymbolNextToken, makeIsKeywordNextTokenProbe, makeIsSymbolNextTokenProbe } from "./predicats";
 import { isSourceFragment } from "./sourceFragment";
 import { BlockNode, CssRawNode, FontFaceNode, JsRawNode, JssAtRuleNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssSelectorNode, JssSpreadNode, JssSupportsNode, JssVarDeclarationNode, NodeType, SyntaxTree } from "./syntaxTree";
@@ -34,17 +34,20 @@ templatePlaceholder.probe = is$NextToken;
 function withVendorPrefix(keywordParser : TokenParser) : TokenParser {
     return function(stream : TokenStream) : ReturnType<TokenParser> {
         firstOf(
-            sequence(
-                symbol(Symbols.minus),
-                firstOf(
-                    literalKeyword('webkit', peekNextToken),
-                    literalKeyword('moz', peekNextToken),
-                    literalKeyword('o', peekNextToken),
-                    literalKeyword('ms', peekNextToken),
+            probe(
+                sequenceVoid(
+                    symbol(Symbols.minus),
+                    firstOf(
+                        literalKeyword('webkit', peekNextToken),
+                        literalKeyword('moz', peekNextToken),
+                        literalKeyword('o', peekNextToken),
+                        literalKeyword('ms', peekNextToken),
+                    ),
+                    symbol(Symbols.minus, peekNextToken),
+                    noSpacesHere,
+                    keywordParser,
                 ),
-                symbol(Symbols.minus, peekNextToken),
-                noSpacesHere,
-                keywordParser,
+                makeIsSymbolNextTokenProbe(Symbols.minus),
             ),
             keywordParser,
         )(stream);
@@ -240,7 +243,7 @@ export function jssIdent(stream : TokenStream) : HiddenToken {
             templatePlaceholder,
             cssLiteral,//NOTE it can't be started with numbers, and content some chars, read the spec
         ),
-        sequence(noSpacesHere, firstOf(
+        sequenceVoid(noSpacesHere, firstOf(
             templatePlaceholder,
             cssLiteral,
         )),
@@ -518,7 +521,7 @@ function atRule(stream : TokenStream) : JssAtRuleNode {
   @namespace <namespace-prefix>? [ <string> | <url> ] ;
  * */
 function namespaceStatement(stream : TokenStream) : CssRawNode {
-    sequence(
+    sequenceVoid(
         keyword(Keywords.cssNamespace),
         // <namespace-prefix> = <ident>
         firstOf(
@@ -526,11 +529,11 @@ function namespaceStatement(stream : TokenStream) : CssRawNode {
             // url( <string> <url-modifier>* )  |
             // src( <string> <url-modifier>* )
             //TODO add template placehoders
-            sequence(
+            sequenceVoid(
                 cssLiteral,
                 firstOf(
                     anyString,
-                    sequence(cssLiteral, roundBracket),
+                    sequenceVoid(cssLiteral, roundBracket),
                     roundBracket,
                 )
             ),
@@ -555,7 +558,7 @@ function namespaceStatement(stream : TokenStream) : CssRawNode {
  *
  * */
 function keyframesStatement(stream : TokenStream) : CssRawNode {
-    sequence(
+    sequenceVoid(
         withVendorPrefix(
             literalKeyword('keyframes'),
         ),
@@ -563,7 +566,7 @@ function keyframesStatement(stream : TokenStream) : CssRawNode {
         block(TokenType.LazyBlock, strictLoop(
             firstOf(
                 ignoreSpacesAndComments,
-                sequence(
+                sequenceVoid(
                     firstOf(
                         literalKeyword('from'),
                         literalKeyword('to'),

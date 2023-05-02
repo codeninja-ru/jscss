@@ -30,7 +30,12 @@ export class KindOfSpaceInputStream extends AbstractInputStreamDecorator impleme
 
 export class LiteralInputStream extends AbstractInputStreamDecorator implements InputStream {
     static isLiteral(ch: string) {
-        return /^[0-9a-zA-Z\$\_]/.test(ch);
+        const code = ch.charCodeAt(0);
+        return (code >= 48 && code <= 57) // 0-9
+            || (code >= 97 && code <= 122) // a-z
+            || (code >= 65 && code <= 90) // A-Z
+            || code == 36 || code == 95; // $ _
+        //return /^[0-9a-zA-Z\$\_]/.test(ch);
     }
 
     isEof(): boolean {

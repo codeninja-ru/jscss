@@ -169,6 +169,7 @@ describe('CSS Parser', () => {
     });
 
     it('rulesetStatement', () => {
+        debugger;
         testParser(rulesetStatement, 'div {}');
         testParser(rulesetStatement, 'div { }');
         testParser(rulesetStatement, 'div { color: white; }');

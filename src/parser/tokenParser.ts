@@ -23,6 +23,7 @@ export type ProbeFn = (nextToken : NextToken) => boolean;
 export interface NextToken {
     readonly token : Token;
     readonly exists : boolean;
+    procede(parser : TokenParser) : boolean;
 }
 
 class NoNextToken implements NextToken {
@@ -30,6 +31,10 @@ class NoNextToken implements NextToken {
     get token() : Token {
         throw new Error("nextToken doesn't exist");
     }
+    procede(_ : TokenParser) : boolean {
+        return true;
+    }
+
 }
 
 const NO_NEXT_TOKEN = new NoNextToken();
@@ -38,6 +43,17 @@ export class NextNotSpaceToken implements NextToken {
     readonly exists = true;
 
     private constructor(public readonly token : Token) {
+    }
+
+    procede(parser : TokenParser) : boolean {
+        if (parser.probe) {
+            if (this.exists && !parser.probe(this)) {
+                // skip parser
+                return false;
+            }
+        }
+
+        return true;
     }
 
     static fromStream(stream : TokenStream) : NextToken {
@@ -52,7 +68,6 @@ export class NextNotSpaceToken implements NextToken {
             throw e;
         }
     }
-
 }
 
 export type TokenParserArrayWithPosition = (stream: TokenStream) => ParsedSourceWithPosition[];
