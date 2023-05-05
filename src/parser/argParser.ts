@@ -65,7 +65,7 @@ function option(name : string) : TokenParser {
         )(stream);
 
         if (optionName.value != name) {
-            throw new ParserError(`-${optionName.value} is unrecognized option`, optionName);
+            throw ParserError.reuse(`-${optionName.value} is unrecognized option`, optionName);
         }
 
         return optionName.value;
@@ -88,7 +88,7 @@ function longOption(name : string) : TokenParser {
         )(stream);
 
         if (optionName.value != name) {
-            throw new ParserError(`--${name} is unrecognized option`, optionName);
+            throw ParserError.reuse(`--${name} is unrecognized option`, optionName);
         }
 
         return optionName.value;

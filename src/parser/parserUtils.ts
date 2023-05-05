@@ -21,7 +21,7 @@ export function noLineTerminatorHere(stream : TokenStream) : void {
                 stream.next();
                 continue;
             } else {
-                throw new ParserError('no line terminator here', token);
+                throw ParserError.reuse('no line terminator here', token);
             }
         } else {
             break;
@@ -33,7 +33,7 @@ export function noSpacesHere(stream : TokenStream) : void {
     while(!stream.eof()) {
         const token = stream.peek();
         if (token.type == TokenType.Space) {
-            throw new ParserError('no spaces here', token);
+            throw ParserError.reuse('no spaces here', token);
         } else {
             break;
         }
@@ -47,7 +47,7 @@ export function keyword(keyword: Keyword,
         if (token.type == TokenType.Literal && keyword.equal(token)) {
             return token;
         } else {
-            throw new ParserError(`keyword "${keyword.name}" is expected`, token);
+            throw ParserError.reuse(`keyword "${keyword.name}" is expected`, token);
         }
     };
 }
@@ -60,7 +60,7 @@ export function literalKeyword(keyword: string,
         if (token.type == TokenType.Literal && token.value == keyword) {
             return token;
         } else {
-            throw new ParserError(`keyword "${keyword}" is expected`, token);
+            throw ParserError.reuse(`keyword "${keyword}" is expected`, token);
         }
     };
 }
@@ -71,7 +71,7 @@ export function comma(stream: TokenStream) : SymbolToken {
         return token;
     }
 
-    throw new ParserError(`, is expected`, token);
+    throw ParserError.reuse(`, is expected`, token);
 }
 comma.probe = isSymbolNextToken;
 
@@ -186,7 +186,7 @@ export function sequence(...parsers: TokenParser[]) : TokenParser<any[]> {
                 results.push(parser(parserStream));
             } catch(e) {
                 if (i > 0) {
-                    throw new SequenceError(e, i);
+                    throw SequenceError.reuse(e, i);
                 } else {
                     throw e;
                 }
@@ -206,7 +206,7 @@ export function sequenceVoid(...parsers: TokenParser[]) : TokenParser<void> {
                 parsers[i](stream);
             } catch(e) {
                 if (i > 0) {
-                    throw new SequenceError(e, i);
+                    throw SequenceError.reuse(e, i);
                 } else {
                     throw e;
                 }
@@ -242,7 +242,7 @@ export function sequenceWithPosition(...parsers: TokenParser[]) : TokenParserArr
                 }
             } catch(e) {
                 if (i > 0) {
-                    throw new SequenceError(e);
+                    throw SequenceError.reuse(e);
                 } else {
                     throw e;
                 }
@@ -284,7 +284,7 @@ export function longestOf(...parsers: TokenParser[]) : TokenParser {
         }
 
         if (result.length == 0) {
-            throw new ParserError(`none of the parsers worked`, stream.peek());
+            throw ParserError.reuse(`none of the parsers worked`, stream.peek());
         } else {
             const [longestResult, longestStream] = result.reduce((prevValue, curValue) => {
                 if (curValue[1].currentPosition() > prevValue[1].currentPosition()) {
@@ -334,10 +334,10 @@ export function firstOf(...parsers: TokenParser[]) : TokenParser {
             throw sequenceErrors[0];
         } else {
             if (stream.eof()) {
-                throw new UnexpectedEndError(stream);
+                throw UnexpectedEndError.reuse(stream);
             } else {
                 const token = stream.peek();
-                throw new ParserError(`unknown statement "${token.value}"`, token);
+                throw ParserError.reuse(`unknown statement "${token.value}"`, token);
             }
         }
     };
@@ -399,7 +399,7 @@ export function oneOfSymbols(...chars: MultiSymbol[]) : TokenParser<SymbolToken>
         const firstToken = peekAndSkipSpaces(stream);
 
         if (firstToken.type != TokenType.Symbol) {
-            throw new ParserError(`one of ${charsForErrorReports} is expected`, firstToken);
+            throw ParserError.reuse(`one of ${charsForErrorReports} is expected`, firstToken);
         }
 
         for (var i = 0; i < groupByLength.length; i++) {
@@ -433,7 +433,7 @@ export function oneOfSymbols(...chars: MultiSymbol[]) : TokenParser<SymbolToken>
             }
         }
 
-        throw new ParserError(`one of ${charsForErrorReports} is expected`, firstToken);
+        throw ParserError.reuse(`one of ${charsForErrorReports} is expected`, firstToken);
     };
 }
 oneOfSymbols.probe = isSymbolNextToken;
@@ -456,7 +456,7 @@ export function oneOfSimpleSymbols(chars: SyntaxSymbol[], peekNextToken = peekAn
             }
         }
 
-        throw new ParserError(`one of ${charsForErrorReports} is expected`, token);
+        throw ParserError.reuse(`one of ${charsForErrorReports} is expected`, token);
     };
 }
 oneOfSymbols.probe = isSymbolNextToken;
@@ -467,7 +467,7 @@ export function anyString(stream: TokenStream) : StringToken {
         return token;
     }
 
-    throw new ParserError(`string literal is expected`, token);
+    throw ParserError.reuse(`string literal is expected`, token);
 }
 anyString.probe = isStringNextToken;
 
@@ -477,7 +477,7 @@ export function anyTempateStringLiteral(stream: TokenStream) : TemplateStringTok
         return token;
     }
 
-    throw new ParserError(`template string literal is expected`, token);
+    throw ParserError.reuse(`template string literal is expected`, token);
 }
 
 export function anyLiteral(stream: TokenStream, peekNext = peekAndSkipSpaces) : LiteralToken {
@@ -486,7 +486,7 @@ export function anyLiteral(stream: TokenStream, peekNext = peekAndSkipSpaces) : 
         return token;
     }
 
-    throw new ParserError(`literal is expected`, token);
+    throw ParserError.reuse(`literal is expected`, token);
 }
 
 export function anySymbol(stream : TokenStream, peekNext = peekAndSkipSpaces) : SymbolToken {
@@ -494,7 +494,7 @@ export function anySymbol(stream : TokenStream, peekNext = peekAndSkipSpaces) : 
     if (token.type == TokenType.Symbol) {
         return token;
     }
-    throw new ParserError(`symbol is expected`, token);
+    throw ParserError.reuse(`symbol is expected`, token);
 }
 
 export function anySpace(stream : TokenStream, peekNext = peekNextToken) : SpaceToken {
@@ -502,7 +502,7 @@ export function anySpace(stream : TokenStream, peekNext = peekNextToken) : Space
     if (token.type == TokenType.Space) {
         return token;
     }
-    throw new ParserError(`space is expected`, token);
+    throw ParserError.reuse(`space is expected`, token);
 }
 
 export function dollarSign(stream: TokenStream) : LiteralToken {
@@ -512,7 +512,7 @@ export function dollarSign(stream: TokenStream) : LiteralToken {
         return token;
     }
 
-    throw new ParserError(`dollar ($) sign is expected here`, token);
+    throw ParserError.reuse(`dollar ($) sign is expected here`, token);
 }
 
 export function symbol(ch: SyntaxSymbol,
@@ -528,7 +528,7 @@ export function symbol(ch: SyntaxSymbol,
             };
         }
 
-        throw new ParserError(`${ch.name} is expected`, token);
+        throw ParserError.reuse(`${ch.name} is expected`, token);
     };
 }
 
@@ -543,7 +543,7 @@ export function multiSymbol(ch: MultiSymbol,
 
                 if (!(nextToken.type == TokenType.Symbol
                     && nextToken.value == ch.name[i])) {
-                    throw new ParserError(`${ch.name} is expected`, token);
+                    throw ParserError.reuse(`${ch.name} is expected`, token);
                 }
             }
 
@@ -554,7 +554,7 @@ export function multiSymbol(ch: MultiSymbol,
             };
         }
 
-        throw new ParserError(`${ch.name} is expected`, token);
+        throw ParserError.reuse(`${ch.name} is expected`, token);
     };
 }
 
@@ -569,7 +569,7 @@ export function anyBlock(stream: TokenStream) : LazyNode {
         };
     }
 
-    throw new ParserError(`block is expected`, token);
+    throw ParserError.reuse(`block is expected`, token);
 }
 
 export function leftHandRecurciveRule(leftRule : TokenParser, rightRule : TokenParser) : TokenParser {
@@ -595,7 +595,7 @@ export function squareBracket(stream: TokenStream) : SquareBracketsToken {
         return token;
     }
 
-    throw new ParserError(`squere brackets were expected`, token);
+    throw ParserError.reuse(`squere brackets were expected`, token);
 }
 
 export function roundBracket(stream: TokenStream, peekNext = peekAndSkipSpaces) : LazyNode {
@@ -608,7 +608,7 @@ export function roundBracket(stream: TokenStream, peekNext = peekAndSkipSpaces) 
         };
     }
 
-    throw new ParserError(`round brackets were expected`, token);
+    throw ParserError.reuse(`round brackets were expected`, token);
 }
 roundBracket.probe = isRoundBracketNextToken;
 
@@ -618,7 +618,7 @@ export function regexpLiteral(reg : RegExp, peekFn : TokenStreamReader = peekAnd
         if (token.type == TokenType.Literal && reg.test(token.value)) {
             return token.value;
         } else {
-            throw new ParserError(`expected literal matched to regexp ${reg}`, token);
+            throw ParserError.reuse(`expected literal matched to regexp ${reg}`, token);
         }
     };
 }
@@ -670,7 +670,7 @@ export function lazyBlock(expectedTokenType : OneOfBlockTokenType, parser : Toke
             case '{':
             return BlockType.CurlyBracket;
             default:
-            throw new ParserError(`bracket type ${token.value[0]} is unsupported`, token);
+            throw ParserError.reuse(`bracket type ${token.value[0]} is unsupported`, token);
         }
     }
     return probe(function(stream : TokenStream) : LazyBlockParser<ReturnType<TokenParser>> {
@@ -688,7 +688,7 @@ export function lazyBlock(expectedTokenType : OneOfBlockTokenType, parser : Toke
                         throw new BlockParserError(e);
                     }
                     if (!tokenStream.eof()) {
-                        throw new ParserError(`unexpected token " ${tokenStream.peek().value} "`, tokenStream.peek());
+                        throw ParserError.reuse(`unexpected token " ${tokenStream.peek().value} "`, tokenStream.peek());
                     }
                     return {
                         type: NodeType.Block,
@@ -699,7 +699,7 @@ export function lazyBlock(expectedTokenType : OneOfBlockTokenType, parser : Toke
             };
         }
 
-        throw new ParserError(`block is expected`, token);
+        throw ParserError.reuse(`block is expected`, token);
     }, function(nextToken : NextToken) {
         return nextToken.token.type == expectedTokenType;
     });
@@ -722,7 +722,7 @@ export function block(expectedTokenType : OneOfBlockTokenType, parser : TokenPar
             case '{':
             return BlockType.CurlyBracket;
             default:
-            throw new ParserError(`bracket type ${token.value[0]} is unsupported`, token);
+            throw ParserError.reuse(`bracket type ${token.value[0]} is unsupported`, token);
         }
     }
     return probe(function(stream : TokenStream) : ReturnType<TokenParser> {
@@ -738,7 +738,7 @@ export function block(expectedTokenType : OneOfBlockTokenType, parser : TokenPar
                 throw new BlockParserError(e);
             }
             if (!tokenStream.eof()) {
-                throw new ParserError(`unexpected token " ${tokenStream.peek().value} "`, tokenStream.peek());
+                throw ParserError.reuse(`unexpected token " ${tokenStream.peek().value} "`, tokenStream.peek());
             }
             return {
                 type: NodeType.Block,
@@ -747,7 +747,7 @@ export function block(expectedTokenType : OneOfBlockTokenType, parser : TokenPar
             } as BlockNode;
         }
 
-        throw new ParserError(`block is expected`, token);
+        throw ParserError.reuse(`block is expected`, token);
     }, function(nextToken : NextToken) {
         return nextToken.token.type == expectedTokenType;
     });
@@ -797,11 +797,11 @@ export function ignoreSpacesAndComments(stream : TokenStream) : IgnoreNode {
     }
 
     if (token === undefined) {
-        throw new UnexpectedEndError(stream);
+        throw UnexpectedEndError.reuse(stream);
     }
 
     if (token && result.length == 0) {
-        throw new ParserError('Comment or space symbols are expected', token);
+        throw ParserError.reuse('Comment or space symbols are expected', token);
     }
 
     return {
@@ -832,7 +832,7 @@ export function notAllowed(parserArray : TokenParser[] | TokenParser, errorMessa
                 // it's ok
                 continue;
             }
-            throw new ParserError(errorMessage, stream.peek());
+            throw ParserError.reuse(errorMessage, stream.peek());
         }
     };
 }

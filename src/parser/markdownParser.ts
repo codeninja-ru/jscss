@@ -105,7 +105,7 @@ function header(stream : TokenStream) : HeaderMarkdownNode {
             nodeType = MarkdownNodeType.H6;
             break;
         default:
-            throw new ParserError(`header level ${level} is not supported`, stream.peek());
+            throw ParserError.reuse(`header level ${level} is not supported`, stream.peek());
     }
 
     optional(anySpace)(stream);
@@ -135,7 +135,7 @@ function endOfLine(stream : TokenStream) : void {
         return;
     }
 
-    throw new ParserError('end of line is expected', token);
+    throw ParserError.reuse('end of line is expected', token);
 }
 
 function sourceCode(stream : TokenStream) : SourceCodeMarkdownNode {
@@ -168,7 +168,7 @@ function beginningOfStream(stream : TokenStream) : void {
         return;
     }
 
-    throw new ParserError('beigging of the stream is expected', stream.peek());
+    throw ParserError.reuse('beigging of the stream is expected', stream.peek());
 }
 
 function isEndOfLineToken(token : Token) : boolean {
@@ -191,7 +191,7 @@ function endOfBlock(stream : TokenStream) : SpaceToken {
         return token;
     }
 
-    throw new ParserError('end of block is expected', stream.peek());
+    throw ParserError.reuse('end of block is expected', stream.peek());
 }
 
 function p(stream : TokenStream) : PMarkdownNode {

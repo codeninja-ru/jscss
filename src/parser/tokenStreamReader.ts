@@ -33,7 +33,7 @@ export function isSpaceOrComment(token : Token) : boolean {
 
 export function peekNextToken(stream : TokenStream) : Token {
     if (stream.eof()) {
-        throw new UnexpectedEndError(stream);
+        throw UnexpectedEndError.fromStream(stream);
     }
 
     return stream.next();
@@ -49,7 +49,7 @@ export function peekAndSkipSpaces(stream: TokenStream) : Token {
         }
     }
 
-    throw new UnexpectedEndError(stream);
+    throw UnexpectedEndError.fromStream(stream);
 }
 
 export function peekNoLineTerminatorHere(stream: TokenStream) : Token {
@@ -67,5 +67,5 @@ export function peekNoLineTerminatorHere(stream: TokenStream) : Token {
         }
     }
 
-    throw new UnexpectedEndError(stream);
+    throw UnexpectedEndError.fromStream(stream);
 };

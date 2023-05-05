@@ -89,7 +89,7 @@ export function makeStringReader(quatation: "'" | '"') : Reader {
     };
 }
 
-export const JS_SYMBOLS = ";.,=<>-*+&|^@%?:#!~\\<>"; //TODO sort according statistic of usage
+const JS_SYMBOLS = ";.,=<>-*+&|^@%?:#!~\\<>"; //TODO sort according statistic of usage
 
 export function makeSymbolReader(allowedSymbols = JS_SYMBOLS): Reader {
     return function(stream : InputStream) : ReaderResult {

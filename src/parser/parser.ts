@@ -214,7 +214,7 @@ export function numericLiteral(stream : TokenStream) : void {
         }
 
         if (numberPart === undefined && fraction === undefined) {
-            throw new Error("it's not a number");
+            throw ParserError.reuse("it's not a number", stream.peek());
         }
 
         return [numberPart, dot, fraction].filter(value => value !== undefined).join('');
@@ -307,14 +307,14 @@ function regularExpressionBody(stream: TokenStream) : string {
                 isEscapeMode = false;
             }
         } else if (token.type == TokenType.Space && token.value.indexOf('\n') !== -1) {
-            throw new ParserError(`unexpected end of the regexp`, token);
+            throw ParserError.reuse(`unexpected end of the regexp`, token);
         } else {
             result += token.value;
             isEscapeMode = false;
         }
     }
 
-    throw new UnexpectedEndError(stream, `the regexp has been ended unexpectedly`);
+    throw UnexpectedEndError.reuse(stream, `the regexp has been ended unexpectedly`);
 }
 
 function identifierName(stream : TokenStream) : LiteralToken {
@@ -326,7 +326,7 @@ function identifierName(stream : TokenStream) : LiteralToken {
 export function identifier(stream: TokenStream) : string {
     const bindingIdentifier = identifierName(stream);
     if (bindingIdentifier.value in ReservedWords) {
-        throw new Error(`${bindingIdentifier} is a reseved word`);
+        throw ParserError.reuse(`${bindingIdentifier} is a reseved word`, bindingIdentifier);
     }
 
     return bindingIdentifier.value;

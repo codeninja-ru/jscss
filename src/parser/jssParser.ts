@@ -113,8 +113,8 @@ export function jssPropertyName(stream : TokenStream) : any {
             function(stream : TokenStream) {
                 const name = jssIdent(stream);
                 if (name.value in ReservedWords) {
-                    throw new SequenceError(
-                        new SyntaxRuleError(`"${name.value}" is a reseved word, it's not allowed as a property name`, name.position)
+                    throw SequenceError.reuse(
+                        SyntaxRuleError.reuse(`"${name.value}" is a reserved word, it's not allowed as a property name`, name.position)
                     );
                 }
                 return name;
@@ -193,7 +193,7 @@ function jssPropertyValue(stream : TokenStream) : any {
                             parserStream.flush();
                             return token;
                         default:
-                            throw new ParserError('unexpected symbol in jssPropertyValue', token);
+                            throw ParserError.reuse('unexpected symbol in jssPropertyValue', token);
 
                     }
                 }
@@ -319,7 +319,7 @@ export function jssSelector(stream : TokenStream) : JssSelectorNode {
         } else if (sel) {
             result.push(sel);
         } else if (comb) {
-            throw new ParserError(`unexpected combinator`, comb);
+            throw ParserError.reuse(`unexpected combinator`, comb);
         } else {
             break;
         }
@@ -359,8 +359,9 @@ function jssVariableStatement(stream : TokenStream) : JssVarDeclarationNode {
     )(stream);
 
     if (varName.value in {"self" : 1, "_styles" : 1, "JssStylesheet" : 1, "JssStyleBlock" : 1, "JssBlock": 1}) {
-        throw new SequenceError(
-            new SyntaxRuleError(`${varName.value} is a reseved word`, varName.position),
+        throw SequenceError.reuse(
+            // TODO there is no point in the second (cause) exception
+            SyntaxRuleError.reuse(`${varName.value} is a reserved word`, varName.position),
         );
     }
 
@@ -424,8 +425,8 @@ export function rulesetStatement(stream : TokenStream) : JssBlockNode {
         const firstSelector = selectors[0].items[0];
 
         if (firstSelector in ReservedWords) {
-            throw new SequenceError(
-                new SyntaxRuleError(`"${firstSelector}" is a reseved word, it's not allowed as a selector`, selectors[0].position)
+            throw SequenceError.reuse(
+                SyntaxRuleError.reuse(`"${firstSelector}" is a reseved word, it's not allowed as a selector`, selectors[0].position)
             );
         }
     }
@@ -454,7 +455,7 @@ export function jssMediaStatement(stream : TokenStream) : JssAtRuleNode {
             items: rules.parse().items,
         };
     } catch(e) {
-        throw new SequenceError(e);
+        throw SequenceError.reuse(e);
     }
 }
 

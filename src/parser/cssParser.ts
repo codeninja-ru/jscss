@@ -36,10 +36,10 @@ export function cssLiteral(stream: TokenStream) : LiteralToken {
     }
 
     if (result == "") {
-        throw new ParserError(`css literal is expected`, firstToken);
+        throw ParserError.reuse(`css literal is expected`, firstToken);
     } else {
         if (result.includes('$')) {
-            throw new ParserError(`css literal can't containt $`, firstToken);
+            throw ParserError.reuse(`css literal can't containt $`, firstToken);
         }
         return {
             type: TokenType.Literal,

@@ -47,7 +47,7 @@ export class ArrayTokenStream implements TokenStream {
         if (idx < this.tokens.length) {
             return this.tokens[idx];
         } else {
-            throw new UnexpectedEndError(this);
+            throw UnexpectedEndError.reuse(this);
         }
     }
 
@@ -55,7 +55,7 @@ export class ArrayTokenStream implements TokenStream {
         if (this.pos < this.tokens.length) {
             return this.tokens[this.pos++];
         } else {
-            throw new UnexpectedEndError(this);
+            throw UnexpectedEndError.reuse(this);
         }
     }
 
@@ -63,7 +63,7 @@ export class ArrayTokenStream implements TokenStream {
         if (this.pos < this.tokens.length) {
             return this.tokens[this.pos];
         } else {
-            throw new UnexpectedEndError(this);
+            throw UnexpectedEndError.reuse(this);
         }
     }
 
