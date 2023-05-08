@@ -1,16 +1,17 @@
 import { Keywords, ReservedWords } from "keywords";
 import { Symbols } from "symbols";
 import { HiddenToken, LiteralToken, SymbolToken, TokenType } from "token";
-import { attrib, combinator, cssCharset, cssLiteral, hash, importStatement, mediaQuery, mediaQueryList, pageStatement, term } from "./cssParser";
+import { attrib, combinator, cssCharset, cssLiteral, hash, importStatement, mediaQuery, mediaQueryList, term } from "./cssParser";
 import { expression, functionExpression, identifier, moduleItem, parseJsVarStatement } from "./parser";
 import { ParserError, SequenceError, SyntaxRuleError } from "./parserError";
-import { andRule, anyBlock, anyLiteral, anyString, block, commaList, dollarSign, endsWithOptionalSemicolon, firstOf, ignoreSpacesAndComments, isBlockNode, keyword, lazyBlock, LazyBlockParser, leftHandRecurciveRule, literalKeyword, loop, multiSymbol, noLineTerminatorHere, noSpacesHere, notAllowed, oneOfSimpleSymbols, optional, probe, rawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, sequenceVoid, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
+import { andRule, anyBlock, anyLiteral, anyString, block, commaList, dollarSign, endsWithOptionalSemicolon, firstOf, ignoreSpacesAndComments, isBlockNode, isLazyBlockParser, keyword, lazyBlock, LazyBlockParser, leftHandRecurciveRule, literalKeyword, loop, multiSymbol, noLineTerminatorHere, noSpacesHere, notAllowed, oneOfSimpleSymbols, optional, probe, rawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, sequenceVoid, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
 import { is$NextToken, is$Token, isCssToken, isLiteralNextToken, isSquareBracketNextToken, isSymbolNextToken, makeIsKeywordNextTokenProbe, makeIsSymbolNextTokenProbe } from "./predicats";
 import { isSourceFragment } from "./sourceFragment";
-import { BlockNode, CssRawNode, FontFaceNode, JsRawNode, JssAtRuleNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssSelectorNode, JssSpreadNode, JssSupportsNode, JssVarDeclarationNode, NodeType, SyntaxTree } from "./syntaxTree";
+import { BlockNode, CssCharsetNode, CssImportNode, CssMediaNode, CssPageNode, CssRawNode, FontFaceNode, JsRawNode, JssAtRuleNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssSelectorNode, JssSpreadNode, JssSupportsNode, JssVarDeclarationNode, NodeType, SyntaxTree } from "./syntaxTree";
 import { NextToken, TokenParser } from "./tokenParser";
 import { LookAheadTokenStream, TokenStream } from "./tokenStream";
 import { peekAndSkipSpaces, peekNextToken } from "./tokenStreamReader";
+import { OneOfArray, ReturnTypeMap } from "./types";
 
 
 export function parseJssScript(stream : TokenStream) : SyntaxTree {
@@ -73,7 +74,6 @@ function pseudo(stream : TokenStream) : string {
     if (funcCall) {
         result += funcCall[1].value;
     }
-
 
     return result;
 }
@@ -378,10 +378,10 @@ function jssVariableStatement(stream : TokenStream) : JssVarDeclarationNode {
 }
 jssVariableStatement.probe = isLiteralNextToken;
 
-function jssBlockStatement(stream : TokenStream) : LazyBlockParser<BlockNode<JssBlockItemNode>> {
+function jssBlockStatement(stream : TokenStream) : LazyBlockParser<BlockNode<JssBlockItemNode[]>> {
     return lazyBlock(TokenType.LazyBlock, strictLoop(firstOf(
         ignoreSpacesAndComments,
-        function(stream : TokenStream) {
+        function(stream : TokenStream) : JssDeclarationNode | JssBlockNode {
             const rulesetStream = new LookAheadTokenStream(stream);
             const prop = jssPropertyDefinition(stream);
             const semi = optional(semicolon)(stream);
@@ -511,7 +511,7 @@ function atRule(stream : TokenStream) : JssAtRuleNode {
         mediaList: mediaListItems,
         name: '@' + start.value,
         position: start.position,
-        items: rules.parse().items,
+        items: isLazyBlockParser(rules) ? rules.parse().items : undefined,
     };
 }
 
@@ -606,22 +606,31 @@ function supportsStatement(stream : TokenStream) : JssSupportsNode {
 }
 
 
+type StartsWithDogResult<R extends TokenParser[]> = OneOfArray<ReturnTypeMap<R>>;
+type StartsWithDogNode = CssMediaNode | CssPageNode | CssCharsetNode
+    | CssImportNode | JssAtRuleNode | CssRawNode | JssSupportsNode
+    | FontFaceNode;
 /**
  * all rules that stat with @
  * */
-function startsWithDog(...rules : TokenParser<any>[]) : TokenParser {
-    return probe(function(stream : TokenStream) : ReturnType<TokenParser> {
+function startsWithDog<R extends TokenParser<StartsWithDogNode>[]>(...rules : R) : TokenParser<StartsWithDogResult<R>> {
+    return probe(function(stream : TokenStream) : StartsWithDogResult<R> {
         const dog = symbol(Symbols.at)(stream);
         noSpacesHere(stream);
         let result = firstOf(
             ...rules,
-        )(stream);
+        )(stream); //TODO typescript is not able to derive type here, check for updates or bugs
 
+        //TODO get rid of ts-ignore here
+        // @ts-ignore
         if (result.rawValue) {
+        // @ts-ignore
             result.rawValue = '@' + result.rawValue;
         }
 
+        // @ts-ignore
         if (result.position) {
+            // @ts-ignore
             result.position = dog.position;
         }
 
@@ -645,7 +654,7 @@ function jssStatement(stream : TokenStream) : ReturnType<TokenParser> {
             cssCharset,
             importStatement,
             jssMediaStatement,
-            pageStatement,
+            //pageStatement, //TODO remove?
             namespaceStatement,
             keyframesStatement,
             supportsStatement,

@@ -237,7 +237,7 @@ function mediaQuery2js(node : JssAtRuleNode, fileName : string, bindName = 'self
 
     return tag`(function(parent) {
 ${instance}
-${printProperties(node.items, fileName, bindName)}
+${node.items ? printProperties(node.items, fileName, bindName) : ''}
 return self;
 }).bind(${bindName})(${bindName})`;
 }

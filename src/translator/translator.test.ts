@@ -228,6 +228,29 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
 ]}]);
     });
 
+    it('parses @page', () => {
+        expect(evalTestCode(`@page {
+  size: 8.5in 9in;
+  margin-top: 4in;
+}
+
+/* Targets all even-numbered pages */
+@page :left {
+  margin-top: 4in;
+}
+
+/* Targets all odd-numbered pages */
+@page :right {
+  size: 11in;
+  margin-top: 4in;
+}
+
+/* Targets all selectors with 'page: wide;' set */
+@page wide {
+  size: a4 landscape;
+}`).toArray()).toEqual('todo');
+    });
+
     it('parses complex media queries', () => {
         //TODO instead of @media there can be @page, @charset and etc
         expect(evalTestCode(`.className {

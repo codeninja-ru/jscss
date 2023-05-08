@@ -237,5 +237,11 @@ describe('CSS Parser', () => {
 }]);
     });
 
+    it('parses @page', () => {
+        expect(parseCssStyleSheet(ArrayTokenStream.fromString(`@page {} @page :left {} @page wide {}`)))
+            .toEqual('todo');
+    });
+
+
 
 });

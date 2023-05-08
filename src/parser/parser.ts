@@ -2,8 +2,8 @@ import { Keywords, ReservedWords } from "keywords";
 import { AssignmentOperator, Symbols } from "symbols";
 import { LiteralToken, TokenType } from "token";
 import { ParserError, UnexpectedEndError } from "./parserError";
-import { anyBlock, anyLiteral, anyString, anyTempateStringLiteral, block, comma, commaList, firstOf, keyword, leftHandRecurciveRule, longestOf, loop, multiSymbol, noLineTerminatorHere, notAllowed, oneOfSymbols, optional, rawValue, regexpLiteral, roundBracket, sequence, squareBracket, strictLoop, symbol } from "./parserUtils";
-import { isLiteralNextToken } from "./predicats";
+import { anyBlock, anyLiteral, anyString, anyTempateStringLiteral, block, comma, commaList, firstOf, keyword, leftHandRecurciveRule, longestOf, loop, map, multiSymbol, noLineTerminatorHere, notAllowed, oneOfSymbols, optional, rawValue, regexpLiteral, roundBracket, sequence, squareBracket, strictLoop, symbol } from "./parserUtils";
+import { isLiteralNextToken, literalToString } from "./predicats";
 import { IfNode, JsModuleNode, JsRawNode, JssScriptNode, MultiNode, Node, NodeType, VarDeclaraionNode } from "./syntaxTree";
 import { NextToken, TokenParser } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
@@ -220,7 +220,7 @@ export function numericLiteral(stream : TokenStream) : void {
         return [numberPart, dot, fraction].filter(value => value !== undefined).join('');
     }
 
-    return firstOf(
+    firstOf(
         // DecimalLiteral
         // DecimalBigIntegerLiteral
         numberRule,
@@ -332,14 +332,14 @@ export function identifier(stream: TokenStream) : string {
     return bindingIdentifier.value;
 }
 
-function bindingIdentifier(stream : TokenStream) : Node {
+function bindingIdentifier(stream : TokenStream) : string {
     return firstOf(
         // Identifier
         identifier,
         // yield
-        keyword(Keywords._yield),
+        map(keyword(Keywords._yield), literalToString),
         // await
-        keyword(Keywords._await),
+        map(keyword(Keywords._await), literalToString),
     )(stream);
 }
 
@@ -846,12 +846,10 @@ function declaration(stream : TokenStream) : JsRawNode {
     return returnRawNode(stream);
 }
 
-export function statementListItem(stream : TokenStream) : void {
+export function statementListItem(stream : TokenStream) : JsRawNode {
     return firstOf(
         parseJsStatement,
         declaration,
-
-        //TODO put CSS rules here
     )(stream);
 }
 
@@ -958,7 +956,7 @@ export function moduleItem(stream : TokenStream) : ReturnType<TokenParser> {
 }
 
 export function propertyName(stream : TokenStream) : void {
-    return firstOf(
+    firstOf(
         // LiteralPropertyName
         identifierName,
         anyString,

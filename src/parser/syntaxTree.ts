@@ -1,4 +1,5 @@
 import { Position } from "stream/position";
+import { SquareBracketsToken } from "token";
 
 export type SyntaxTree = JssNode[];
 
@@ -35,6 +36,7 @@ export enum NodeType {
     CssSelector,
     CssCharset,
     CssMedia,
+    CssPage,
     CssDeclaration,
 
     JsTemplate,
@@ -55,10 +57,10 @@ export enum BlockType {
     CurlyBracket,
 }
 
-export interface BlockNode<N extends Node = Node> extends Node {
+export interface BlockNode<N> extends Node {
     type: NodeType.Block,
     readonly blockType: BlockType,
-    readonly items: N[],
+    readonly items: N,
 }
 
 export interface Node {
@@ -95,7 +97,7 @@ export interface CommentNode extends Node {
 
 export interface VarDeclaraionNode extends Node {
     type: NodeType.VarDeclaration,
-    name: Node,
+    name: string | LazyNode | SquareBracketsToken,
     value?: Node,
 }
 
@@ -118,7 +120,7 @@ export interface JsModuleNode extends MultiNode {
     type: NodeType.JsModule,
 }
 
-export type CssBlockItemNode = CssDeclarationNode | IgnoreNode | CssMediaNode;
+export type CssBlockItemNode = CssDeclarationNode | IgnoreNode | CssMediaNode | CssBlockNode;
 export interface CssBlockNode extends Node {
     type: NodeType.CssBlock,
     readonly selectors: CssSelectorNode[],
@@ -165,7 +167,7 @@ export interface JssSelectorNode extends Node, SourceMappedNode {
     readonly items: string[];
 }
 
-interface SourceMappedNode {
+export interface SourceMappedNode {
     readonly position: Position;
 }
 
@@ -180,11 +182,17 @@ export interface CssMediaNode extends Node, SourceMappedNode {
     readonly items: CssBlockItemNode[],
 }
 
+export interface CssPageNode extends Node, SourceMappedNode {
+    readonly type: NodeType.CssPage,
+    readonly pageSelectors: string[],
+    readonly items: (CssDeclarationNode | IgnoreNode)[],
+}
+
 export interface JssAtRuleNode extends Node, SourceMappedNode {
     readonly type: NodeType.JssAtRule,
     readonly name: string;
     readonly mediaList: string[],
-    readonly items: JssBlockItemNode[],
+    readonly items?: JssBlockItemNode[],
 }
 
 export interface JssSupportsNode extends Node, SourceMappedNode {

@@ -180,22 +180,15 @@ function readFileAndWrite(stream : TokenStream) : InputAndOutputArgNode {
         optional(jsOption),
         path,
         optional(firstOf(
-            symbol(Symbols.minus),
+            map(symbol(Symbols.minus), item => item.value),
             path,
         )),
     )(stream);
 
-    let out;
-    if (outputFile && outputFile.value && outputFile.value == '-') {
-        out = '-';
-    } else {
-        out = outputFile;
-    }
-
     return {
         type: ArgNodeType.InputAndOutput,
         inputFile: inputFile,
-        outputFile: out,
+        outputFile,
         hasJsOption: hasJsOption === true,
     };
 }

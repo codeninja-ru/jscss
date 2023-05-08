@@ -7,9 +7,9 @@ import { Position } from "stream/position";
 import { Symbols } from "symbols";
 import { LiteralToken, SymbolToken, TokenType } from "token";
 import { ParserError } from "./parserError";
-import { anyString, block, commaList, firstOf, ignoreSpacesAndComments, keyword, leftHandRecurciveRule, list, loop, noSpacesHere, oneOfSimpleSymbols, optional, rawValue, regexpLiteral, returnRawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, squareBracket, strictLoop, symbol } from "./parserUtils";
+import { anyString, block, commaList, firstOf, ignoreSpacesAndComments, keyword, leftHandRecurciveRule, loop, map, noSpacesHere, oneOfSimpleSymbols, optional, rawValue, regexpLiteral, returnRawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, sequenceVoid, squareBracket, strictLoop, symbol } from "./parserUtils";
 import { isCssToken, isSymbolNextToken, makeIsSymbolNextTokenProbe, makeIsTokenTypeNextTokenProbe } from "./predicats";
-import { BlockNode, CssBlockNode, CssCharsetNode, CssDeclarationNode, CssImportNode, CssMediaNode, CssSelectorNode, NodeType, StringNode } from "./syntaxTree";
+import { CssBlockNode, CssCharsetNode, CssDeclarationNode, CssImportNode, CssMediaNode, CssPageNode, CssSelectorNode, NodeType, StringNode } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
 import { peekAndSkipSpaces, peekNextToken } from "./tokenStreamReader";
@@ -68,7 +68,7 @@ export function cssCharset(stream : TokenStream) : CssCharsetNode {
 /**
  * all rules that stat with @
  * */
-function startsWithDog(stream : TokenStream) : any {
+function startsWithDog(stream : TokenStream) : CssCharsetNode | CssImportNode | CssMediaNode | CssPageNode {
     const dog = symbol(Symbols.at)(stream);
     noSpacesHere(stream);
     let result = firstOf(
@@ -79,10 +79,13 @@ function startsWithDog(stream : TokenStream) : any {
     )(stream);
 
     if (result.rawValue) {
+        // TODO remove ts-ignore
+        // @ts-ignore
         result.rawValue = '@' + result.rawValue;
     }
 
     if (result.position) {
+        // @ts-ignore
         result.position = dog.position;
     }
 
@@ -122,7 +125,7 @@ export function importStatement(stream : TokenStream) : CssImportNode {
     const [,path,,] = sequence(
         keyword(Keywords._import),
         firstOf(
-            anyString,
+            map(anyString, (item) => item.value),
             uri,
         ),
         optional(mediaQueryList),
@@ -132,7 +135,7 @@ export function importStatement(stream : TokenStream) : CssImportNode {
     const source = rawValue(stream);
     return {
         type: NodeType.CssImport,
-        path: path.value,
+        path: path,
         position: source.position,
         rawValue: source.value,
     };
@@ -144,8 +147,10 @@ export function importStatement(stream : TokenStream) : CssImportNode {
 "url("{w}{url}{w}")"    {return URI;}
  *
  * */
-function uri(stream : TokenStream) : void {
-    sequence(keyword(Keywords.cssUrl), noSpacesHere, roundBracket)(stream);
+function uri(stream : TokenStream) : string {
+    const [name,, content] = sequence(keyword(Keywords.cssUrl), noSpacesHere, roundBracket)(stream);
+
+    return name + content.value;
 }
 
 /**
@@ -173,13 +178,13 @@ export function mediaQuery(stream : TokenStream) : any {
     return firstOf(
         //  : [ONLY | NOT]? S* media_type S* [ AND S* expression ]*
         returnRawValue(leftHandRecurciveRule(
-            sequence(
+            sequenceVoid(
                 optional(
                     firstOf(keyword(Keywords.cssOnly), keyword(Keywords.cssNot))
                 ),
                 mediaType,
             ),
-            sequence(
+            sequenceVoid(
                 keyword(Keywords.cssAnd),
                 expression,
             )
@@ -213,8 +218,8 @@ function mediaType(stream : TokenStream) : LiteralToken {
  *  ;
  *
  * */
-function expression(stream : TokenStream) : BlockNode {
-    return block(TokenType.RoundBrackets, sequence(
+function expression(stream : TokenStream) : void {
+    block(TokenType.RoundBrackets, sequence(
         mediaFeature,
         optional(
             sequence(
@@ -263,7 +268,7 @@ export function rulesetStatement(stream : TokenStream) : CssBlockNode {
     return {
         type: NodeType.CssBlock,
         selectors,
-        items: cssBlock.items
+        items: cssBlock.items,
     }
 }
 
@@ -554,7 +559,7 @@ export function mediaStatement(stream : TokenStream) : CssMediaNode {
         type: NodeType.CssMedia,
         mediaList: mediaListItems,
         items: rules.items,
-        position: new Position(1, 1), // NOTE: it's going to be fixed in the startsWithDog
+        position: Position.ZERO, // NOTE: it's going to be fixed in the startsWithDog
     };
 }
 
@@ -566,16 +571,24 @@ export function mediaStatement(stream : TokenStream) : CssMediaNode {
   ;
  *
  * */
-export function pageStatement(stream : TokenStream) : void {
-    sequence(
+export function pageStatement(stream : TokenStream) : CssPageNode {
+    const [,pageSelectorList, declarationList] = sequence(
         keyword(Keywords.cssPage),
         optional(pseudoPage),
-        block(TokenType.LazyBlock, list(
-            declaration,
-            symbol(Symbols.semicolon),
-            true, // list can be empty
+        block(TokenType.LazyBlock, strictLoop(
+            firstOf(
+                ignoreSpacesAndComments,
+                declaration,
+            )
         ))
     )(stream);
+
+    return {
+        type: NodeType.CssPage,
+        pageSelectors: pageSelectorList !== undefined ? [pageSelectorList] : [],
+        items: declarationList.items,
+        position: Position.ZERO, // NOTE: it's going to be fixed in the startsWithDog
+    };
 }
 
 /**
@@ -585,10 +598,12 @@ export function pageStatement(stream : TokenStream) : void {
   ;
  *
  * */
-function pseudoPage(stream : TokenStream) : void {
-    sequence(
+function pseudoPage(stream : TokenStream) : string {
+    const [,,name] = sequence(
         symbol(Symbols.colon),
         noSpacesHere,
         ident,
     )(stream);
+
+    return name.value;
 }

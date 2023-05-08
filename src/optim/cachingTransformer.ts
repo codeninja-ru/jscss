@@ -61,8 +61,10 @@ export default function (program: ts.Program) {
                                 case 'symbol':
                                 case 'literalKeyword':
                                 case 'lazyBlock':
+                                case 'block':
                                 case 'strictLoop':
                                 case 'loop':
+                                case 'map':
                                 case 'oneOfSymbols':
                                 case 'oneOfSimpleSymbols':
                                 case 'commaList':

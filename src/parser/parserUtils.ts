@@ -11,6 +11,7 @@ import { BlockNode, BlockType, IgnoreNode, LazyNode, NodeType } from "./syntaxTr
 import { NextNotSpaceToken, NextToken, ParsedSourceWithPosition, ProbeFn, TokenParser, TokenParserArrayWithPosition } from "./tokenParser";
 import { ArrayTokenStream, FlushableTokenStream, LookAheadTokenStream, TokenStream } from "./tokenStream";
 import { isSpaceOrComment, peekAndSkipSpaces, peekNextToken, TokenStreamReader } from "./tokenStreamReader";
+import { OneOfArray, ReturnTypeMap } from "./types";
 
 
 export function noLineTerminatorHere(stream : TokenStream) : void {
@@ -42,7 +43,7 @@ export function noSpacesHere(stream : TokenStream) : void {
 
 export function keyword(keyword: Keyword,
                         peekFn : TokenStreamReader = peekAndSkipSpaces): TokenParser<LiteralToken> {
-    return function(stream: TokenStream) : LiteralToken {
+    return function keywordInst(stream: TokenStream) : LiteralToken {
         const token = peekFn(stream);
         if (token.type == TokenType.Literal && keyword.equal(token)) {
             return token;
@@ -54,7 +55,7 @@ export function keyword(keyword: Keyword,
 
 export function literalKeyword(keyword: string,
                         peekFn : TokenStreamReader = peekAndSkipSpaces): TokenParser<LiteralToken> {
-    return function(stream: TokenStream) : LiteralToken {
+    return function literalKeywordInst(stream: TokenStream) : LiteralToken {
         //TODO make it case insecitive
         const token = peekFn(stream);
         if (token.type == TokenType.Literal && token.value == keyword) {
@@ -80,7 +81,7 @@ export function commaList(parser: TokenParser, canListBeEmpty : boolean = false)
 }
 
 export function flushed(parser : TokenParser) : TokenParser {
-    return function(stream: TokenStream) : ReturnType<TokenParser> {
+    return function flushedInst(stream: TokenStream) : ReturnType<TokenParser> {
         const childStream = new LookAheadTokenStream(stream);
         let result;
         try {
@@ -107,7 +108,7 @@ export function rawValue(stream : TokenStream | FlushableTokenStream) : SourceFr
 }
 
 export function returnRawValueWithPosition(parser : TokenParser) : TokenParser<SourceFragment> {
-    return function(stream: TokenStream) : SourceFragment {
+    return function returnRawValueWithPositionInst(stream: TokenStream) : SourceFragment {
         const childStream = new LookAheadTokenStream(stream);
         parser(childStream);
         const result = new LeftTrimSourceFragment(childStream.sourceFragment());
@@ -118,7 +119,7 @@ export function returnRawValueWithPosition(parser : TokenParser) : TokenParser<S
 }
 
 export function returnRawValue(parser : TokenParser) : TokenParser<string> {
-    return function(stream: TokenStream) : string {
+    return function returnRawValueInst(stream: TokenStream) : string {
         const childStream = new LookAheadTokenStream(stream);
         parser(childStream);
         const result = childStream.sourceFragment();
@@ -133,7 +134,7 @@ export function list(parser: TokenParser,
                      canListBeEmpty : boolean = false) : TokenParser {
     const flushedParser = flushed(parser);
     const optionalSeperator = optional(separator);
-    return probe(function(stream: TokenStream) : ReturnType<TokenParser> {
+    return probe(function listInst(stream: TokenStream) : ReturnType<TokenParser> {
         let result = [];
         while (!stream.eof()) {
             if (parser.probe) {
@@ -176,14 +177,18 @@ export function sequenceName(name: string,
     };
 }
 
-export function sequence(...parsers: TokenParser[]) : TokenParser<any[]> {
-    return function(stream: TokenStream) : ReturnType<TokenParser>[] {
+//type SequenceReturn<R extends TokenParser<any>[]> = FilterNotVoid<ReturnTypeMap<R>>;
+type SequenceReturn<R extends TokenParser<any>[]> = ReturnTypeMap<R>;
+
+export function sequence<R extends TokenParser[]>(...parsers: R) : TokenParser<SequenceReturn<R>> {
+    return function sequenceInst(stream: TokenStream) : SequenceReturn<R> {
         const parserStream = new LookAheadTokenStream(stream);
         const results = [];
         for (var i = 0; i < parsers.length; i++) {
             const parser = parsers[i];
             try {
-                results.push(parser(parserStream));
+                const result = parser(parserStream);
+                results.push(result);
             } catch(e) {
                 if (i > 0) {
                     throw SequenceError.reuse(e, i);
@@ -195,7 +200,7 @@ export function sequence(...parsers: TokenParser[]) : TokenParser<any[]> {
 
         // TODO flush might be not needed if we call sequence inside firstOf/or
         parserStream.flush();
-        return results;
+        return results as SequenceReturn<R>;
     };
 }
 
@@ -255,9 +260,8 @@ export function sequenceWithPosition(...parsers: TokenParser[]) : TokenParserArr
     };
 }
 
-type TokenParserMapFn = (item : ReturnType<TokenParser>) => ReturnType<TokenParser>;
-export function map(parser : TokenParser, mapFn: TokenParserMapFn) : TokenParser {
-    return function(stream : TokenStream) : ReturnType<TokenParser> {
+export function map<S, D>(parser : TokenParser<S>, mapFn: (item : S) => D) : TokenParser<D> {
+    return function(stream : TokenStream) : D {
         return mapFn(parser(stream));
     };
 }
@@ -301,8 +305,10 @@ export function longestOf(...parsers: TokenParser[]) : TokenParser {
     };
 }
 
-export function firstOf(...parsers: TokenParser[]) : TokenParser {
-    return function(stream: TokenStream) : ReturnType<TokenParser> {
+type FirstOfResult<R extends TokenParser[]> = OneOfArray<ReturnTypeMap<R>>;
+
+export function firstOf<R extends TokenParser[]>(...parsers: R) : TokenParser<FirstOfResult<R>> {
+    return function firstOfInst(stream: TokenStream) : FirstOfResult<R> {
         let sequenceErrors = [];
         let blockErrors = [];
         const nextToken = NextNotSpaceToken.fromStream(stream);
@@ -343,9 +349,10 @@ export function firstOf(...parsers: TokenParser[]) : TokenParser {
     };
 }
 
+
 // TODO and string to ReturnType when parser returns void
 export function optional<P extends TokenParser>(parser: P) : TokenParser<ReturnType<P> | undefined> {
-    return function(stream: TokenStream) : ReturnType<P> | undefined {
+    return function optionalInst(stream: TokenStream) : ReturnType<P> | undefined {
         if (parser.probe) {
             const nextToken = NextNotSpaceToken.fromStream(stream);
 
@@ -438,7 +445,8 @@ export function oneOfSymbols(...chars: MultiSymbol[]) : TokenParser<SymbolToken>
 }
 oneOfSymbols.probe = isSymbolNextToken;
 
-export function oneOfSimpleSymbols(chars: SyntaxSymbol[], peekNextToken = peekAndSkipSpaces) : TokenParser<SymbolToken> {
+export function oneOfSimpleSymbols(chars: SyntaxSymbol[],
+                                   peekNextToken = peekAndSkipSpaces) : TokenParser<SymbolToken> {
 
     let charsForErrorReports = '';
     for(var i = 0; i < chars.length; i++) {
@@ -572,20 +580,18 @@ export function anyBlock(stream: TokenStream) : LazyNode {
     throw ParserError.reuse(`block is expected`, token);
 }
 
-export function leftHandRecurciveRule(leftRule : TokenParser, rightRule : TokenParser) : TokenParser {
+export function leftHandRecurciveRule(leftRule : TokenParser,
+                                      rightRule : TokenParser) : TokenParser<void> {
     const optionalRight = optional(rightRule);
-    return flushed(function(stream : TokenStream) : ReturnType<TokenParser> {
-        let result = leftRule(stream);
+    return function leftHandRecurciveRuleInst(stream : TokenStream) : void {
+        leftRule(stream);
         do {
             let right = optionalRight(stream);
-            if (right) {
-                result += right;
-            } else {
+            if (right === undefined) {
                 break;
             }
         } while(true);
-        return result;
-    });
+    };
 }
 
 export function squareBracket(stream: TokenStream) : SquareBracketsToken {
@@ -623,9 +629,9 @@ export function regexpLiteral(reg : RegExp, peekFn : TokenStreamReader = peekAnd
     };
 }
 
-export function strictLoop(parser : TokenParser) : TokenParser {
-    return function(stream : TokenStream) : ReturnType<TokenParser>[] {
-        let results = [] as ReturnType<TokenParser>[];
+export function strictLoop<R>(parser : TokenParser<R>) : TokenParser<R[]> {
+    return function strictLoopInst(stream : TokenStream) : R[] {
+        let results = [];
         while(!stream.eof()) {
             const result = parser(stream);
             if (result != null && result !== undefined) {
@@ -660,7 +666,12 @@ export interface LazyBlockParser<R> {
     parse() : R;
 }
 
-export function lazyBlock(expectedTokenType : OneOfBlockTokenType, parser : TokenParser) : TokenParser {
+export function isLazyBlockParser<R>(obj : any) : obj is LazyBlockParser<R> {
+    return obj.parse;
+}
+
+export function lazyBlock<R>(expectedTokenType : OneOfBlockTokenType,
+                          parser : TokenParser<R>) : TokenParser<LazyBlockParser<BlockNode<R>>> {
     function getBlockType(token : Token) : BlockType {
        switch(token.value[0]) {
             case '(':
@@ -673,11 +684,11 @@ export function lazyBlock(expectedTokenType : OneOfBlockTokenType, parser : Toke
             throw ParserError.reuse(`bracket type ${token.value[0]} is unsupported`, token);
         }
     }
-    return probe(function(stream : TokenStream) : LazyBlockParser<ReturnType<TokenParser>> {
+    return probe(function(stream : TokenStream) : LazyBlockParser<BlockNode<R>> {
         const token = peekAndSkipSpaces(stream);
         if (token.type == expectedTokenType) {
-            return new class implements LazyBlockParser<ReturnType<TokenParser>> {
-                parse() : ReturnType<TokenParser> {
+            return new class implements LazyBlockParser<BlockNode<R>> {
+                parse() : BlockNode<R> {
                     const tokens = jssLexer(SubStringInputStream.fromBlockToken(token));
                     const tokenStream = new ArrayTokenStream(tokens, token.position);
                     const blockType = getBlockType(token);
@@ -694,7 +705,7 @@ export function lazyBlock(expectedTokenType : OneOfBlockTokenType, parser : Toke
                         type: NodeType.Block,
                         blockType: blockType,
                         items: result,
-                    } as BlockNode;
+                    };
                 }
             };
         }
@@ -705,14 +716,15 @@ export function lazyBlock(expectedTokenType : OneOfBlockTokenType, parser : Toke
     });
 }
 
-export function isBlockNode(obj : any) : obj is BlockNode {
+export function isBlockNode<R>(obj : any) : obj is BlockNode<R> {
     return obj.type && obj.type == NodeType.Block
         && obj.blockType && obj.items;
 }
 
 //TODO block can by rewritten using lazyBlock
 type OneOfBlockTokenType = TokenType.Block | TokenType.LazyBlock | TokenType.RoundBrackets | TokenType.SquareBrackets ;
-export function block(expectedTokenType : OneOfBlockTokenType, parser : TokenParser) : TokenParser {
+export function block<R>(expectedTokenType : OneOfBlockTokenType,
+                      parser : TokenParser<R>) : TokenParser<BlockNode<R>> {
     function getBlockType(token : Token) : BlockType {
        switch(token.value[0]) {
             case '(':
@@ -725,7 +737,7 @@ export function block(expectedTokenType : OneOfBlockTokenType, parser : TokenPar
             throw ParserError.reuse(`bracket type ${token.value[0]} is unsupported`, token);
         }
     }
-    return probe(function(stream : TokenStream) : ReturnType<TokenParser> {
+    return probe(function(stream : TokenStream) : BlockNode<R> {
         const token = peekAndSkipSpaces(stream);
         if (token.type == expectedTokenType) {
             const tokens = jssLexer(SubStringInputStream.fromBlockToken(token));
@@ -744,7 +756,7 @@ export function block(expectedTokenType : OneOfBlockTokenType, parser : TokenPar
                 type: NodeType.Block,
                 blockType: blockType,
                 items: result,
-            } as BlockNode;
+            };
         }
 
         throw ParserError.reuse(`block is expected`, token);
