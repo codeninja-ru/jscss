@@ -76,7 +76,8 @@ export function comma(stream: TokenStream) : SymbolToken {
 }
 comma.probe = isSymbolNextToken;
 
-export function commaList(parser: TokenParser, canListBeEmpty : boolean = false) : TokenParser {
+export function commaList<R>(parser: TokenParser<R>,
+                          canListBeEmpty : boolean = false) : TokenParser<R[]> {
     return list(parser, comma, canListBeEmpty);
 }
 
@@ -640,25 +641,36 @@ export function strictLoop<R>(parser : TokenParser<R>) : TokenParser<R[]> {
         }
 
         return results;
-
     };
 }
 
-export function loop(parser : TokenParser) : TokenParser {
-    return function(stream : TokenStream) : ReturnType<TokenParser>[] {
-        let results = [] as ReturnType<TokenParser>[];
-        const optionalParser = optional(parser);
-        while(!stream.eof()) {
-            const result = optionalParser(stream);
-            if (result === undefined) {
-                break;
-            } else {
-                results.push(result);
-            }
+function loop<R>(stream : TokenStream,
+                   optionalParser : TokenParser<R | undefined>,
+                   results : R[]) : R[] {
+    while(!stream.eof()) {
+        const result = optionalParser(stream);
+        if (result === undefined) {
+            break;
+        } else {
+            results.push(result);
         }
+    }
 
-        return results;
+    return results;
+}
 
+export function repeat1<R>(parser : TokenParser<R>) : TokenParser<R[]> {
+    const optionalParser = optional(parser);
+    return function repeat1Inst(stream : TokenStream) : R[] {
+        let results = [parser(stream)];
+        return loop(stream, optionalParser, results);
+    };
+}
+
+export function repeat<R>(parser : TokenParser<R>) : TokenParser<R[]> {
+    const optionalParser = optional(parser);
+    return function repeatInst(stream : TokenStream) : R[] {
+        return loop(stream, optionalParser, []);
     };
 }
 

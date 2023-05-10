@@ -63,7 +63,8 @@ export default function (program: ts.Program) {
                                 case 'lazyBlock':
                                 case 'block':
                                 case 'strictLoop':
-                                case 'loop':
+                                case 'repeat':
+                                case 'repeat1':
                                 case 'map':
                                 case 'oneOfSymbols':
                                 case 'oneOfSimpleSymbols':

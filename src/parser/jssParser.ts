@@ -4,7 +4,7 @@ import { HiddenToken, LiteralToken, SymbolToken, TokenType } from "token";
 import { attrib, combinator, cssCharset, cssLiteral, hash, importStatement, mediaQuery, mediaQueryList, term } from "./cssParser";
 import { expression, functionExpression, identifier, moduleItem, parseJsVarStatement } from "./parser";
 import { ParserError, SequenceError, SyntaxRuleError } from "./parserError";
-import { andRule, anyBlock, anyLiteral, anyString, block, commaList, dollarSign, endsWithOptionalSemicolon, firstOf, ignoreSpacesAndComments, isBlockNode, isLazyBlockParser, keyword, lazyBlock, LazyBlockParser, leftHandRecurciveRule, literalKeyword, loop, multiSymbol, noLineTerminatorHere, noSpacesHere, notAllowed, oneOfSimpleSymbols, optional, probe, rawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, sequenceVoid, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
+import { andRule, anyBlock, anyLiteral, anyString, block, commaList, dollarSign, endsWithOptionalSemicolon, firstOf, ignoreSpacesAndComments, isBlockNode, isLazyBlockParser, keyword, lazyBlock, LazyBlockParser, leftHandRecurciveRule, literalKeyword, repeat, multiSymbol, noLineTerminatorHere, noSpacesHere, notAllowed, oneOfSimpleSymbols, optional, probe, rawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, sequenceVoid, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
 import { is$NextToken, is$Token, isCssToken, isLiteralNextToken, isSquareBracketNextToken, isSymbolNextToken, makeIsKeywordNextTokenProbe, makeIsSymbolNextTokenProbe } from "./predicats";
 import { isSourceFragment } from "./sourceFragment";
 import { BlockNode, CssCharsetNode, CssImportNode, CssMediaNode, CssPageNode, CssRawNode, FontFaceNode, JsRawNode, JssAtRuleNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssSelectorNode, JssSpreadNode, JssSupportsNode, JssVarDeclarationNode, NodeType, SyntaxTree } from "./syntaxTree";
@@ -157,7 +157,7 @@ export function jssPropertyName(stream : TokenStream) : any {
  * */
 function jssPropertyValue(stream : TokenStream) : any {
 
-        return returnRawValueWithPosition(loop( //jssPropertyValue
+        return returnRawValueWithPosition(repeat( //jssPropertyValue
             (stream : TokenStream) => {
                 const parserStream = new LookAheadTokenStream(stream);
                 const token = peekAndSkipSpaces(parserStream);
@@ -297,9 +297,9 @@ export function simpleSelector(stream : TokenStream) : string {
 
     const name = optionalElementName(stream);
     if (name) {
-        return name.value + loop(restNoSpace)(stream).join('');
+        return name.value + repeat(restNoSpace)(stream).join('');
     } else {
-        return rest(stream) + loop(restNoSpace)(stream).join('');
+        return rest(stream) + repeat(restNoSpace)(stream).join('');
     }
 }
 simpleSelector.probe = (nextToken : NextToken) : boolean => jssIdent.probe(nextToken)

@@ -7,7 +7,7 @@ import { Position } from "stream/position";
 import { Symbols } from "symbols";
 import { LiteralToken, SymbolToken, TokenType } from "token";
 import { ParserError } from "./parserError";
-import { anyString, block, commaList, firstOf, ignoreSpacesAndComments, keyword, leftHandRecurciveRule, loop, map, noSpacesHere, oneOfSimpleSymbols, optional, rawValue, regexpLiteral, returnRawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, sequenceVoid, squareBracket, strictLoop, symbol } from "./parserUtils";
+import { anyString, block, commaList, firstOf, ignoreSpacesAndComments, keyword, leftHandRecurciveRule, map, noSpacesHere, oneOfSimpleSymbols, optional, rawValue, regexpLiteral, repeat, repeat1, returnRawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, sequenceVoid, squareBracket, strictLoop, symbol } from "./parserUtils";
 import { isCssToken, isSymbolNextToken, makeIsSymbolNextTokenProbe, makeIsTokenTypeNextTokenProbe } from "./predicats";
 import { CssBlockNode, CssCharsetNode, CssDeclarationNode, CssImportNode, CssMediaNode, CssPageNode, CssSelectorNode, NodeType, StringNode } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
@@ -91,6 +91,7 @@ function startsWithDog(stream : TokenStream) : CssCharsetNode | CssImportNode | 
 
     return result;
 }
+startsWithDog.probe = makeIsSymbolNextTokenProbe(Symbols.at);
 
 
 /**
@@ -111,7 +112,7 @@ export function stylesheetItem(stream : TokenStream) : ReturnType<TokenParser> {
 }
 
 export function parseCssStyleSheet(stream : TokenStream) : ReturnType<TokenParser> {
-    return loop(stylesheetItem)(stream);
+    return repeat(stylesheetItem)(stream);
 }
 
 /**
@@ -322,7 +323,7 @@ export function prioStatement(stream : TokenStream) : StringNode {
  * */
 export function expr(stream : TokenStream) : void {
     term(stream);
-    loop(
+    repeat(
         sequence(
             optional(oneOfSimpleSymbols([Symbols.div, Symbols.comma])),
             term,
@@ -469,9 +470,9 @@ export function simpleSelector(stream : TokenStream) : string {
 
     const name = optional(elementName)(stream);
     if (name) {
-        return name + returnRawValue(loop(sequence(noSpacesHere, rest)))(stream);
+        return name + returnRawValue(repeat(sequence(noSpacesHere, rest)))(stream);
     } else {
-        return returnRawValue(rest)(stream) + returnRawValue(loop(sequence(noSpacesHere, rest)))(stream);
+        return returnRawValue(rest)(stream) + returnRawValue(repeat(sequence(noSpacesHere, rest)))(stream);
     }
 }
 
@@ -569,23 +570,26 @@ export function mediaStatement(stream : TokenStream) : CssMediaNode {
   : PAGE_SYM S* pseudo_page?
     '{' S* declaration? [ ';' S* declaration? ]* '}' S*
   ;
+
+  https://developer.mozilla.org/en-US/docs/Web/CSS/@page
+  @page =
+  @page <page-selector-list>? { <declaration-list> }
+
  *
  * */
 export function pageStatement(stream : TokenStream) : CssPageNode {
-    const [,pageSelectorList, declarationList] = sequence(
-        keyword(Keywords.cssPage),
-        optional(pseudoPage),
-        block(TokenType.LazyBlock, strictLoop(
-            firstOf(
-                ignoreSpacesAndComments,
-                declaration,
-            )
-        ))
-    )(stream);
+    keyword(Keywords.cssPage)(stream);
+    const pageSelectors = optional(pageSelectorList)(stream);
+    const declarationList = block(TokenType.LazyBlock, strictLoop(
+        firstOf(
+            ignoreSpacesAndComments,
+            declaration,
+        )
+    ))(stream);
 
     return {
         type: NodeType.CssPage,
-        pageSelectors: pageSelectorList !== undefined ? [pageSelectorList] : [],
+        pageSelectors: pageSelectors !== undefined ? pageSelectors : [],
         items: declarationList.items,
         position: Position.ZERO, // NOTE: it's going to be fixed in the startsWithDog
     };
@@ -593,9 +597,34 @@ export function pageStatement(stream : TokenStream) : CssPageNode {
 
 /**
  * implements:
+ *
+ * <page-selector-list> =
+ *   <page-selector>#
+ *
+ * <page-selector> =
+ *   [ <ident-token>? <pseudo-page>* ]!
+ *
+ * <pseudo-page> =
+ *   ':' [ left | right | first | blank ]
+ *
+ * */
+function pageSelectorList(stream : TokenStream) : string[] {
+    return commaList(
+        function(stream : TokenStream) : string {
+            const identToken = optional(ident)(stream);
+            const pseudo = identToken ? repeat(pseudoPage)(stream) : repeat1(pseudoPage)(stream);
+            return (identToken ? identToken.value : '') + pseudo.join('');
+        }
+    )(stream);
+}
+
+
+/**
+ * implements:
  * pseudo_page
   : ':' IDENT S*
   ;
+
  *
  * */
 function pseudoPage(stream : TokenStream) : string {
@@ -605,5 +634,5 @@ function pseudoPage(stream : TokenStream) : string {
         ident,
     )(stream);
 
-    return name.value;
+    return ':' + name.value;
 }

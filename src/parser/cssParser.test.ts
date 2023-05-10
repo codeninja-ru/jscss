@@ -169,7 +169,6 @@ describe('CSS Parser', () => {
     });
 
     it('rulesetStatement', () => {
-        debugger;
         testParser(rulesetStatement, 'div {}');
         testParser(rulesetStatement, 'div { }');
         testParser(rulesetStatement, 'div { color: white; }');
@@ -239,7 +238,28 @@ describe('CSS Parser', () => {
 
     it('parses @page', () => {
         expect(parseCssStyleSheet(ArrayTokenStream.fromString(`@page {} @page :left {} @page wide {}`)))
-            .toEqual('todo');
+            .toEqual([{
+                type: NodeType.CssPage,
+                pageSelectors: [],
+                position: {line: 1, col: 1},
+                items: [],
+            }, {
+                type: NodeType.Ignore,
+                items: [" "]
+            }, {
+                type: NodeType.CssPage,
+                pageSelectors: [":left"],
+                position: {line: 1, col: 10},
+                items: [],
+            }, {
+                type: NodeType.Ignore,
+                items: [" "]
+            }, {
+                type: NodeType.CssPage,
+                pageSelectors: ["wide"],
+                position: {line: 1, col: 25},
+                items: [],
+            }]);
     });
 
 

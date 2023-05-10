@@ -2,7 +2,7 @@ import { Keywords, ReservedWords } from "keywords";
 import { AssignmentOperator, Symbols } from "symbols";
 import { LiteralToken, TokenType } from "token";
 import { ParserError, UnexpectedEndError } from "./parserError";
-import { anyBlock, anyLiteral, anyString, anyTempateStringLiteral, block, comma, commaList, firstOf, keyword, leftHandRecurciveRule, longestOf, loop, map, multiSymbol, noLineTerminatorHere, notAllowed, oneOfSymbols, optional, rawValue, regexpLiteral, roundBracket, sequence, squareBracket, strictLoop, symbol } from "./parserUtils";
+import { anyBlock, anyLiteral, anyString, anyTempateStringLiteral, block, comma, commaList, firstOf, keyword, leftHandRecurciveRule, longestOf, repeat, map, multiSymbol, noLineTerminatorHere, notAllowed, oneOfSymbols, optional, rawValue, regexpLiteral, roundBracket, sequence, squareBracket, strictLoop, symbol } from "./parserUtils";
 import { isLiteralNextToken, literalToString } from "./predicats";
 import { IfNode, JsModuleNode, JsRawNode, JssScriptNode, MultiNode, Node, NodeType, VarDeclaraionNode } from "./syntaxTree";
 import { NextToken, TokenParser } from "./tokenParser";
@@ -857,7 +857,7 @@ export function statementListItem(stream : TokenStream) : JsRawNode {
 export function parseJsScript(stream : TokenStream) : JssScriptNode {
     return {
         type: NodeType.JsScript,
-        items: loop(statementListItem)(stream),
+        items: repeat(statementListItem)(stream),
     }
 }
 

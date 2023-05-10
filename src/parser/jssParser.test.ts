@@ -337,6 +337,32 @@ import * as _ from '/reader/readers';`).toEqual([
     ]}]);
     });
 
+    it('parses @page', () => {
+        expect(parseCode(`@page {} @page :left {} @page wide {}`))
+            .toEqual([{
+                type: NodeType.CssPage,
+                pageSelectors: [],
+                position: {line: 1, col: 1},
+                items: [],
+            }, {
+                type: NodeType.Ignore,
+                items: [" "]
+            }, {
+                type: NodeType.CssPage,
+                pageSelectors: [":left"],
+                position: {line: 1, col: 10},
+                items: [],
+            }, {
+                type: NodeType.Ignore,
+                items: [" "]
+            }, {
+                type: NodeType.CssPage,
+                pageSelectors: ["wide"],
+                position: {line: 1, col: 26},
+                items: [],
+            }]);
+    });
+
     it('parse jssIdent', () => {
         expect(jssIdent(ArrayTokenStream.fromString('background-${propName}')))
             .toEqual({"position": {"col": 1, "line": 1}, "type": TokenType.HiddenToken, "value": "background-${propName}"});
