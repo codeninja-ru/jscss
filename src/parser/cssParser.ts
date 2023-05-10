@@ -112,7 +112,7 @@ export function stylesheetItem(stream : TokenStream) : ReturnType<TokenParser> {
 }
 
 export function parseCssStyleSheet(stream : TokenStream) : ReturnType<TokenParser> {
-    return repeat(stylesheetItem)(stream);
+    return strictLoop(stylesheetItem)(stream);
 }
 
 /**
