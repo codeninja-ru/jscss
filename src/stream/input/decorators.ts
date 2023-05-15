@@ -17,32 +17,6 @@ export class TillEndOfLineStream extends AbstractInputStreamDecorator implements
     }
 }
 
-//TODO remove
-export class KindOfSpaceInputStream extends AbstractInputStreamDecorator implements InputStream {
-    static isKindOfSpace(ch: string) : boolean {
-        return ch.charCodeAt(0) <= 32;
-    }
-
-    isEof(): boolean {
-        return this.stream.isEof() || !KindOfSpaceInputStream.isKindOfSpace(this.stream.peek());
-    }
-}
-
-export class LiteralInputStream extends AbstractInputStreamDecorator implements InputStream {
-    static isLiteral(ch: string) {
-        const code = ch.charCodeAt(0);
-        return (code >= 48 && code <= 57) // 0-9
-            || (code >= 97 && code <= 122) // a-z
-            || (code >= 65 && code <= 90) // A-Z
-            || code == 36 || code == 95; // $ _
-        //return /^[0-9a-zA-Z\$\_]/.test(ch);
-    }
-
-    isEof(): boolean {
-        return this.stream.isEof() || !LiteralInputStream.isLiteral(this.stream.peek());
-    }
-}
-
 export class BlockInputStream extends AbstractInputStreamDecorator {
     private level = 0;
     private isFirstSymbol = true;

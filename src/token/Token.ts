@@ -1,10 +1,15 @@
 import { Position } from "stream/position";
 
+export type ExtractType<T> = T extends BaseToken ? T["type"] : never;
+
 export type Token = SpaceToken | CommentToken |
     MultilineCommentToken | BlockToken |
     LiteralToken | LazyBlockToken | StringToken |
     SymbolToken | TemplateStringToken |
     RoundBracketsToken | SquareBracketsToken;
+
+export type OneOfBlockToken = BlockToken | LazyBlockToken | RoundBracketsToken
+    | SquareBracketsToken;
 
 export enum TokenType {
     Space,
@@ -94,5 +99,3 @@ export interface HiddenToken extends BaseToken {
     type: TokenType.HiddenToken;
     readonly value: string;
 }
-
-export type OneOfBlockToken = BlockToken | LazyBlockToken | RoundBracketsToken | SquareBracketsToken ;

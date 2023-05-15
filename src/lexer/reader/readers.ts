@@ -1,5 +1,5 @@
 import { LexerError } from "parser/parserError";
-import { BlockInputStream, InputStream, LiteralInputStream, readToEnd, TillEndOfLineStream } from "stream/input";
+import { BlockInputStream, InputStream, readToEnd, TillEndOfLineStream } from "stream/input";
 import { SpaceToken, SymbolToken, Token, TokenType } from "token";
 
 export type ReaderResult = Token | null;
@@ -14,29 +14,38 @@ function readUntil(input: InputStream, checkFn : (ch : string) => boolean): stri
     return result;
 }
 
-function isKindOfSpace(ch: string) : boolean {
+function isKindOfSpaceChar(ch: string) : boolean {
     return ch.charCodeAt(0) <= 32;
 }
 
 export function spaceReader(stream: InputStream) : ReaderResult {
-    if (isKindOfSpace(stream.peek())) {
+    if (isKindOfSpaceChar(stream.peek())) {
         const pos = stream.position();
         return {
             type: TokenType.Space,
             position: pos,
-            value: readUntil(stream, isKindOfSpace),
+            value: readUntil(stream, isKindOfSpaceChar),
         } as SpaceToken;
     }
 
     return null;
 }
 
+function isLiteralChar(ch : string) : boolean {
+    const code = ch.charCodeAt(0);
+    return (code >= 48 && code <= 57) // 0-9
+        || (code >= 97 && code <= 122) // a-z
+        || (code >= 65 && code <= 90) // A-Z
+        || code == 36 || code == 95; // $ _
+    //return /^[0-9a-zA-Z\$\_]/.test(ch);
+}
+
 export function literalReader(stream: InputStream) : ReaderResult {
-    if (LiteralInputStream.isLiteral(stream.peek())) {
+    if (isLiteralChar(stream.peek())) {
         return {
             type: TokenType.Literal,
             position: stream.position(),
-            value: readToEnd(new LiteralInputStream(stream))
+            value: readUntil(stream, isLiteralChar),
         } as Token;
     }
 

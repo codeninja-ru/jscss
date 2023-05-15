@@ -3,7 +3,7 @@ import { jssLexer } from "lexer/jssLexer";
 import { SubStringInputStream } from "stream/input/SubStringInputStream";
 import { Position } from "stream/position";
 import { MultiSymbol, Symbols, SyntaxSymbol } from "symbols";
-import { isToken, LiteralToken, SpaceToken, SquareBracketsToken, StringToken, SymbolToken, TemplateStringToken, Token, TokenType } from "token";
+import { ExtractType, isToken, LiteralToken, OneOfBlockToken, SpaceToken, SquareBracketsToken, StringToken, SymbolToken, TemplateStringToken, Token, TokenType } from "token";
 import { BlockParserError, EmptyStreamError, LexerError, ParserError, SequenceError, UnexpectedEndError } from "./parserError";
 import { isRoundBracketNextToken, isStringNextToken, isSymbolNextToken } from "./predicats";
 import { LeftTrimSourceFragment, SourceFragment } from "./sourceFragment";
@@ -644,47 +644,49 @@ export function strictLoop<R>(parser : TokenParser<R>) : TokenParser<R[]> {
     };
 }
 
-function loop<R>(stream : TokenStream,
-                   optionalParser : TokenParser<R | undefined>,
-                   results : R[]) : R[] {
-    while(!stream.eof()) {
-        const result = optionalParser(stream);
-        if (result === undefined) {
-            break;
-        } else {
-            results.push(result);
-        }
-    }
-
-    return results;
-}
-
 export function repeat1<R>(parser : TokenParser<R>) : TokenParser<R[]> {
     const optionalParser = optional(parser);
     return function repeat1Inst(stream : TokenStream) : R[] {
         let results = [parser(stream)];
-        return loop(stream, optionalParser, results);
+        while(!stream.eof()) {
+            const result = optionalParser(stream);
+            if (result === undefined) {
+                break;
+            } else {
+                results.push(result);
+            }
+        }
+
+        return results;
     };
 }
 
 export function repeat<R>(parser : TokenParser<R>) : TokenParser<R[]> {
     const optionalParser = optional(parser);
     return function repeatInst(stream : TokenStream) : R[] {
-        return loop(stream, optionalParser, []);
-    };
-}
+        let results = [];
+        while(!stream.eof()) {
+            const result = optionalParser(stream);
+            if (result === undefined) {
+                break;
+            } else {
+                results.push(result);
+            }
+        }
 
-export interface LazyBlockParser<R> {
-    parse() : R;
+        return results;
+    };
 }
 
 export function isLazyBlockParser<R>(obj : any) : obj is LazyBlockParser<R> {
     return obj.parse;
 }
+export class LazyBlockParser<R> {
+    constructor(private readonly parser : TokenParser<R>,
+                private readonly token : OneOfBlockToken) {
+    }
 
-export function lazyBlock<R>(expectedTokenType : OneOfBlockTokenType,
-                          parser : TokenParser<R>) : TokenParser<LazyBlockParser<BlockNode<R>>> {
-    function getBlockType(token : Token) : BlockType {
+    private getBlockType(token : OneOfBlockToken) : BlockType {
        switch(token.value[0]) {
             case '(':
             return BlockType.RoundBracket;
@@ -696,30 +698,33 @@ export function lazyBlock<R>(expectedTokenType : OneOfBlockTokenType,
             throw ParserError.reuse(`bracket type ${token.value[0]} is unsupported`, token);
         }
     }
-    return probe(function(stream : TokenStream) : LazyBlockParser<BlockNode<R>> {
+
+    parse() : BlockNode<R> {
+        const tokens = jssLexer(SubStringInputStream.fromBlockToken(this.token));
+        const tokenStream = new ArrayTokenStream(tokens, this.token.position);
+        let result;
+        try {
+            result = this.parser(tokenStream);
+        } catch (e) {
+            throw new BlockParserError(e);
+        }
+        if (!tokenStream.eof()) {
+            throw ParserError.reuse(`unexpected token " ${tokenStream.peek().value} "`, tokenStream.peek());
+        }
+        return {
+            type: NodeType.Block,
+            blockType: this.getBlockType(this.token),
+            items: result,
+        };
+    }
+}
+
+export function lazyBlock<R>(expectedTokenType : OneOfBlockTokenType,
+                          parser : TokenParser<R>) : TokenParser<LazyBlockParser<R>> {
+    return probe(function(stream : TokenStream) : LazyBlockParser<R> {
         const token = peekAndSkipSpaces(stream);
         if (token.type == expectedTokenType) {
-            return new class implements LazyBlockParser<BlockNode<R>> {
-                parse() : BlockNode<R> {
-                    const tokens = jssLexer(SubStringInputStream.fromBlockToken(token));
-                    const tokenStream = new ArrayTokenStream(tokens, token.position);
-                    const blockType = getBlockType(token);
-                    let result;
-                    try {
-                        result = parser(tokenStream);
-                    } catch (e) {
-                        throw new BlockParserError(e);
-                    }
-                    if (!tokenStream.eof()) {
-                        throw ParserError.reuse(`unexpected token " ${tokenStream.peek().value} "`, tokenStream.peek());
-                    }
-                    return {
-                        type: NodeType.Block,
-                        blockType: blockType,
-                        items: result,
-                    };
-                }
-            };
+            return new LazyBlockParser<R>(parser, token);
         }
 
         throw ParserError.reuse(`block is expected`, token);
@@ -734,7 +739,7 @@ export function isBlockNode<R>(obj : any) : obj is BlockNode<R> {
 }
 
 //TODO block can by rewritten using lazyBlock
-type OneOfBlockTokenType = TokenType.Block | TokenType.LazyBlock | TokenType.RoundBrackets | TokenType.SquareBrackets ;
+type OneOfBlockTokenType = ExtractType<OneOfBlockToken>;
 export function block<R>(expectedTokenType : OneOfBlockTokenType,
                       parser : TokenParser<R>) : TokenParser<BlockNode<R>> {
     function getBlockType(token : Token) : BlockType {

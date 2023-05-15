@@ -1,6 +1,6 @@
 import { StringInputStream } from "stream/input";
 import { TokenType } from "token";
-import { makeBracketsReader, makeStringReader, makeSymbolReader, templateStringReader, unexpectedReader } from "./readers";
+import { literalReader, makeBracketsReader, makeStringReader, makeSymbolReader, spaceReader, templateStringReader, unexpectedReader } from "./readers";
 
 describe('makeStringReader()', () => {
     test('correct strings', () => {
@@ -151,6 +151,22 @@ describe('unexpectedReader()', () => {
     it('throws an exeption', () => {
         expect(() => unexpectedReader(new StringInputStream('test')))
             .toThrowError("(1:1) : unexpected symbol 't' code: ");
+    });
+
+});
+
+describe('spaceReader()', () => {
+    it('parses spaces', () => {
+        expect(spaceReader(new StringInputStream("  \n\r end"))?.value).toEqual("  \n\r ");
+    });
+});
+
+describe('literalReader()', () => {
+    it('reads literals', () => {
+        expect(literalReader(new StringInputStream('className .nextClassName'))?.value).toEqual('className');
+        expect(literalReader(new StringInputStream('className, .nextClassName'))?.value).toEqual('className');
+        expect(literalReader(new StringInputStream('className, .nextClassName'))?.value).toEqual('className');
+        expect(literalReader(new StringInputStream('className:hover, .nextClassName'))?.value).toEqual('className');
     });
 
 });
