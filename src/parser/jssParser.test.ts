@@ -243,7 +243,7 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
 
     it('does not allow reserved words in selectors', () => {
         expect(() => parseCode('import { display: none; }'))
-            .toThrowError(`(1:1) : "import" is a reseved word, it's not allowed as a selector at index 0`);
+            .toThrowError(`(1:1) : "import" is a reserved word, it's not allowed as a selector at index 0`);
     });
 
     xit('does not allow reserved words in selectors (todo)', () => {
@@ -338,9 +338,9 @@ import * as _ from '/reader/readers';`).toEqual([
     });
 
     it('parses @page', () => {
-        expect(parseCode(`@page {} @page :left {} @page wide {}`))
+        parseCode(`@page {} @page :left {} @page wide {}`)
             .toEqual([{
-                type: NodeType.CssPage,
+                type: NodeType.JssPage,
                 pageSelectors: [],
                 position: {line: 1, col: 1},
                 items: [],
@@ -348,7 +348,7 @@ import * as _ from '/reader/readers';`).toEqual([
                 type: NodeType.Ignore,
                 items: [" "]
             }, {
-                type: NodeType.CssPage,
+                type: NodeType.JssPage,
                 pageSelectors: [":left"],
                 position: {line: 1, col: 10},
                 items: [],
@@ -356,9 +356,9 @@ import * as _ from '/reader/readers';`).toEqual([
                 type: NodeType.Ignore,
                 items: [" "]
             }, {
-                type: NodeType.CssPage,
+                type: NodeType.JssPage,
                 pageSelectors: ["wide"],
-                position: {line: 1, col: 26},
+                position: {line: 1, col: 25},
                 items: [],
             }]);
     });

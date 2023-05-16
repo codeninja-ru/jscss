@@ -229,6 +229,7 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
     });
 
     it('parses @page', () => {
+        debugger;
         expect(evalTestCode(`@page {
   size: 8.5in 9in;
   margin-top: 4in;
@@ -248,7 +249,12 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
 /* Targets all selectors with 'page: wide;' set */
 @page wide {
   size: a4 landscape;
-}`).toArray()).toEqual('todo');
+}`).toArray()).toEqual([
+    {name: '@page', value: {'margin-top': '4in', size: '8.5in 9in'}},
+    {name: '@page :left', value: {'margin-top': '4in'}},
+    {name: '@page :right', value: {'margin-top': '4in', size: '11in'}},
+    {name: '@page wide', value: {'size': 'a4 landscape'}},
+]);
     });
 
     it('parses complex media queries', () => {

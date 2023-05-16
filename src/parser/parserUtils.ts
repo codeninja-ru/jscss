@@ -351,9 +351,12 @@ export function firstOf<R extends TokenParser[]>(...parsers: R) : TokenParser<Fi
 }
 
 
+type OptionalReturnType<P extends TokenParser, D = undefined> = ReturnType<P> | D;
+
 // TODO and string to ReturnType when parser returns void
-export function optional<P extends TokenParser>(parser: P) : TokenParser<ReturnType<P> | undefined> {
-    return function optionalInst(stream: TokenStream) : ReturnType<P> | undefined {
+// TODO make optional with default value and proper typeing
+export function optional<P extends TokenParser>(parser: P) : TokenParser<OptionalReturnType<P>> {
+    return function optionalInst(stream: TokenStream) : OptionalReturnType<P> {
         if (parser.probe) {
             const nextToken = NextNotSpaceToken.fromStream(stream);
 

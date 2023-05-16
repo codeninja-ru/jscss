@@ -6,7 +6,7 @@ export type SyntaxTree = JssNode[];
 export type JssNode = IgnoreNode | JsRawNode |
     JssBlockNode | CssImportNode | JssSelectorNode |
     CommentNode | JssVarDeclarationNode | CssCharsetNode | JssAtRuleNode |
-    JssSupportsNode | FontFaceNode | CssRawNode;
+    JssSupportsNode | FontFaceNode | CssRawNode | JssPageNode;
 
 export enum NodeType {
     Error,
@@ -38,6 +38,7 @@ export enum NodeType {
     CssMedia,
     CssPage,
     CssDeclaration,
+    CssFontFace,
 
     JsTemplate,
     JssSpread,
@@ -48,7 +49,7 @@ export enum NodeType {
     JssVarDeclaration,
     JssAtRule,
     JssSupports,
-    CssFontFace,
+    JssPage,
 }
 
 export enum BlockType {
@@ -188,11 +189,17 @@ export interface CssPageNode extends Node, SourceMappedNode {
     readonly items: (CssDeclarationNode | IgnoreNode)[],
 }
 
+export interface JssPageNode extends Node, SourceMappedNode {
+    readonly type: NodeType.JssPage,
+    readonly pageSelectors: string[],
+    readonly items: JssBlockItemNode[],
+}
+
 export interface JssAtRuleNode extends Node, SourceMappedNode {
     readonly type: NodeType.JssAtRule,
     readonly name: string;
     readonly mediaList: string[],
-    readonly items?: JssBlockItemNode[],
+    readonly items: JssBlockItemNode[],
 }
 
 export interface JssSupportsNode extends Node, SourceMappedNode {

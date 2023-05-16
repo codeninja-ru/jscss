@@ -8,7 +8,7 @@ import { Symbols } from "symbols";
 import { LiteralToken, SymbolToken, TokenType } from "token";
 import { ParserError } from "./parserError";
 import { anyString, block, commaList, firstOf, ignoreSpacesAndComments, keyword, leftHandRecurciveRule, map, noSpacesHere, oneOfSimpleSymbols, optional, rawValue, regexpLiteral, repeat, repeat1, returnRawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, sequenceVoid, squareBracket, strictLoop, symbol } from "./parserUtils";
-import { isCssToken, isSymbolNextToken, makeIsSymbolNextTokenProbe, makeIsTokenTypeNextTokenProbe } from "./predicats";
+import { isCssToken, isSymbolNextToken, makeIsKeywordNextTokenProbe, makeIsSymbolNextTokenProbe, makeIsTokenTypeNextTokenProbe } from "./predicats";
 import { CssBlockNode, CssCharsetNode, CssDeclarationNode, CssImportNode, CssMediaNode, CssPageNode, CssSelectorNode, NodeType, StringNode } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
@@ -141,6 +141,7 @@ export function importStatement(stream : TokenStream) : CssImportNode {
         rawValue: source.value,
     };
 }
+importStatement.probe = makeIsKeywordNextTokenProbe(Keywords._import);
 
 /**
  * implements:
@@ -608,7 +609,7 @@ export function pageStatement(stream : TokenStream) : CssPageNode {
  *   ':' [ left | right | first | blank ]
  *
  * */
-function pageSelectorList(stream : TokenStream) : string[] {
+export function pageSelectorList(stream : TokenStream) : string[] {
     return commaList(
         function(stream : TokenStream) : string {
             const identToken = optional(ident)(stream);

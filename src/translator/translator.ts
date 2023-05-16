@@ -1,4 +1,4 @@
-import { CssDeclarationNode, CssImportNode, CssRawNode, FontFaceNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssAtRuleNode, JssNode, JssSelectorNode, JssSpreadNode, JssSupportsNode, JssVarDeclarationNode, NodeType, SyntaxTree } from 'parser/syntaxTree';
+import { CssDeclarationNode, CssImportNode, CssRawNode, FontFaceNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssAtRuleNode, JssNode, JssSelectorNode, JssSpreadNode, JssSupportsNode, JssVarDeclarationNode, NodeType, SyntaxTree, JssPageNode } from 'parser/syntaxTree';
 import { SourceMapGenerator, SourceNode } from 'source-map';
 import { Position } from 'stream/position';
 import { SourceMappingUrl } from './sourceMappingUrl';
@@ -211,8 +211,9 @@ function insertSourceCssRaw(node : CssRawNode, fileName : string) : SourceNode {
     );
 }
 
-function supports2js(node :
-                          JssSupportsNode, fileName : string, bindName = 'self') : SourceNode {
+function supports2js(node : JssSupportsNode,
+                     fileName : string,
+                     bindName = 'self') : SourceNode {
     const query = makeSourceNode(node.position,
                                  fileName,
                                  "`" + templateEscape(node.query.trim()) + "`");
@@ -224,7 +225,25 @@ return self;
 }).bind(${bindName})(${bindName})`;
 }
 
-function mediaQuery2js(node : JssAtRuleNode, fileName : string, bindName = 'self') : SourceNode {
+function page2js(node : JssPageNode,
+                 fileName : string,
+                 bindName = 'self') : SourceNode {
+
+    const pageName = makeSourceNode(node.position, fileName, '@page');
+    const params = node
+        .pageSelectors
+        .map(item => quoteEscape(item))
+        .join(', ');
+    return tag`(function(parent) {
+var ${bindName} = new JssStyleBlock('${pageName}${params ? ' ' + params : ''}');
+${printProperties(node.items, fileName, bindName)}
+return ${bindName};
+}).bind(${bindName})(${bindName})`;
+}
+
+function mediaQuery2js(node : JssAtRuleNode,
+                       fileName : string,
+                       bindName = 'self') : SourceNode {
     let mediaList = makeSourceNode(node.position, fileName, '[');
     mediaList.add(node.mediaList.map((item) => {
         return "`" + templateEscape(item) + "`";
@@ -281,6 +300,8 @@ function translateNode(node : JssNode, fileName : string) : SourceNode {
             return tag`${EXPORT_VAR_NAME}.insertBlock(${mediaQuery2js(node, fileName)});\n`;
         case NodeType.JssSupports:
             return tag`${EXPORT_VAR_NAME}.insertBlock(${supports2js(node, fileName)});\n`;
+        case NodeType.JssPage:
+            return tag`${EXPORT_VAR_NAME}.insertBlock(${page2js(node, fileName)});\n`;
         case NodeType.Comment:
         default:
             throw new Error(`unsupported node ${JSON.stringify(node)}`);
