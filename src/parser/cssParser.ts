@@ -7,7 +7,7 @@ import { Position } from "stream/position";
 import { Symbols } from "symbols";
 import { LiteralToken, SymbolToken, TokenType } from "token";
 import { ParserError } from "./parserError";
-import { anyString, block, commaList, firstOf, ignoreSpacesAndComments, keyword, leftHandRecurciveRule, map, noSpacesHere, oneOfSimpleSymbols, optional, rawValue, regexpLiteral, repeat, repeat1, returnRawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, sequenceVoid, squareBracket, strictLoop, symbol } from "./parserUtils";
+import { anyString, block, commaList, firstOf, ignoreSpacesAndComments, keyword, leftHandRecurciveRule, map, noSpacesHere, oneOfSimpleSymbols, optional, optionalRaw, rawValue, regexpLiteral, repeat, repeat1, returnRawValue, returnRawValueWithPosition, roundBracket, semicolon, sequence, sequenceVoid, squareBracket, strictLoop, symbol } from "./parserUtils";
 import { isCssToken, isSymbolNextToken, makeIsKeywordNextTokenProbe, makeIsSymbolNextTokenProbe, makeIsTokenTypeNextTokenProbe } from "./predicats";
 import { CssBlockNode, CssCharsetNode, CssDeclarationNode, CssImportNode, CssMediaNode, CssPageNode, CssSelectorNode, NodeType, StringNode } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
@@ -334,7 +334,7 @@ export function expr(stream : TokenStream) : void {
 
 const NUM_REG = /^[0-9]+$/;
 function percentage(stream : TokenStream) : string {
-    const num = optional(regexpLiteral(NUM_REG))(stream);
+    const num = optionalRaw(regexpLiteral(NUM_REG))(stream);
     let dot;
     if (num) {
         dot = optional(symbol(Symbols.dot, peekNextToken))(stream);
@@ -367,7 +367,7 @@ export function term(stream : TokenStream) : void {
     firstOf(
         // numbers
         sequence(
-            optional(unaryOperator),
+            optionalRaw(unaryOperator),
             firstOf(
                 // PERCENTAGE
                 percentage,
@@ -375,7 +375,7 @@ export function term(stream : TokenStream) : void {
                 sequence(
                     optional(
                         sequence(
-                            optional(regexpLiteral(NUM_REG)),
+                            optionalRaw(regexpLiteral(NUM_REG)),
                             symbol(Symbols.dot),
                         )
                     ),
@@ -590,7 +590,7 @@ export function pageStatement(stream : TokenStream) : CssPageNode {
 
     return {
         type: NodeType.CssPage,
-        pageSelectors: pageSelectors !== undefined ? pageSelectors : [],
+        pageSelectors: pageSelectors ? pageSelectors : [],
         items: declarationList.items,
         position: Position.ZERO, // NOTE: it's going to be fixed in the startsWithDog
     };

@@ -2,7 +2,7 @@ import { Keywords, ReservedWords } from "keywords";
 import { AssignmentOperator, Symbols } from "symbols";
 import { LiteralToken, TokenType } from "token";
 import { ParserError, UnexpectedEndError } from "./parserError";
-import { anyBlock, anyLiteral, anyString, anyTempateStringLiteral, block, comma, commaList, firstOf, keyword, leftHandRecurciveRule, longestOf, repeat, map, multiSymbol, noLineTerminatorHere, notAllowed, oneOfSymbols, optional, rawValue, regexpLiteral, roundBracket, sequence, squareBracket, strictLoop, symbol } from "./parserUtils";
+import { anyBlock, anyLiteral, anyString, anyTempateStringLiteral, block, comma, commaList, firstOf, keyword, leftHandRecurciveRule, longestOf, repeat, map, multiSymbol, noLineTerminatorHere, notAllowed, oneOfSymbols, optional, rawValue, regexpLiteral, roundBracket, sequence, squareBracket, strictLoop, symbol, optionalRaw } from "./parserUtils";
 import { isLiteralNextToken, literalToString } from "./predicats";
 import { IfNode, JsModuleNode, JsRawNode, JssScriptNode, MultiNode, Node, NodeType, VarDeclaraionNode } from "./syntaxTree";
 import { NextToken, TokenParser } from "./tokenParser";
@@ -170,7 +170,7 @@ const classExpression = classDeclaration;
 
 function classTail(stream : TokenStream) : void {
     // ClassHeritage[?Yield, ?Await]opt { ClassBody[?Yield, ?Await]opt }
-    optional(classHeritage)(stream);
+    optionalRaw(classHeritage)(stream);
     anyBlock(stream);
 }
 
@@ -200,7 +200,7 @@ function regularExpressionLiteral(stream: TokenStream) : string {
 
 export function numericLiteral(stream : TokenStream) : void {
     const numberRule = function(stream : TokenStream) {
-        const numberPart = optional(regexpLiteral(/^[0-9\_]+([eE][\-\+][0-9\_]+)?n?$/))(stream);
+        const numberPart = optionalRaw(regexpLiteral(/^[0-9\_]+([eE][\-\+][0-9\_]+)?n?$/))(stream);
         // NOTE: exponentioal part is odd here
         let fraction = undefined;
         let dot;
@@ -210,7 +210,7 @@ export function numericLiteral(stream : TokenStream) : void {
             dot = optional(symbol(Symbols.dot, peekNextToken))(stream);
         }
         if (dot) {
-            fraction = optional(regexpLiteral(/^[0-9\_]+([eE][\-\+][0-9\_]+)?n?$/, peekNextToken))(stream);
+            fraction = optionalRaw(regexpLiteral(/^[0-9\_]+([eE][\-\+][0-9\_]+)?n?$/, peekNextToken))(stream);
         }
 
         if (numberPart === undefined && fraction === undefined) {

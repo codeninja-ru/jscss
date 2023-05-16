@@ -11,7 +11,7 @@ import { BlockNode, BlockType, IgnoreNode, LazyNode, NodeType } from "./syntaxTr
 import { NextNotSpaceToken, NextToken, ParsedSourceWithPosition, ProbeFn, TokenParser, TokenParserArrayWithPosition } from "./tokenParser";
 import { ArrayTokenStream, FlushableTokenStream, LookAheadTokenStream, TokenStream } from "./tokenStream";
 import { isSpaceOrComment, peekAndSkipSpaces, peekNextToken, TokenStreamReader } from "./tokenStreamReader";
-import { OneOfArray, ReturnTypeMap } from "./types";
+import { NeverVoid, OneOfArray, ReturnTypeMap } from "./types";
 
 
 export function noLineTerminatorHere(stream : TokenStream) : void {
@@ -130,8 +130,8 @@ export function returnRawValue(parser : TokenParser) : TokenParser<string> {
     };
 }
 
-export function list(parser: TokenParser,
-                     separator: TokenParser,
+export function list<S>(parser: TokenParser,
+                     separator: TokenParser<NeverVoid<S>>,
                      canListBeEmpty : boolean = false) : TokenParser {
     const flushedParser = flushed(parser);
     const optionalSeperator = optional(separator);
@@ -350,13 +350,12 @@ export function firstOf<R extends TokenParser[]>(...parsers: R) : TokenParser<Fi
     };
 }
 
-
-type OptionalReturnType<P extends TokenParser, D = undefined> = ReturnType<P> | D;
+type OptionalReturnType<R> = R | undefined;
 
 // TODO and string to ReturnType when parser returns void
 // TODO make optional with default value and proper typeing
-export function optional<P extends TokenParser>(parser: P) : TokenParser<OptionalReturnType<P>> {
-    return function optionalInst(stream: TokenStream) : OptionalReturnType<P> {
+export function optional<R>(parser: TokenParser<NeverVoid<R>>) : TokenParser<OptionalReturnType<R>> {
+    return function optionalInst(stream: TokenStream) : OptionalReturnType<R> {
         if (parser.probe) {
             const nextToken = NextNotSpaceToken.fromStream(stream);
 
@@ -368,6 +367,33 @@ export function optional<P extends TokenParser>(parser: P) : TokenParser<Optiona
 
         try {
             let result = parser(parserStream);
+            if (result === undefined) {
+                throw new Error('parser returned undefined');
+            }
+            parserStream.flush();
+            return result;
+        } catch(e) {
+            if (e instanceof BlockParserError) {
+                throw e;
+            }
+            return undefined;
+        }
+    };
+}
+
+export function optionalRaw<R>(parser: TokenParser<R>) : TokenParser<R | undefined | string> {
+    return function optionalRawInst(stream: TokenStream) : R | undefined | string {
+        if (parser.probe) {
+            const nextToken = NextNotSpaceToken.fromStream(stream);
+
+            if (!nextToken.procede(parser)) {
+                return undefined;
+            }
+        }
+        const parserStream = new LookAheadTokenStream(stream);
+
+        try {
+            let result = parser(parserStream) as string | R;
             if (result === undefined) {
                 result = parserStream.sourceFragment().value;
             }
@@ -586,7 +612,7 @@ export function anyBlock(stream: TokenStream) : LazyNode {
 
 export function leftHandRecurciveRule(leftRule : TokenParser,
                                       rightRule : TokenParser) : TokenParser<void> {
-    const optionalRight = optional(rightRule);
+    const optionalRight = optionalRaw(rightRule);
     return function leftHandRecurciveRuleInst(stream : TokenStream) : void {
         leftRule(stream);
         do {
@@ -647,10 +673,10 @@ export function strictLoop<R>(parser : TokenParser<R>) : TokenParser<R[]> {
     };
 }
 
-export function repeat1<R>(parser : TokenParser<R>) : TokenParser<R[]> {
+export function repeat1<R>(parser : TokenParser<NeverVoid<R>>) : TokenParser<R[]> {
     const optionalParser = optional(parser);
     return function repeat1Inst(stream : TokenStream) : R[] {
-        let results = [parser(stream)];
+        let results = [parser(stream)] as R[];
         while(!stream.eof()) {
             const result = optionalParser(stream);
             if (result === undefined) {
@@ -664,7 +690,7 @@ export function repeat1<R>(parser : TokenParser<R>) : TokenParser<R[]> {
     };
 }
 
-export function repeat<R>(parser : TokenParser<R>) : TokenParser<R[]> {
+export function repeat<R>(parser : TokenParser<NeverVoid<R>>) : TokenParser<R[]> {
     const optionalParser = optional(parser);
     return function repeatInst(stream : TokenStream) : R[] {
         let results = [];
@@ -798,7 +824,7 @@ function htmlStyleComment(stream : TokenStream) : void {
     symbol(Symbols.minus, peekNextToken)(stream);
 
     while(!stream.eof()) {
-        if (optional(endOfHtmlComment)(stream)) {
+        if (optionalRaw(endOfHtmlComment)(stream)) {
             break;
         }
 
@@ -809,7 +835,7 @@ function htmlStyleComment(stream : TokenStream) : void {
 export function ignoreSpacesAndComments(stream : TokenStream) : IgnoreNode {
     const result = [];
     var token;
-    const optinalHtmlStyleComment = optional(htmlStyleComment);
+    const optinalHtmlStyleComment = optionalRaw(htmlStyleComment);
     while(!stream.eof()) {
         token = stream.peek();
         if (isSpaceOrComment(token)) {

@@ -5,7 +5,7 @@ import { HiddenToken, LiteralToken, SymbolToken, TokenType } from "token";
 import { attrib, combinator, cssCharset, cssLiteral, hash, importStatement, mediaQuery, mediaQueryList, pageSelectorList, term } from "./cssParser";
 import { expression, functionExpression, identifier, moduleItem, parseJsVarStatement } from "./parser";
 import { ParserError, SequenceError, SyntaxRuleError } from "./parserError";
-import { andRule, anyBlock, anyLiteral, anyString, block, commaList, dollarSign, endsWithOptionalSemicolon, firstOf, ignoreSpacesAndComments, isBlockNode, isLazyBlockParser, keyword, lazyBlock, LazyBlockParser, leftHandRecurciveRule, literalKeyword, multiSymbol, noLineTerminatorHere, noSpacesHere, notAllowed, oneOfSimpleSymbols, optional, probe, rawValue, repeat, returnRawValueWithPosition, roundBracket, semicolon, sequence, sequenceVoid, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
+import { andRule, anyBlock, anyLiteral, anyString, block, commaList, dollarSign, endsWithOptionalSemicolon, firstOf, ignoreSpacesAndComments, isBlockNode, isLazyBlockParser, keyword, lazyBlock, LazyBlockParser, leftHandRecurciveRule, literalKeyword, multiSymbol, noLineTerminatorHere, noSpacesHere, notAllowed, oneOfSimpleSymbols, optional, optionalRaw, probe, rawValue, repeat, returnRawValueWithPosition, roundBracket, semicolon, sequence, sequenceVoid, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
 import { is$NextToken, is$Token, isCssToken, isLiteralNextToken, isSquareBracketNextToken, isSymbolNextToken, makeIsKeywordNextTokenProbe, makeIsSymbolNextTokenProbe } from "./predicats";
 import { isSourceFragment } from "./sourceFragment";
 import { CssCharsetNode, CssImportNode, CssMediaNode, CssPageNode, CssRawNode, FontFaceNode, JsRawNode, JssAtRuleNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssNode, JssPageNode, JssSelectorNode, JssSpreadNode, JssSupportsNode, JssVarDeclarationNode, NodeType, SyntaxTree } from "./syntaxTree";
@@ -16,7 +16,7 @@ import { OneOfArray, ReturnTypeMap } from "./types";
 
 
 export function parseJssScript(stream : TokenStream) : SyntaxTree {
-    optional(skipShebang)(stream);
+    optionalRaw(skipShebang)(stream);
     return strictLoop(jssStatement)(stream);
 }
 
@@ -374,7 +374,7 @@ function jssVariableStatement(stream : TokenStream) : JssVarDeclarationNode {
         namePos: varName.position,
         items: block.value.parse().items,
         hasExport: exportKeyword !== undefined,
-        ...(exportKeyword !== undefined ? { exportPos: exportKeyword.position } : {})
+        ...(exportKeyword ? { exportPos: exportKeyword.position } : {})
     };
 }
 jssVariableStatement.probe = isLiteralNextToken;
@@ -530,7 +530,7 @@ function pageStatement(stream : TokenStream) : JssPageNode {
 
     return {
         type: NodeType.JssPage,
-        pageSelectors: pageSelectors !== undefined ? pageSelectors : [],
+        pageSelectors: pageSelectors ? pageSelectors : [],
         items: declarationList.parse().items,
         position: Position.ZERO, // NOTE: it's going to be fixed in the startsWithDog
     };

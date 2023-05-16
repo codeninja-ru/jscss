@@ -154,7 +154,7 @@ function jsOption(stream : TokenStream) : boolean {
 }
 
 function endOfTheSteam(stream : TokenStream,
-                      peekFn : TokenStreamReader = peekAndSkipSpaces) : void {
+                       peekFn : TokenStreamReader = peekAndSkipSpaces) : void {
     let token;
     try {
         token = peekFn(stream);
