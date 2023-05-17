@@ -96,23 +96,20 @@ export interface ExtendedStyleProp {
 }
 
 type TItem = string | StyleBlock;
-const privateItems = new WeakMap<StyleSheet, TItem[]>();
 
 export class JssStyleSheet implements StyleSheet {
-    constructor() {
-        setPrivate(this, privateItems, []);
-    }
+    _items : TItem[] = [];
 
     insertBlock(block : StyleBlock) {
-        getPrivate(this, privateItems).push(block);
+        this._items.push(block);
     }
 
     insertCss(cssCode : string) {
-        getPrivate(this, privateItems).push(cssCode);
+        this._items.push(cssCode);
     }
 
     toCss() : string {
-        return getPrivate(this, privateItems)
+        return this._items
             .map((item) => {
                 if (typeof item == 'string') {
                     return item;
@@ -123,10 +120,9 @@ export class JssStyleSheet implements StyleSheet {
     }
 
     toArray() : StyleSheetArray {
-        const items = getPrivate(this, privateItems)
         const result = [] as StyleSheetArray;
 
-        for (const item of items) {
+        for (const item of this._items) {
             if (typeof item == 'string') {
                 result.push(item);
             } else {
@@ -142,8 +138,6 @@ export class JssStyleSheet implements StyleSheet {
     }
 }
 
-const privateValue = new WeakMap<Block, StyleProp>();
-const privateChildren = new WeakMap<Block, PrintableBlock[]>();
 const privateParent = new WeakMap<Block, StyleBlockParent>();
 
 function isPrintableBlock(value : any) : value is PrintableBlock {
@@ -151,21 +145,20 @@ function isPrintableBlock(value : any) : value is PrintableBlock {
 }
 
 export class JssBlock implements Block {
-    constructor() {
-        privateChildren.set(this, []);
-        privateValue.set(this, {});
-    }
+    _value = new Map();
+    _children : PrintableBlock[] = [];
+    _selectors : string[] = [];
 
     get selectors() : string[] {
-        return [...getPrivate(this, privateSelectors)];
+        return [...this._selectors];
     }
 
     get children() : PrintableBlock[] {
-        return [...getPrivate(this, privateChildren)];
+        return [...this._children];
     }
 
     push(name : string, value : any) {
-        getPrivate(this, privateValue)[name] = value;
+        this._value.set(name, value);
     }
 
     addChild(value : PrintableBlock) {
@@ -173,35 +166,35 @@ export class JssBlock implements Block {
         if (value == this) {
             throw new Error('cannot contain itself')
         }
-        getPrivate(this, privateChildren).push(value);
+        this._children.push(value);
     }
 
     extend(value : ExtendedStyleProp | JssBlockCaller) : void {
         if (value instanceof JssBlockCaller) {
             const blockInstance = value.call(this);
-            Object.assign(getPrivate(this, privateValue), blockInstance.styles);
+            for (const key in blockInstance.styles) {
+                this._value.set(key, blockInstance.styles[key]);
+            }
             blockInstance.children.forEach((child) => this.addChild(child));
         } else if (!isEmpty(value)) {
-            const styleProps = {} as StyleProp;
             for (const key in value) {
                 const item = value[key];
                 if (isPrintableBlock(item)) {
                     this.addChild(item);
                 } else {
-                    styleProps[key] = item;
+                    this._value.set(key, item);
                 }
 
             }
-            Object.assign(getPrivate(this, privateValue), styleProps);
         }
     }
 
     isEmpty() : boolean {
-        return isEmpty(getPrivate(this, privateValue)) && isEmpty(getPrivate(this, privateChildren));
+        return this._value.size == 0 && this._children.length == 0;
     }
 
     get styles() : StyleProp {
-        return new Proxy(getPrivate(this, privateValue), {
+        return new Proxy(Object.fromEntries(this._value), {
             get(value : StyleProp, prop : string) : StylePropValue | undefined {
                 if (typeof prop != 'string') {
                     return undefined;
@@ -221,8 +214,6 @@ export class JssBlock implements Block {
         });
     }
 }
-
-const privateSelectors = new WeakMap<Block, string[]>();
 
 function sprintObject(value : any, indent = 1) {
     var result = "";
@@ -275,16 +266,16 @@ export class JssStyleBlock extends JssBlock implements StyleBlock {
                 parent : StyleBlockParent = null) {
         super();
         if (typeof selectors == 'string') {
-            privateSelectors.set(this, [selectors]);
+            this._selectors = [selectors];
         } else {
-            privateSelectors.set(this, selectors);
+            this._selectors = selectors;
         }
         this.extend(content);
         setPrivate(this, privateParent, parent);
     }
 
     get name() : string {
-        return getPrivate(this, privateSelectors).join(', ');
+        return this._selectors.join(', ');
     }
 
     get parent() : StyleBlockParent {
@@ -298,14 +289,13 @@ export class JssStyleBlock extends JssBlock implements StyleBlock {
 
     toArray() : StyleArray {
         const name = this.name;
-        const children = getPrivate(this, privateChildren);
-        const value = getPrivate(this, privateValue);
+        const value = Object.fromEntries(this._value);
         const result = [];
 
         result.push({name: name, value: Object.assign({}, value)});
 
-        if (children.length > 0) {
-            for (const child of children) {
+        if (this._children.length > 0) {
+            for (const child of this._children) {
                 result.push(...child.toArray());
             }
         }
@@ -315,14 +305,13 @@ export class JssStyleBlock extends JssBlock implements StyleBlock {
 
     toCss() : string {
         const name = this.name;
-        const children = getPrivate(this, privateChildren);
-        const value = getPrivate(this, privateValue);
+        const value = Object.fromEntries(this._value);
         const result = [] as string[];
 
         result.push(sprintCssValue(name, value));
 
-        if (children.length > 0) {
-            for (const child of children) {
+        if (this._children.length > 0) {
+            for (const child of this._children) {
                 result.push(child.toCss());
             }
         }
@@ -380,16 +369,15 @@ export class JssAtRuleBlock extends JssBlock implements MediaQueryBlock {
 
     toArray() : StyleArray {
         const name = [this.blockName, this.mediaList.join(', ')].filter((item) => item).join(' ');
-        const children = getPrivate(this, privateChildren);
-        const value = getPrivate(this, privateValue);
         const result = [] as StyleArray;
 
-        if (isEmpty(value)) {
+        if (this._value.size == 0) {
             result.push({
                 name: name,
-                children: children.map(item => item.toArray()).flat(),
+                children: this._children.map(item => item.toArray()).flat(),
             });
         } else {
+            const value = Object.fromEntries(this._value);
             const parent = findStyleParent(this);
 
             if (parent != null) {
@@ -397,8 +385,8 @@ export class JssAtRuleBlock extends JssBlock implements MediaQueryBlock {
                     name: name,
                     children: [{
                         name: parent.name,
-                        value: {...value},
-                    }, ...children.map(item => item.toArray()).flat()]
+                        value: value,
+                    }, ...this._children.map(item => item.toArray()).flat()]
                 });
 
             } else {
