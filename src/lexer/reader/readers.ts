@@ -66,7 +66,7 @@ export function blockReader(stream: InputStream) : ReaderResult {
 const ESCAPE_SYMBOL = '\\';
 
 export function makeStringReader(quatation: "'" | '"') : Reader {
-    return function(stream : InputStream) : ReaderResult {
+    return function stringReaderInst(stream : InputStream) : ReaderResult {
         if (stream.peek() == quatation) {
             const pos = stream.position();
             var result = stream.next();
@@ -101,7 +101,7 @@ export function makeStringReader(quatation: "'" | '"') : Reader {
 const JS_SYMBOLS = ";.,=<>-*+&|^@%?:#!~\\<>"; //TODO sort according statistic of usage
 
 export function makeSymbolReader(allowedSymbols = JS_SYMBOLS): Reader {
-    return function(stream : InputStream) : ReaderResult {
+    return function symbolReaderInst(stream : InputStream) : ReaderResult {
         var ch = stream.peek();
         if (allowedSymbols.includes(ch)) {
             const pos = stream.position();
@@ -184,7 +184,7 @@ export function simpleRoundBracketsReader(stream : InputStream) : ReaderResult {
 }
 
 export function makeBracketsReader(startBracket: '(' | '[', endBracket: ')' | ']'): Reader {
-    return function(stream : InputStream) : ReaderResult {
+    return function bracketsReaderInst(stream : InputStream) : ReaderResult {
         if (stream.peek() == startBracket) {
             let result = '';
             let level = 0;

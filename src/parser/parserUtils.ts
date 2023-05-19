@@ -134,7 +134,7 @@ export function list<S>(parser: TokenParser,
                      separator: TokenParser<NeverVoid<S>>,
                      canListBeEmpty : boolean = false) : TokenParser {
     const flushedParser = flushed(parser);
-    const optionalSeperator = optional(separator);
+    const optionalSeperator = optionalBool(separator);
     return probe(function listInst(stream: TokenStream) : ReturnType<TokenParser> {
         let result = [];
         while (!stream.eof()) {
@@ -381,8 +381,32 @@ export function optional<R>(parser: TokenParser<NeverVoid<R>>) : TokenParser<Opt
     };
 }
 
-export function optionalRaw<R>(parser: TokenParser<R>) : TokenParser<R | undefined | string> {
-    return function optionalRawInst(stream: TokenStream) : R | undefined | string {
+export function optionalBool<R>(parser: TokenParser<R>) : TokenParser<boolean> {
+    return function optionalBoolInst(stream: TokenStream) : boolean {
+        if (parser.probe) {
+            const nextToken = NextNotSpaceToken.fromStream(stream);
+
+            if (!nextToken.procede(parser)) {
+                return false;
+            }
+        }
+        const parserStream = new LookAheadTokenStream(stream);
+
+        try {
+            parser(parserStream);
+            parserStream.flush();
+            return true;
+        } catch(e) {
+            if (e instanceof BlockParserError) {
+                throw e;
+            }
+            return false;
+        }
+    };
+}
+
+export function optionalRaw(parser: TokenParser<void>) : TokenParser<string | undefined> {
+    return function optionalRawInst(stream: TokenStream) : undefined | string {
         if (parser.probe) {
             const nextToken = NextNotSpaceToken.fromStream(stream);
 
@@ -393,10 +417,8 @@ export function optionalRaw<R>(parser: TokenParser<R>) : TokenParser<R | undefin
         const parserStream = new LookAheadTokenStream(stream);
 
         try {
-            let result = parser(parserStream) as string | R;
-            if (result === undefined) {
-                result = parserStream.sourceFragment().value;
-            }
+            parser(parserStream);
+            const result = parserStream.sourceFragment().value;
             parserStream.flush();
             return result;
         } catch(e) {
@@ -612,12 +634,12 @@ export function anyBlock(stream: TokenStream) : LazyNode {
 
 export function leftHandRecurciveRule(leftRule : TokenParser,
                                       rightRule : TokenParser) : TokenParser<void> {
-    const optionalRight = optionalRaw(rightRule);
+    const optionalRight = optionalBool(rightRule);
     return function leftHandRecurciveRuleInst(stream : TokenStream) : void {
         leftRule(stream);
         do {
             let right = optionalRight(stream);
-            if (right === undefined) {
+            if (!right) {
                 break;
             }
         } while(true);
@@ -835,14 +857,14 @@ function htmlStyleComment(stream : TokenStream) : void {
 export function ignoreSpacesAndComments(stream : TokenStream) : IgnoreNode {
     const result = [];
     var token;
-    const optinalHtmlStyleComment = optionalRaw(htmlStyleComment);
+    const optionalHtmlStyleComment = optionalRaw(htmlStyleComment);
     while(!stream.eof()) {
         token = stream.peek();
         if (isSpaceOrComment(token)) {
             stream.next();
             result.push(token.value);
         } else if (Symbols.gt.equal(token)) {
-            const htmlComment = optinalHtmlStyleComment(stream);
+            const htmlComment = optionalHtmlStyleComment(stream);
 
             if (htmlComment) {
                 result.push(htmlComment);
@@ -938,7 +960,7 @@ export function repeatUntil(parser : TokenParser, until : TokenParser) : TokenPa
 export function endsWithOptionalSemicolon<R>(parser : TokenParser<R>) : TokenParser<R> {
     return probe(function(stream : TokenStream) : R {
         const result = parser(stream);
-        optional(semicolon)(stream);
+        optionalBool(semicolon)(stream);
 
         return result;
     }, parser.probe);
