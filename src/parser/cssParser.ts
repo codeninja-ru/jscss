@@ -17,11 +17,10 @@ import { peekAndSkipSpaces, peekNextToken } from "./tokenStreamReader";
 /**
  * literal that can contain "-"
  * */
-export function cssLiteral(stream: TokenStream) : LiteralToken {
-    let firstToken = peekAndSkipSpaces(stream);
-    let result = "";
+export function cssLiteral(stream: TokenStream, peekFirstToken = peekAndSkipSpaces) : LiteralToken {
+    let firstToken = peekFirstToken(stream);
     if (isCssToken(firstToken)) {
-        result = firstToken.value;
+        var result = firstToken.value;
 
         while(!stream.eof()) {
             const token = stream.peek();
@@ -31,13 +30,8 @@ export function cssLiteral(stream: TokenStream) : LiteralToken {
             } else {
                 break;
             }
-
         }
-    }
 
-    if (result == "") {
-        throw ParserError.reuse(`css literal is expected`, firstToken);
-    } else {
         if (result.includes('$')) {
             throw ParserError.reuse(`css literal can't containt $`, firstToken);
         }
@@ -47,6 +41,8 @@ export function cssLiteral(stream: TokenStream) : LiteralToken {
             position: firstToken.position,
         };
     }
+
+    throw ParserError.reuse(`css literal is expected`, firstToken);
 }
 
 /**
@@ -484,9 +480,8 @@ export function simpleSelector(stream : TokenStream) : string {
  * */
 export function hash(stream : TokenStream) : string {
     symbol(Symbols.numero)(stream);
-    noSpacesHere(stream);
     // nmchar		[_a-z0-9-]|{nonascii}|{escape} //TODO test out
-    const name = cssLiteral(stream);
+    const name = cssLiteral(stream, peekNextToken);
 
     return '#' + name.value;
 }

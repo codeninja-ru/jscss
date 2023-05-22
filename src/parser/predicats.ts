@@ -16,8 +16,8 @@ function containsOnly(str : string, symbol : SyntaxSymbol) : boolean {
     if (str.length == 0) {
         return false;
     }
-    for (const ch of str) {
-        if (ch != symbol.name) {
+    for (var i = 0; i < str.length; i++) {
+        if (str[i] != symbol.name) {
             return false;
         }
     }
