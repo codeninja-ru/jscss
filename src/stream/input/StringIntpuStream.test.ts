@@ -46,4 +46,17 @@ describe('class StringInputStream', () => {
         expect(input.readUntil('*/')).toEqual(' test */');
         expect(input.readUntil('test')).toEqual('no');
     });
+
+    test('lookahead()', () => {
+        let input = new StringInputStream('123');
+
+        expect(input.peek()).toEqual('1');
+        expect(input.lookahead()).toEqual('2');
+        expect(input.next()).toEqual('1');
+        expect(input.peek()).toEqual('2');
+        expect(input.lookahead()).toEqual('3');
+        expect(input.next()).toEqual('2');
+        expect(input.lookahead()).toBeUndefined();
+    });
+
 });

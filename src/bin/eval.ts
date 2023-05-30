@@ -1,5 +1,5 @@
 import vm from "vm";
-import Module from 'module';
+import { createRequire } from 'module';
 import { BasicStackTracePrinter, SourceMappedStackTrace, StackTrace, VmScriptStrackTrace } from "./stackTrace";
 import { SourceMapConsumer } from "source-map";
 import { GeneratedCode } from "translator/translator";
@@ -16,14 +16,13 @@ export interface EvalResult {
 }
 
 export function evalCode(sourceCode : GeneratedCode,
-                         fileName : string) : Promise<EvalResult> {
-    const contectModule = new Module(fileName);
-    const context = {
-        'require' : contectModule.require.bind(contectModule),
-        'module' : contectModule,
-        'exports' : contectModule.exports,
+                         fileName : string,
+                         modulePath : string) : Promise<EvalResult> {
+    const contextRequire = createRequire(modulePath);
+    const context = vm.createContext({
+        'require' : contextRequire,
         ...evalContext(),
-    };
+    });
 
     try {
         const script = new vm.Script(sourceCode.value, {

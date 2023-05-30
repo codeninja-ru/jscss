@@ -72,6 +72,8 @@ export default function (program: ts.Program) {
                                 case 'returnRawValueWithPosition':
                                 case 'returnRawValue':
                                 case 'optional':
+                                case 'optionalRaw':
+                                case 'optionalVoid':
                                 case 'leftHandRecurciveRule':
                                 //case 'probe':
                                     return wrapFn(node, combinatorIdx++);

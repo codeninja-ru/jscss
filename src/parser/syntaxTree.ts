@@ -1,12 +1,14 @@
 import { Position } from "stream/position";
 import { SquareBracketsToken } from "token";
+import { ValueWithPosition } from "./parserUtils";
 
 export type SyntaxTree = JssNode[];
 
 export type JssNode = IgnoreNode | JsRawNode |
     JssBlockNode | CssImportNode | JssSelectorNode |
     CommentNode | JssVarDeclarationNode | CssCharsetNode | JssAtRuleNode |
-    JssSupportsNode | FontFaceNode | CssRawNode | JssPageNode;
+    JssSupportsNode | FontFaceNode | CssRawNode | JssPageNode |
+    JsImportNode | JssDeclarationNode;
 
 export enum NodeType {
     Error,
@@ -78,17 +80,17 @@ export interface IgnoreNode extends Node {
     readonly items: string[];
 }
 
-// import namespace from ...
-export interface JsImportNamespace {
-    readonly varName?: string;
-    readonly varAlias?: string;
+export interface ImportSepcifier {
+    readonly name: ValueWithPosition<string>,
+    readonly moduleExportName?: ValueWithPosition<string>;
 }
 
 // import defaultVar as asName, { var1 as asName1, var2 as asName2 } from 'path';
 export interface JsImportNode extends Node {
     type: NodeType.JsImport;
-    readonly path?: string;
-    readonly vars?: JsImportNamespace[];
+    readonly path: string;
+    readonly pathPos: Position;
+    readonly vars: ImportSepcifier[];
 }
 
 export interface CommentNode extends Node {

@@ -63,4 +63,12 @@ export class StringInputStream implements InputStream {
     position() : Position {
         return new Position(this.line, this.col);
     }
+
+    lookahead() : string | undefined {
+        if (this.pos >= this.input.length - 1) {
+            return undefined;
+        }
+
+        return this.input[this.pos + 1];
+    }
 }

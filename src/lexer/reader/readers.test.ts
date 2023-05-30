@@ -1,6 +1,6 @@
 import { StringInputStream } from "stream/input";
 import { TokenType } from "token";
-import { literalReader, makeBracketsReader, makeStringReader, makeSymbolReader, spaceReader, templateStringReader, unexpectedReader } from "./readers";
+import { jssLiteralReader, literalReader, makeBracketsReader, makeStringReader, makeSymbolReader, spaceReader, templateStringReader, unexpectedReader } from "./readers";
 
 describe('makeStringReader()', () => {
     test('correct strings', () => {
@@ -145,6 +145,16 @@ describe('makeSymbolReader()', () => {
             value: '+',
         });
     });
+
+    it('parses dollar sign', () => {
+        const reader = makeSymbolReader();
+        expect(reader(new StringInputStream("$test"))).toEqual({
+            type: TokenType.Symbol,
+            position: {col: 1, line: 1},
+            value: '$',
+        });
+    });
+
 });
 
 describe('unexpectedReader()', () => {
@@ -169,4 +179,19 @@ describe('literalReader()', () => {
         expect(literalReader(new StringInputStream('className:hover, .nextClassName'))?.value).toEqual('className');
     });
 
+});
+
+describe('jssLiteralReader', () => {
+    it('reads literals', () => {
+        expect(jssLiteralReader(new StringInputStream('className .nextClassName'))?.value).toEqual('className');
+        expect(jssLiteralReader(new StringInputStream('className, .nextClassName'))?.value).toEqual('className');
+        expect(jssLiteralReader(new StringInputStream('className, .nextClassName'))?.value).toEqual('className');
+        expect(jssLiteralReader(new StringInputStream('className:hover, .nextClassName'))?.value).toEqual('className');
+
+        expect(jssLiteralReader(new StringInputStream('${}'))).toEqual(null);
+        expect(jssLiteralReader(new StringInputStream('$test'))?.value).toEqual('$test');
+        expect(jssLiteralReader(new StringInputStream('test$test'))?.value).toEqual('test$test');
+        expect(jssLiteralReader(new StringInputStream('test${test}'))?.value).toEqual('test');
+        expect(jssLiteralReader(new StringInputStream('test$'))?.value).toEqual('test$');
+    });
 });

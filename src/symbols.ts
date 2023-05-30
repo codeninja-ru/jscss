@@ -2,12 +2,15 @@ import { SymbolToken, Token, TokenType } from "token";
 
 type SingleCharSymbol = '~' | '@' | '#' | '%' | '^' | '&' | '*' | '<' | '>'
     | '"' | '\'' | '/' | '\\' | '?' | '!' | '|' | '`' | '.' | ',' | ';' | ':'
-    | '+' | '-' | '=';
+    | '+' | '-' | '=' | '$';
 
+interface SomeSymboleToken extends SymbolToken {
+    value : SingleCharSymbol;
+}
 export class SyntaxSymbol {
     constructor(readonly name: SingleCharSymbol) {
     }
-    equal(token : Token) : token is SymbolToken {
+    equal(token : Token) : token is SomeSymboleToken {
         return token.type == TokenType.Symbol && token.value === this.name;
     }
 }
@@ -36,7 +39,9 @@ export const Symbols = {
     div: new SyntaxSymbol('/'),
     backslash: new SyntaxSymbol('\\'),
     percent: new SyntaxSymbol('%'),
+    dollar: new SyntaxSymbol('$'),
     numero: new SyntaxSymbol('#'),
+    shebang: new MultiSymbol('#!'),
 
     and: new MultiSymbol('&&'),
     or: new MultiSymbol('||'),

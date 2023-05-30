@@ -1,4 +1,4 @@
-import { blockReader, literalReader, makeBracketsReader, makeStringReader, makeSymbolReader, simpleRoundBracketsReader, spaceReader, templateStringReader, unexpectedReader } from 'lexer/reader/readers';
+import { blockReader, jssLiteralReader, makeBracketsReader, makeStringReader, makeSymbolReader, simpleRoundBracketsReader, spaceReader, templateStringReader, unexpectedReader } from 'lexer/reader/readers';
 import { InputStream } from 'stream/input';
 import { Token, TokenType } from 'token/Token';
 import { commentReader } from './reader/comments';
@@ -6,8 +6,8 @@ import { commentReader } from './reader/comments';
 class Lexer {
     private readonly readers = [
         spaceReader,
+        jssLiteralReader,
         makeSymbolReader(),
-        literalReader,
         blockReader,
         commentReader,
         makeStringReader("'"),

@@ -6,38 +6,17 @@
 
 it follows js imports
 ```jsslang
-import $ from './jquery.js';
+import moment from './vendor/moment.js';
 
-#id .className {
+#id .className${moment(new Date('10-10-2024')).format('YYYY')} {
     display: block;
 }
 ```
 
 Output:
 ```css
-#id .className {
+#id .className2024 {
     display: block;
-}
-```
-
-You can call functions from js libraries
-
-```jsslang
-import {log, count, rgb} from './lib.js';
-
-log('start');
-
-p.className${count()} {
-    color: ${rgb(100, 100,100)};
-}
-
-log('end');
-```
-
-Output:
-```css
-p.className1 {
-    color: #fff;
 }
 ```
 

@@ -66,7 +66,7 @@ function processInput(node : InputAndOutputArgNode) {
     if (node.hasJsOption) {
         console.log(outStr.value);
     } else {
-        evalCode(outStr, inputFileName).then((result) => {
+        evalCode(outStr, inputFileName, __dirname).then((result) => {
             if (result.statusCode == EvalStatucCode.Success) {
                 if (node.outputFile == '-' || (node.inputFile == '-' && node.inputFile === undefined)) {
                     console.log(result.output);

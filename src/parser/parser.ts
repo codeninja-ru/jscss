@@ -2,12 +2,13 @@ import { Keywords, ReservedWords } from "keywords";
 import { AssignmentOperator, Symbols } from "symbols";
 import { LiteralToken, TokenType } from "token";
 import { ParserError, UnexpectedEndError } from "./parserError";
-import { anyBlock, anyLiteral, anyString, anyTempateStringLiteral, block, comma, commaList, firstOf, keyword, leftHandRecurciveRule, longestOf, repeat, map, multiSymbol, noLineTerminatorHere, notAllowed, oneOfSymbols, optional, rawValue, regexpLiteral, roundBracket, sequence, squareBracket, strictLoop, symbol, optionalRaw } from "./parserUtils";
-import { isLiteralNextToken, literalToString } from "./predicats";
-import { IfNode, JsModuleNode, JsRawNode, JssScriptNode, MultiNode, Node, NodeType, VarDeclaraionNode } from "./syntaxTree";
-import { NextToken, TokenParser } from "./tokenParser";
+import { anyBlock, anyLiteral, anyString, anyTempateStringLiteral, block, comma, commaList, firstOf, keyword, leftHandRecurciveRule, longestOf, map, multiSymbol, noLineTerminatorHere, notAllowed, oneOfSymbols, optional, optionalRaw, rawValue, regexpLiteral, repeat, returnValueWithPosition, roundBracket, sequence, squareBracket, strictLoop, symbol, ValueWithPosition } from "./parserUtils";
+import { isLiteralNextToken, literalToString, makeIsKeywordNextTokenProbe, makeIsSymbolNextTokenProbe } from "./predicats";
+import { IfNode, ImportSepcifier, JsImportNode, JsModuleNode, JsRawNode, JssScriptNode, MultiNode, Node, NodeType, VarDeclaraionNode } from "./syntaxTree";
+import { NextToken } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
 import { peekAndSkipSpaces, peekNextToken, peekNoLineTerminatorHere } from "./tokenStreamReader";
+import { NeverVoid } from "./types";
 
 function returnRawNode(stream : TokenStream) : JsRawNode {
     const source = rawValue(stream);
@@ -861,43 +862,125 @@ export function parseJsScript(stream : TokenStream) : JssScriptNode {
     }
 }
 
-function nameSpaceImport(stream : TokenStream) : void {
-    symbol(Symbols.astersik)(stream);
+function nameSpaceImport(stream : TokenStream) : ImportSepcifier  {
+    const asterisk = symbol(Symbols.astersik)(stream);
     keyword(Keywords._as)(stream);
-    bindingIdentifier(stream);
+    const name = importDefaultBinding(stream);
+
+    return {
+        name: new ValueWithPosition('*', asterisk.position),
+        moduleExportName: name,
+    };
+}
+nameSpaceImport.probe = makeIsSymbolNextTokenProbe(Symbols.astersik);
+
+function importDefaultBinding(stream : TokenStream) : ValueWithPosition<string> {
+    //TODO remplace with identifier, identifier should return LiteralToken
+    return returnValueWithPosition(identifier)(stream);
 }
 
-function importDeclaration(stream : TokenStream) : JsRawNode {
+function importSpecifier(stream : TokenStream) : ImportSepcifier {
+    return firstOf(
+        //NOTE here the order of rules is changed, at first the longest rule
+        // ModuleExportName as ImportedBinding
+        map(
+            sequence(
+                firstOf(
+                    // IdentifierName
+                    identifierName,
+                    // StringLiteral
+                    anyString,
+                ),
+                keyword(Keywords._as),
+                importDefaultBinding,
+            ),
+            function([nameValue, , asValue]) : ImportSepcifier {
+                return {
+                    name: new ValueWithPosition(nameValue.value, nameValue.position),
+                    moduleExportName: asValue,
+                };
+            }
+        ),
+        // ImportedBinding
+        map(importDefaultBinding, function(value) : ImportSepcifier {
+            return {
+                name: value,
+                moduleExportName: undefined
+            };
+        }),
+    )(stream);
+}
+
+function namedImports(stream : TokenStream) : ImportSepcifier[] {
+    // NamedImports :
+    // { }
+    // { ImportsList }
+    // { ImportsList , }
+    return block(TokenType.LazyBlock, function(stream : TokenStream) : ImportSepcifier[] {
+        // ImportSpecifier
+        // ImportsList , ImportSpecifier
+        const result = commaList(importSpecifier, true)(stream);
+        if (result.length > 0) {
+            optional(comma)(stream);
+        }
+        return result;
+    })(stream).items;
+}
+
+function toArray<T>(value: NeverVoid<T>) : [T] {
+    return [value];
+}
+
+function importClause(stream : TokenStream) : ImportSepcifier[] {
+    const bindingNameGlobal = map(importDefaultBinding, function(value) : ImportSepcifier {
+        return {
+            name: new ValueWithPosition('*', value.position),
+            moduleExportName: value,
+        };
+    });
+    const clause = firstOf(
+        // NameSpaceImport
+        map(nameSpaceImport, toArray),
+        // NamedImports
+        namedImports,
+        // ImportedDefaultBinding , NameSpaceImport
+        // ImportedDefaultBinding , NamedImports
+        map(
+            sequence(bindingNameGlobal, comma, firstOf(
+                map(nameSpaceImport, toArray),
+                namedImports,
+            )),
+            function([name,,rest]) : ImportSepcifier[] {
+                return [name, ...rest];
+            },
+        ),
+        //NOTE changed order
+        // TODO the 2 last rules can be joined togather
+        // ImportedDefaultBinding
+        map(bindingNameGlobal, toArray),
+    )(stream);
+    keyword(Keywords._from)(stream);
+
+    return clause;
+}
+
+export function importDeclaration(stream : TokenStream) : JsImportNode {
     keyword(Keywords._import)(stream);
 
-    optional(
-        // import ImportClause FromClause ;
-        sequence(
-            firstOf(
-                // ImportedDefaultBinding
-                bindingIdentifier,
-                // NameSpaceImport
-                nameSpaceImport,
-                // NamedImports
-                anyBlock,
-                // ImportedDefaultBinding , NameSpaceImport
-                // ImportedDefaultBinding , NamedImports
-                sequence(bindingIdentifier, comma, firstOf(
-                    nameSpaceImport,
-                    anyBlock
-                )),
-            ),
-            keyword(Keywords._from),
-        ),
-        // import ModuleSpecifier ;
-    )(stream);
+    const clause = optional(importClause)(stream);
 
-    anyString(stream);
+    const fromString = anyString(stream);
 
     optional(symbol(Symbols.semicolon))(stream);
 
-    return returnRawNode(stream);
+    return {
+        type: NodeType.JsImport,
+        path: fromString.value,
+        pathPos: fromString.position,
+        vars: clause ? clause : [],
+    };
 }
+importDeclaration.probe = makeIsKeywordNextTokenProbe(Keywords._import);
 
 function exportFromClause(stream : TokenStream) : void {
     firstOf(
@@ -944,7 +1027,7 @@ function exportDeclaration(stream : TokenStream) : JsRawNode {
     return returnRawNode(stream);
 }
 
-export function moduleItem(stream : TokenStream) : ReturnType<TokenParser> {
+export function moduleItem(stream : TokenStream) : JsRawNode | JsImportNode {
     return firstOf(
         // ImportDeclaration
         importDeclaration,

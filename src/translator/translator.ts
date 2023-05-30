@@ -1,4 +1,5 @@
-import { CssDeclarationNode, CssImportNode, CssRawNode, FontFaceNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssAtRuleNode, JssNode, JssSelectorNode, JssSpreadNode, JssSupportsNode, JssVarDeclarationNode, NodeType, SyntaxTree, JssPageNode } from 'parser/syntaxTree';
+import { ValueWithPosition } from 'parser/parserUtils';
+import { CssDeclarationNode, CssImportNode, CssRawNode, FontFaceNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssAtRuleNode, JssNode, JssSelectorNode, JssSpreadNode, JssSupportsNode, JssVarDeclarationNode, NodeType, SyntaxTree, JssPageNode, JsImportNode, ImportSepcifier } from 'parser/syntaxTree';
 import { SourceMapGenerator, SourceNode } from 'source-map';
 import { Position } from 'stream/position';
 import { SourceMappingUrl } from './sourceMappingUrl';
@@ -270,6 +271,50 @@ ${declarations2js(items, fileName)}
 }).bind(${bindName})();`;
 }
 
+function makeValue(value : ValueWithPosition<string>,
+                   fileName : string) : SourceNode {
+    return makeSourceNode(value.position, fileName, value.value);
+}
+function importSpecifier2jsonPair(node : ImportSepcifier,
+                                  fileName : string) : SourceNode {
+    if (node.moduleExportName) {
+        return tag`${makeValue(node.name, fileName)}:${makeValue(node.moduleExportName, fileName)}`;
+    } else {
+        return makeValue(node.name, fileName);
+    }
+}
+function esImport2Js(node : JsImportNode,
+                     fileName : string) : SourceNode {
+    const path = makeSourceNode(node.pathPos, fileName, node.path);
+    if (node.vars.length == 0) {
+        return tag`require(${path});\n`;
+    }
+
+    const globalImports = node.vars
+        .filter(item => item.name.value == '*')
+        .map(item => {
+            if (item.moduleExportName == undefined) {
+                throw new Error(`moduleExportName cannot be undefined node: ${node}`);
+            }
+            return tag`const ${makeValue(item.moduleExportName, fileName)} = require(${path});\n`;
+        });
+    const namedImports = node.vars
+        .filter(item => item.name.value !== '*')
+        .map(item => importSpecifier2jsonPair(item, fileName));
+
+    const result = makeNullSourceNode('')
+        .add(globalImports);
+
+    if (namedImports.length > 0) {
+        result.add('const {');
+        result.add(makeNullSourceNode(namedImports).join(', '));
+        result.add(tag`} = require(${path});\n`);
+    }
+
+    return result;
+
+}
+
 function translateNode(node : JssNode, fileName : string) : SourceNode {
     switch(node.type) {
         case NodeType.Ignore:
@@ -302,6 +347,9 @@ function translateNode(node : JssNode, fileName : string) : SourceNode {
             return tag`${EXPORT_VAR_NAME}.insertBlock(${supports2js(node, fileName)});\n`;
         case NodeType.JssPage:
             return tag`${EXPORT_VAR_NAME}.insertBlock(${page2js(node, fileName)});\n`;
+        case NodeType.JsImport:
+            return esImport2Js(node, fileName);
+        case NodeType.JssDeclaration:
         case NodeType.Comment:
         default:
             throw new Error(`unsupported node ${JSON.stringify(node)}`);

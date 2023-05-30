@@ -5,8 +5,8 @@ import { HiddenToken, LiteralToken, SymbolToken, TokenType } from "token";
 import { attrib, combinator, cssCharset, cssLiteral, hash, importStatement, mediaQuery, mediaQueryList, pageSelectorList, term } from "./cssParser";
 import { expression, functionExpression, identifier, moduleItem, parseJsVarStatement } from "./parser";
 import { ParserError, SequenceError, SyntaxRuleError } from "./parserError";
-import { andRule, anyBlock, anyLiteral, anyString, block, commaList, dollarSign, endsWithOptionalSemicolon, firstOf, ignoreSpacesAndComments, isBlockNode, isLazyBlockParser, keyword, lazyBlock, LazyBlockParser, leftHandRecurciveRule, literalKeyword, multiSymbol, noLineTerminatorHere, noSpacesHere, notAllowed, oneOfSimpleSymbols, optional, optionalRaw, probe, rawValue, repeat, returnRawValueWithPosition, roundBracket, semicolon, sequence, sequenceVoid, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
-import { is$NextToken, is$Token, isCssToken, isLiteralNextToken, isSquareBracketNextToken, isSymbolNextToken, makeIsKeywordNextTokenProbe, makeIsSymbolNextTokenProbe } from "./predicats";
+import { andRule, anyBlock, anyLiteral, anyString, block, commaList, endsWithOptionalSemicolon, firstOf, ignoreSpacesAndComments, isBlockNode, isLazyBlockParser, keyword, lazyBlock, LazyBlockParser, leftHandRecurciveRule, literalKeyword, multiSymbol, noLineTerminatorHere, noSpacesHere, notAllowed, oneOfSimpleSymbols, optional, optionalBool, probe, rawValue, repeat, returnRawValueWithPosition, roundBracket, semicolon, sequence, sequenceVoid, sequenceWithPosition, strictLoop, symbol } from "./parserUtils";
+import { isCssToken, isLiteralNextToken, isSquareBracketNextToken, isSymbolNextToken, makeIsKeywordNextTokenProbe, makeIsSymbolNextTokenProbe } from "./predicats";
 import { isSourceFragment } from "./sourceFragment";
 import { CssCharsetNode, CssImportNode, CssMediaNode, CssPageNode, CssRawNode, FontFaceNode, JsRawNode, JssAtRuleNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssNode, JssPageNode, JssSelectorNode, JssSpreadNode, JssSupportsNode, JssVarDeclarationNode, NodeType, SyntaxTree } from "./syntaxTree";
 import { NextToken, TokenParser } from "./tokenParser";
@@ -16,12 +16,12 @@ import { OneOfArray, ReturnTypeMap } from "./types";
 
 
 export function parseJssScript(stream : TokenStream) : SyntaxTree {
-    optionalRaw(skipShebang)(stream);
+    optionalBool(skipShebang)(stream);
     return strictLoop(jssStatement)(stream);
 }
 
-const templatePlaceholder = sequence(dollarSign, noSpacesHere, anyBlock); // template string ${}
-templatePlaceholder.probe = is$NextToken;
+const templatePlaceholder = sequence(symbol(Symbols.dollar), noSpacesHere, anyBlock); // template string ${}
+templatePlaceholder.probe = makeIsSymbolNextTokenProbe(Symbols.dollar);
 
 /**
  * add vendor prefix to keywordParser
@@ -162,10 +162,8 @@ function jssPropertyValue(stream : TokenStream) : any {
             (stream : TokenStream) => {
                 const parserStream = new LookAheadTokenStream(stream);
                 const token = peekAndSkipSpaces(parserStream);
-                if (token.type == TokenType.Literal) {
-                    if (token.value == '$') {
-                        return templatePlaceholder(stream);
-                    }
+                if (Symbols.dollar.equal(token)) {
+                    return templatePlaceholder(stream);
                 }
 
                 if (token.type == TokenType.String) {
@@ -257,7 +255,7 @@ export function jssIdent(stream : TokenStream) : HiddenToken {
     };
 }
 jssIdent.probe = function(token : NextToken) : boolean {
-    return is$Token(token.token) || isCssToken(token.token);
+    return Symbols.dollar.equal(token.token) || isCssToken(token.token);
 }
 
 function elementName(stream : TokenStream) : HiddenToken | SymbolToken {
@@ -307,6 +305,7 @@ simpleSelector.probe = (nextToken : NextToken) : boolean => jssIdent.probe(nextT
     || isSymbolNextToken(nextToken) || isSquareBracketNextToken(nextToken);
 
 export function jssSelector(stream : TokenStream) : JssSelectorNode {
+    //TODO check if it's possible replace RawValue to ValueWithPosition (for optimization)
     const firstSelector = returnRawValueWithPosition(simpleSelector)(stream);
     let result = [firstSelector.value];
     const optionalCombinator = optional(combinator);
@@ -696,7 +695,7 @@ function jssStatement(stream : TokenStream) : JssNode {
  *
  * */
 function skipShebang(stream : TokenStream) : void {
-    symbol(Symbols.numero)(stream);
+    multiSymbol(Symbols.shebang)(stream);
 
     while(!stream.eof()) {
         const token = stream.next();

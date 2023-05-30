@@ -25,4 +25,8 @@ export abstract class AbstractInputStreamDecorator implements InputStream {
     position() : Position {
         return this.stream.position();
     }
+
+    lookahead() : string | undefined {
+        return this.stream.lookahead();
+    }
 }

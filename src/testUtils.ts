@@ -1,23 +1,40 @@
 import { parseJssScript } from "parser/jssParser";
-import { translator } from "translator/translator";
+import { GeneratedCode, translator } from "translator/translator";
 import { ArrayTokenStream } from "parser/tokenStream";
-import vm from "vm";
+import { createRequire } from 'module';
 import { evalContext } from "bin/evalContext";
 import { JssStyleSheet } from "translator/lib/core";
+
+import vm from "vm";
+import path from 'path';
+
+export function translateToJs(jss : string,
+                             line = 1,
+                             col = 1,
+                             sourceFileName = 'result.jss',
+                             resultFileName = 'result.css') : GeneratedCode {
+    return translator(parseJssScript(ArrayTokenStream.fromString(jss, line, col)),
+                                 sourceFileName,
+                                 resultFileName);
+}
 
 export function evalTestCode(css : string,
                              line = 1,
                              col = 1,
                              sourceFileName = 'result.jss',
                              resultFileName = 'result.css') : JssStyleSheet {
-    const sourceCode = translator(parseJssScript(ArrayTokenStream.fromString(css, line, col)),
-                                 sourceFileName,
-                                 resultFileName);
-    const context = {
+    const sourceCode = translateToJs(css, line, col, sourceFileName, resultFileName);
+    const contextRequire = createRequire(path.join(
+        __dirname,
+        '../test',
+        sourceFileName,
+    ));
+    const context = vm.createContext({
+        'require' : contextRequire,
         ...evalContext(),
-    };
+    });
     try {
-        const script = new vm.Script(sourceCode.value.replace('export _styles', '_styles'));
+        const script = new vm.Script(sourceCode.value);
         vm.createContext(context);
         return script.runInContext(context);
     } catch(e) {

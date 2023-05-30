@@ -119,6 +119,21 @@ export function returnRawValueWithPosition(parser : TokenParser) : TokenParser<S
     };
 }
 
+export class ValueWithPosition<R> {
+    constructor(readonly value: NeverVoid<R>, readonly position: Position) {}
+}
+
+export function returnValueWithPosition<R>(parser : TokenParser<NeverVoid<R>>) : TokenParser<ValueWithPosition<R>> {
+    return function returnValueWithPositionInst(stream: TokenStream) : ValueWithPosition<R> {
+        const childStream = new LookAheadTokenStream(stream);
+        const value = parser(childStream);
+        const result = new LeftTrimSourceFragment(childStream.sourceFragment());
+        childStream.flush();
+
+        return new ValueWithPosition(value, result.position);
+    };
+}
+
 export function returnRawValue(parser : TokenParser) : TokenParser<string> {
     return function returnRawValueInst(stream: TokenStream) : string {
         const childStream = new LookAheadTokenStream(stream);
@@ -262,9 +277,9 @@ export function sequenceWithPosition(...parsers: TokenParser[]) : TokenParserArr
 }
 
 export function map<S, D>(parser : TokenParser<S>, mapFn: (item : S) => D) : TokenParser<D> {
-    return function(stream : TokenStream) : D {
+    return probe(function(stream : TokenStream) : D {
         return mapFn(parser(stream));
-    };
+    }, parser.probe);
 }
 
 export function mapJoinStrings(parser : TokenParser, delim = ' ') : TokenParser {
@@ -563,16 +578,6 @@ export function anySpace(stream : TokenStream, peekNext = peekNextToken) : Space
         return token;
     }
     throw ParserError.reuse(`space is expected`, token);
-}
-
-export function dollarSign(stream: TokenStream) : LiteralToken {
-    const token = peekAndSkipSpaces(stream);
-
-    if (token.type == TokenType.Literal && token.value == '$') {
-        return token;
-    }
-
-    throw ParserError.reuse(`dollar ($) sign is expected here`, token);
 }
 
 export function symbol(ch: SyntaxSymbol,

@@ -52,6 +52,31 @@ export function literalReader(stream: InputStream) : ReaderResult {
     return null;
 }
 
+export function jssLiteralReader(stream: InputStream) : ReaderResult {
+    if (isLiteralChar(stream.peek())) {
+        const pos = stream.position();
+        var result = '';
+        if (stream.peek() == '$' && stream.lookahead() == '{') {
+            return null;
+        }
+        while (!stream.isEof() && isLiteralChar(stream.peek())) {
+            if (stream.peek() == '$' && stream.lookahead() == '{') {
+                break;
+            } else {
+                result += stream.next();
+            }
+        }
+
+        return {
+            type: TokenType.Literal,
+            position: pos,
+            value: result,
+        } as Token;
+    }
+
+    return null;
+}
+
 export function blockReader(stream: InputStream) : ReaderResult {
     if (BlockInputStream.isBlockStart(stream.peek())) {
         return {
@@ -98,7 +123,7 @@ export function makeStringReader(quatation: "'" | '"') : Reader {
     };
 }
 
-const JS_SYMBOLS = ";.,=<>-*+&|^@%?:#!~\\<>"; //TODO sort according statistic of usage
+const JS_SYMBOLS = ";.,=<>-*+&|^@%?:#!~\\<>$"; //TODO sort according statistic of usage
 
 export function makeSymbolReader(allowedSymbols = JS_SYMBOLS): Reader {
     return function symbolReaderInst(stream : InputStream) : ReaderResult {

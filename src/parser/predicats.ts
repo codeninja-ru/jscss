@@ -3,15 +3,6 @@ import { Symbols, SyntaxSymbol } from "symbols";
 import { LiteralToken, Token, TokenType } from "token";
 import { NextToken, ProbeFn } from "./tokenParser";
 
-// TODO convert $ to symbol?
-export function is$Token(token : Token) : token is LiteralToken {
-   return token.type == TokenType.Literal && token.value == '$';
-}
-
-export function is$NextToken(nextToken : NextToken) : boolean {
-    return nextToken.exists && is$Token(nextToken.token);
-}
-
 function containsOnly(str : string, symbol : SyntaxSymbol) : boolean {
     if (str.length == 0) {
         return false;

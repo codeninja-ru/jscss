@@ -1,3 +1,4 @@
+import { Position } from "stream/position";
 import { TokenType } from "token";
 import { jssIdent, parseJssScript } from "./jssParser";
 import { NodeType } from "./syntaxTree";
@@ -33,7 +34,10 @@ describe('parseJssScript()', () => {
         expect(stream.sourceFragment().value).toEqual(SIMPLE);
         expect(stream.eof()).toBeTruthy();
         expect(node).toEqual([
-            {type: NodeType.Raw, value: "import _ from 'lodash';", position: {line: 1, col: 1}},
+            {type: NodeType.JsImport, path: "'lodash'",
+             pathPos: new Position(1, 15),
+             vars: [{name: {value: '*', position: new Position(1, 8)},
+                     moduleExportName: {value: '_', position: new Position(1, 8)}}]},
             {type: NodeType.Ignore, items: ["\n"]},
             {type: NodeType.CssImport, path: "'style.css'", rawValue: "@import 'style.css';", position: {line: 2, col: 1}},
             {type: NodeType.Ignore, items: expect.anything()},
@@ -112,6 +116,7 @@ describe('parseJssScript()', () => {
     });
 
     it('parses code with functions', () => {
+        debugger;
         parseCode(`function pad2(n) { return n.length > 1 ? n : "0" + n; }
 function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) + pad2(g.toString(b)); }
 .className {
@@ -482,6 +487,25 @@ background-color: #f8f8f8;
                     }
                 ]);
         });
+
+        it('parses #id .className${something}', () => {
+            parseCode(`#id .className$\{123\} {}`)
+                .toEqual([
+                    {
+                        type: NodeType.JssBlock,
+                        selectors: [
+                            {
+                                type: NodeType.JssSelector,
+                                items: ["#id", ".className${123}"],
+                                position: {line: 1, col: 1},
+                            }
+                        ],
+                        items: [],
+                        position: {line: 1, col: 1},
+                    }
+                ]);
+        });
+
     });
 
     it('parses css expr', () => {

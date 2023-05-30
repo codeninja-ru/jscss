@@ -83,9 +83,9 @@ describe('parseStream()', () => {
             anySpace(),
             makeSquareBracketsToken('[generateProp]'), col(), space(), makeLiteralToken('bold'), semcol(),
             anySpace(),
-            makeLiteralToken('font'), minus(), makeLiteralToken('weight'), col(), space(), makeLiteralToken('$'), makeLazyBlockToken("{test ? 'bold' : 'normal'\}"), semcol(),
+            makeLiteralToken('font'), minus(), makeLiteralToken('weight'), col(), space(), makeSymbolToken('$'), makeLazyBlockToken("{test ? 'bold' : 'normal'\}"), semcol(),
             anySpace(),
-            makeLiteralToken('font'), minus(), makeLiteralToken('size'), col(), space(), makeLiteralToken('$'), makeLazyBlockToken('{getSize()}'), makeLiteralToken('px'), semcol(),
+            makeLiteralToken('font'), minus(), makeLiteralToken('size'), col(), space(), makeSymbolToken('$'), makeLazyBlockToken('{getSize()}'), makeLiteralToken('px'), semcol(),
             anySpace(),
             makeLiteralToken('color'), col(), space(), makeLiteralToken('white'), semcol(),
             anySpace(),
@@ -370,4 +370,16 @@ describe('tricky cases', () => {
             },
         ]);
     });
+
+    it('parses template', () => {
+        const code = '.className${blah}';
+        const tokens = jssLexer(new StringInputStream(code));
+        expect(tokens).toEqual([
+            makeSymbolToken('.'),
+            makeLiteralToken('className'),
+            makeSymbolToken('$'),
+            makeLazyBlockToken('{blah}'),
+        ]);
+    });
+
 });

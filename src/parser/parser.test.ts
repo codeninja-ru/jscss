@@ -1,6 +1,7 @@
-import { StringInputStream } from "stream/input";
 import { jssLexer } from "lexer/jssLexer";
-import { parseJsModule, parseJsScript, parseJsStatement, parseJsVarStatement } from "./parser";
+import { StringInputStream } from "stream/input";
+import { Position } from "stream/position";
+import { importDeclaration, parseJsModule, parseJsScript, parseJsStatement, parseJsVarStatement } from "./parser";
 import { Node, NodeType } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { ArrayTokenStream, LookAheadTokenStream } from "./tokenStream";
@@ -173,6 +174,69 @@ console.log('hi');
         testParserFunction(parseJsScript, `(function (TokenType) {
     TokenType[TokenType["Space"] = 0] = "Space";
 })(TokenType || (TokenType = {}));`);
+    });
+
+    it('parses imports', () => {
+        expect(testParserFunction(importDeclaration, `import _ from 'lodash';`))
+            .toEqual({type: NodeType.JsImport,
+                      path: "'lodash'",
+                      pathPos: new Position(1, 15),
+                      vars: [{
+                          name: {value: "*", position: new Position(1, 8)},
+                          moduleExportName: {value: "_", position: new Position(1, 8)},
+                      }]});
+        expect(testParserFunction(importDeclaration, `import './lib.js';`))
+            .toEqual({type: NodeType.JsImport,
+                      path: "'./lib.js'",
+                      pathPos: new Position(1, 8),
+                      vars: []});
+        expect(testParserFunction(importDeclaration, `import * as lib from 'lib';`))
+            .toEqual({type: NodeType.JsImport,
+                      path: "'lib'",
+                      pathPos: new Position(1, 22),
+                      vars: [{
+                          name: {value: "*", position: new Position(1, 8)},
+                          moduleExportName: {value: 'lib', position: new Position(1, 13)}
+                      }]});
+        expect(testParserFunction(importDeclaration, `import {name1, name2} from "module";`))
+            .toEqual({type: NodeType.JsImport,
+                      path: '"module"',
+                      pathPos: new Position(1, 28),
+                      vars: [{
+                          name: {value: "name1", position: new Position(1, 9)},
+                          moduleExportName: undefined,
+                      }, {
+                          name: {value: "name2", position: new Position(1, 16)},
+                          moduleExportName: undefined,
+                      }]});
+        expect(testParserFunction(importDeclaration, `import {test, y as y1, 'z' as z1} from 'lib';`))
+            .toEqual({type: NodeType.JsImport,
+                      path: "'lib'",
+                      pathPos: new Position(1, 40),
+                      vars: [{
+                          name: {value: "test", position: new Position(1, 9)},
+                          moduleExportName: undefined,
+                      }, {
+                          name: {value: "y", position: new Position(1, 15)},
+                          moduleExportName: {value: "y1", position: new Position(1, 20)},
+                      }, {
+                          name: {value: "'z'", position: new Position(1, 24)},
+                          moduleExportName: {value: "z1", position: new Position(1, 31)},
+                      }]});
+        expect(testParserFunction(importDeclaration, `import z, {y as y1, 'z' as z1} from 'lib';`))
+            .toEqual({type: NodeType.JsImport,
+                      path: "'lib'",
+                      pathPos: new Position(1, 37),
+                      vars: [{
+                          name: {value: "*", position: new Position(1, 8)},
+                          moduleExportName: {value: "z", position: new Position(1, 8)},
+                      }, {
+                          name: {value: "y", position: new Position(1, 12)},
+                          moduleExportName: {value: "y1", position: new Position(1, 17)},
+                      }, {
+                          name: {value: "'z'", position: new Position(1, 21)},
+                          moduleExportName: {value: "z1", position: new Position(1, 28)},
+                      }]});
     });
 
 });
