@@ -322,7 +322,6 @@ body {
         expect(evalTestCode(`@namespace url(http://www.w3.org/1999/xhtml);
 @namespace svg url(http://www.w3.org/2000/svg);`).toCss())
             .toEqual(`@namespace url(http://www.w3.org/1999/xhtml);
-
 @namespace svg url(http://www.w3.org/2000/svg);`);
     });
 
@@ -360,7 +359,6 @@ body {
     margin-top: 100px;
   }
 }
-
 @keyframes important2 {
   from {
     margin-top: 50px;

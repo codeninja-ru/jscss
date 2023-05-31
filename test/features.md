@@ -41,7 +41,7 @@ but it processes *.jss files in imports
 
 Output:
 ```css
-@import 'main.css;
+@import 'main.css';
 ```
 
 and main.css file should be created from main.jss

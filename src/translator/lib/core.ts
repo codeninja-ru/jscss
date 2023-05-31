@@ -109,14 +109,27 @@ export class JssStyleSheet implements StyleSheet {
     }
 
     toCss() : string {
-        return this._items
-            .map((item) => {
-                if (typeof item == 'string') {
-                    return item;
-                } else {
-                    return item.toCss();
+        var result = [] as string[];
+        for (var i = 0; i < this._items.length; i++) {
+            const item = this._items[i];
+            var prev;
+
+            if (typeof item == 'string') {
+                if (!(typeof prev == 'string' || i == 0)) {
+                    result.push('');
                 }
-            }).join("\n\n");
+                result.push(item);
+            } else {
+                if (i > 0) {
+                    result.push('');
+                }
+                result.push(item.toCss());
+            }
+
+            prev = item;
+        }
+
+        return result.join('\n');
     }
 
     toArray() : StyleSheetArray {
@@ -311,10 +324,12 @@ export class JssStyleBlock extends JssBlock implements StyleBlock {
         result.push(sprintCssValue(name, value));
 
         if (this._children.length > 0) {
-            for (const child of this._children) {
+            for (var i = 0; i < this._children.length; i++) {
+                const child = this._children[i];
                 result.push(child.toCss());
             }
         }
+
 
         return result.join("\n\n");
     }
@@ -404,17 +419,16 @@ export class JssAtRuleBlock extends JssBlock implements MediaQueryBlock {
     }
 
     toCss() : string {
-        const result = [] as string[];
         const values = this.toArray();
-        values.forEach((item) => {
+        const result = values.map((item) => {
             if (isStyleArrayItem(item)) {
-                result.push(sprintCssValue(item.name, item.value))
+                return sprintCssValue(item.name, item.value);
             } else if (isMediaArrayItem(item)) {
-                result.push(sprintMediaValue(item.name, item.children));
+                return sprintMediaValue(item.name, item.children);
             } else {
                 throw new Error(`unsupported ArrayItem type ${item}`)
             }
-        });
+        })
 
         return result.join("\n\n");
     }
