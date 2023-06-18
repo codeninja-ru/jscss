@@ -482,7 +482,14 @@ var _styles = _styles ? _styles : new JssStylesheet();
 var self = null;
 
 const _ = require('lodash');
-require('./lib.js');
+(function() {
+    var _r = require('./lib.js');
+    if (isJssStyleSheet(_r)) {
+        _styles.insertStyleSheet(_r);
+    } else if (typeof _r == 'string') {
+        _styles.insertCss(_r);
+    }
+})();
 const lib = require('lib');
 const {name1, name2} = require("module");
 const {test, y:y1, 'z':a} = require("lib");
@@ -490,7 +497,7 @@ const z = require('lib');
 const {yy:yy1, 'zz':zz1} = require('lib');
 
 _styles;
-//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbInJlc3VsdC5qc3MiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6Ijs7OztNQUFPLEMsV0FBTyxRO1FBQ1AsVTtNQUNLLEcsV0FBUyxLO09BQ2IsSyxFQUFPLEssWUFBWSxRO09BQ25CLEksRUFBTSxDLENBQUssRSxFQUFJLEcsQ0FBTyxDLFlBQVEsSztNQUMvQixDLFdBQWlDLEs7T0FBN0IsRSxDQUFNLEcsRUFBSyxJLENBQVEsRyxZQUFVLEsiLCJmaWxlIjoicmVzdWx0LmpzcyJ9`);
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbInJlc3VsdC5qc3MiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6Ijs7OztNQUFPLEMsV0FBTyxROztxQkFDUCxVOzs7Ozs7O01BQ0ssRyxXQUFTLEs7T0FDYixLLEVBQU8sSyxZQUFZLFE7T0FDbkIsSSxFQUFNLEMsQ0FBSyxFLEVBQUksRyxDQUFPLEMsWUFBUSxLO01BQy9CLEMsV0FBaUMsSztPQUE3QixFLENBQU0sRyxFQUFLLEksQ0FBUSxHLFlBQVUsSyIsImZpbGUiOiJyZXN1bHQuanNzIn0=`);
     });
 
 });

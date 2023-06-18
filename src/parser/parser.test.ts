@@ -185,6 +185,16 @@ console.log('hi');
                           name: {value: "*", position: new Position(1, 8)},
                           moduleExportName: {value: "_", position: new Position(1, 8)},
                       }]});
+        expect(testParserFunction(importDeclaration, `import {  } from 'lodash';`))
+            .toEqual({type: NodeType.JsImport,
+                      path: "'lodash'",
+                      pathPos: new Position(1, 18),
+                      vars: []});
+        expect(testParserFunction(importDeclaration, `import {} from 'lodash';`))
+            .toEqual({type: NodeType.JsImport,
+                      path: "'lodash'",
+                      pathPos: new Position(1, 16),
+                      vars: []});
         expect(testParserFunction(importDeclaration, `import './lib.js';`))
             .toEqual({type: NodeType.JsImport,
                       path: "'./lib.js'",
@@ -207,6 +217,17 @@ console.log('hi');
                           moduleExportName: undefined,
                       }, {
                           name: {value: "name2", position: new Position(1, 16)},
+                          moduleExportName: undefined,
+                      }]});
+        expect(testParserFunction(importDeclaration, `import { name1,/* comment */ name2 } from "module";`))
+            .toEqual({type: NodeType.JsImport,
+                      path: '"module"',
+                      pathPos: new Position(1, 43),
+                      vars: [{
+                          name: {value: "name1", position: new Position(1, 10)},
+                          moduleExportName: undefined,
+                      }, {
+                          name: {value: "name2", position: new Position(1, 19)},
                           moduleExportName: undefined,
                       }]});
         expect(testParserFunction(importDeclaration, `import {test, y as y1, 'z' as z1} from 'lib';`))

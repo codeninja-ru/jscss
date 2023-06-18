@@ -1,10 +1,12 @@
 import { Position } from "stream/position";
-import { MultiSymbol, Symbols, SyntaxSymbol } from "symbols";
+import { MultiSymbol, SyntaxSymbol } from "symbols";
 import { SpaceToken, Token, TokenType } from "token";
 import { ParserError } from "./parserError";
-import { anyLiteral, anySpace, anySymbol, firstOf, multiSymbol, optional, repeatUntil, returnRawValue, returnRawValueWithPosition, sequence, skip, strictLoop, symbol } from "./parserUtils";
+import { anyLiteral, anySpace, anyString, anySymbol, firstOf, literalKeyword, map, multiSymbol, noLineTerminatorHere, optional, repeatUntil, returnRawValue, returnRawValueWithPosition, sequence, skip, strictLoop, symbol } from "./parserUtils";
+import { makeIsSymbolNextTokenProbe } from "./predicats";
+import { TokenParser } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
-import { peekNoLineTerminatorHere } from "./tokenStreamReader";
+import { peekNextToken, peekNoLineTerminatorHere } from "./tokenStreamReader";
 
 export enum MarkdownNodeType {
     P,
@@ -55,6 +57,7 @@ export interface SourceCodeMarkdownNode extends MarkdownNode {
     type: MarkdownNodeType.SOURCE_CODE;
     readonly lang : string;
     readonly position: Position;
+    readonly title? : string;
 }
 
 export interface QuoteMarkdownNode extends MarkdownNode {
@@ -63,7 +66,11 @@ export interface QuoteMarkdownNode extends MarkdownNode {
 
 export const MarkdownSymbols = {
     numero: new SyntaxSymbol('#'),
-    quote: new MultiSymbol('```'),
+    eq: new SyntaxSymbol('='),
+    quote1: new SyntaxSymbol('`'),
+    quote3: new MultiSymbol('```'),
+    singleQuote: new SyntaxSymbol("'"),
+    doubleQuote: new SyntaxSymbol('"'),
 }
 
 type HeaderMarkdownNode = H1MarkdownNode | H2MarkdownNode | H3MarkdownNode | H4MarkdownNode | H5MarkdownNode | H6MarkdownNode;
@@ -127,6 +134,7 @@ function header(stream : TokenStream) : HeaderMarkdownNode {
         value: value.trimLeft(),
     }
 }
+header.probe = makeIsSymbolNextTokenProbe(MarkdownSymbols.numero);
 
 function endOfLine(stream : TokenStream) : void {
     const token = stream.next();
@@ -138,30 +146,66 @@ function endOfLine(stream : TokenStream) : void {
     throw ParserError.reuse('end of line is expected', token);
 }
 
+function simpleString(quote : SyntaxSymbol) : TokenParser<string> {
+    return function(stream : TokenStream) : string {
+        return map(
+            sequence(
+                symbol(quote),
+                returnRawValue(
+                    repeatUntil(firstOf(
+                        anyLiteral,
+                        anySpace,
+                        anySymbol,
+                    ), symbol(quote, peekNoLineTerminatorHere))
+                ),
+                symbol(quote),
+            ),
+            ([,str]) => str
+        )(stream);
+    };
+}
+
 function sourceCode(stream : TokenStream) : SourceCodeMarkdownNode {
-    multiSymbol(MarkdownSymbols.quote)(stream);
+    multiSymbol(MarkdownSymbols.quote3)(stream);
     const lang = anyLiteral(stream, peekNoLineTerminatorHere);
+    const title = optional(
+        map(
+            sequence(
+                literalKeyword('title', peekNoLineTerminatorHere),
+                symbol(MarkdownSymbols.eq, peekNoLineTerminatorHere),
+                noLineTerminatorHere,
+                firstOf(
+                    simpleString(MarkdownSymbols.singleQuote),
+                    simpleString(MarkdownSymbols.doubleQuote),
+                )
+            ),
+            ([,,, str]) => str,
+        )
+    )(stream);
 
     const value = returnRawValueWithPosition(
         repeatUntil(
             firstOf(
+                anySpace,
+                anyString,
                 anyLiteral,
                 anySymbol,
-                anySpace,
             ),
-            multiSymbol(MarkdownSymbols.quote)
+            multiSymbol(MarkdownSymbols.quote3, peekNextToken)
         )
     )(stream);
 
-    multiSymbol(MarkdownSymbols.quote)(stream);
+    multiSymbol(MarkdownSymbols.quote3)(stream);
 
     return {
         type: MarkdownNodeType.SOURCE_CODE,
         lang: lang.value,
-        value: value.value.trimLeft(),
+        value: value.value.trim(),
         position: value.position,
+        title: title,
     };
 }
+sourceCode.probe = makeIsSymbolNextTokenProbe(MarkdownSymbols.quote1);
 
 function beginningOfStream(stream : TokenStream) : void {
     if (stream.currentPosition() == 0) {
@@ -210,8 +254,8 @@ function p(stream : TokenStream) : PMarkdownNode {
             firstOf(
                 endOfBlock,
                 sequence(endOfLine, firstOf(
-                    multiSymbol(MarkdownSymbols.quote),
-                    multiSymbol(Symbols.numero),
+                    multiSymbol(MarkdownSymbols.quote3),
+                    multiSymbol(MarkdownSymbols.numero),
                 ))
             )
         )

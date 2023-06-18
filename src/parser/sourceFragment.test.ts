@@ -18,6 +18,15 @@ describe('class ArraySourceFragment', () => {
         expect(fragment.value).toEqual("123456");
         expect(fragment.tokens).toEqual(array);
     });
+
+    it('works with an empty array', () => {
+        const fragment = new ArraySourceFragment([]);
+
+        expect(fragment.position).toEqual(undefined);
+        expect(fragment.value).toEqual("");
+        expect(fragment.tokens).toEqual([]);
+    });
+
 });
 
 describe('class LeftTrimSourceFragment', () => {
@@ -69,5 +78,27 @@ describe('class LeftTrimSourceFragment', () => {
         expect(fragment.value).toEqual("123456");
         expect(fragment.tokens).toEqual(array);
     });
+
+    it('works correctly with empty tokens', () => {
+        {
+            const array = [
+                {type: TokenType.Space, value: '\n\n', position: {line: 1, col: 1}},
+                {type: TokenType.Space, value: '\n\n', position: {line: 4, col: 1}},
+            ] as Token[];
+            const fragment = new LeftTrimSourceFragment(new ArraySourceFragment(array));
+
+            expect(fragment.position).toEqual({line: 1, col: 1});
+            expect(fragment.value).toEqual("");
+            expect(fragment.tokens).toEqual(array);
+        }
+        {
+            const fragment = new LeftTrimSourceFragment(new ArraySourceFragment([]));
+
+            expect(fragment.position).toEqual({line: 1, col: 1});
+            expect(fragment.value).toEqual("");
+            expect(fragment.tokens).toEqual(array);
+        }
+    });
+
 
 });

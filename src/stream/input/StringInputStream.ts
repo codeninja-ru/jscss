@@ -71,4 +71,8 @@ export class StringInputStream implements InputStream {
 
         return this.input[this.pos + 1];
     }
+
+    toString() {
+        return this.input;
+    }
 }

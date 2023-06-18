@@ -1,12 +1,18 @@
+import { JssCompiler } from "bin/compile";
+import { EvalContext } from "bin/evalContext";
+import { makeRequire } from "bin/require";
+import { Script } from "bin/script";
 import { parseJssScript } from "parser/jssParser";
-import { GeneratedCode, translator } from "translator/translator";
 import { ArrayTokenStream } from "parser/tokenStream";
-import { createRequire } from 'module';
-import { evalContext } from "bin/evalContext";
-import { JssStyleSheet } from "translator/lib/core";
-
-import vm from "vm";
 import path from 'path';
+import { ModulePath, FsModulePath } from "stream/input/modulePath";
+import { JssStyleSheet } from "translator/lib/core";
+import { GeneratedCode, translator } from "translator/translator";
+
+export const TEST_FOLDER_PATH = path.join(
+    __dirname,
+    '../test',
+);
 
 export function translateToJs(jss : string,
                              line = 1,
@@ -21,22 +27,18 @@ export function translateToJs(jss : string,
 export function evalTestCode(css : string,
                              line = 1,
                              col = 1,
+                             modulePath : ModulePath = new FsModulePath(TEST_FOLDER_PATH, 'result.jss'),
                              sourceFileName = 'result.jss',
                              resultFileName = 'result.css') : JssStyleSheet {
     const sourceCode = translateToJs(css, line, col, sourceFileName, resultFileName);
-    const contextRequire = createRequire(path.join(
-        __dirname,
-        '../test',
-        sourceFileName,
+    const evalContext = new EvalContext(makeRequire(
+        modulePath,
+        new JssCompiler(),
     ));
-    const context = vm.createContext({
-        'require' : contextRequire,
-        ...evalContext(),
-    });
+
     try {
-        const script = new vm.Script(sourceCode.value);
-        vm.createContext(context);
-        return script.runInContext(context);
+        const script = new Script<JssStyleSheet>(sourceCode.value, resultFileName);
+        return evalContext.runInContext(script).output;
     } catch(e) {
         console.log(sourceCode);
         console.error(e);
@@ -48,5 +50,6 @@ export function evalTestCodeFile(css : string,
                                  sourceFileName : string,
                                  resultFileName: string
                                 ) : JssStyleSheet {
-    return evalTestCode(css, 1, 1, sourceFileName, resultFileName);
+    const modulePath = new FsModulePath(TEST_FOLDER_PATH, sourceFileName);
+    return evalTestCode(css, 1, 1, modulePath, sourceFileName, resultFileName);
 }

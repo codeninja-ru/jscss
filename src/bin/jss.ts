@@ -1,18 +1,18 @@
-#!/usr/bin/env node
+#!/usr/bin/env -S NODE_OPTIONS=--experimental-modules node
 
 import fs from 'fs';
 import { argLexer } from 'lexer/argLexer';
 import { ArgNodeType, CommandErrorArgNode, InputAndOutputArgNode, parseArgsStatement } from 'parser/argParser';
-import { parseJssScript } from 'parser/jssParser';
 import { ArrayTokenStream } from 'parser/tokenStream';
 import path from 'path';
 import { argv } from 'process';
-// --enable-source-maps doesn't work by unkown reason
-import 'source-map-support/register';
+import '@cspotcode/source-map-support/register'
 import { ProcessArgsInputStream } from 'stream/input/ProcessArgsInputStream';
-import { translator } from 'translator/translator';
-import { evalCode, EvalStatucCode } from './eval';
+import { evalCode } from './eval';
 import { BasicStackTracePrinter, StackTrace } from './stackTrace';
+import { EvalStatucCode } from './evalContext';
+import { JssCompiler } from './compile';
+import { FsModulePath } from 'stream/input/modulePath';
 
 
 const [,execname] = argv;
@@ -55,32 +55,36 @@ function processInput(node : InputAndOutputArgNode) {
         process.exit(1);
     }
 
-    const resultFileName = path.basename(outfilepath);
     const inputFileName = path.basename(infilepath);
-    const outStr = translator(
-        parseJssScript(ArrayTokenStream.fromFile(infilepath)),
+    const compiler = new JssCompiler();
+    const modulePath = new FsModulePath(
+        path.dirname(infilepath),
         inputFileName,
-        resultFileName,
+    );
+    const generatedCode = compiler.compile(
+        modulePath.file(path.basename(infilepath)),
+        outfilepath
     );
 
     if (node.hasJsOption) {
-        console.log(outStr.value);
+        console.log(generatedCode.value);
     } else {
-        evalCode(outStr, inputFileName, __dirname).then((result) => {
-            if (result.statusCode == EvalStatucCode.Success) {
-                if (node.outputFile == '-' || (node.inputFile == '-' && node.inputFile === undefined)) {
-                    console.log(result.output);
-                } else {
-                    fs.writeFileSync(outfilepath, result.output);
-                }
-            } else if (result.statusCode == EvalStatucCode.Error) {
-                process.exit(1);
+        const result = evalCode(generatedCode,
+                                compiler,
+                                inputFileName,
+                                modulePath);
+
+        if (result.statusCode == EvalStatucCode.Success) {
+            if (node.outputFile == '-' || (node.inputFile == '-' && node.inputFile === undefined)) {
+                console.log(result.output);
             } else {
-                console.error('unsupported EvalStatusCode');
+                fs.writeFileSync(outfilepath, result.output);
             }
-        }).catch(() => {
+        } else if (result.statusCode == EvalStatucCode.Error) {
             process.exit(1);
-        });
+        } else {
+            console.error('unsupported EvalStatusCode');
+        }
     }
 
 }

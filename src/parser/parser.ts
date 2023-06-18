@@ -2,7 +2,7 @@ import { Keywords, ReservedWords } from "keywords";
 import { AssignmentOperator, Symbols } from "symbols";
 import { LiteralToken, TokenType } from "token";
 import { ParserError, UnexpectedEndError } from "./parserError";
-import { anyBlock, anyLiteral, anyString, anyTempateStringLiteral, block, comma, commaList, firstOf, keyword, leftHandRecurciveRule, longestOf, map, multiSymbol, noLineTerminatorHere, notAllowed, oneOfSymbols, optional, optionalRaw, rawValue, regexpLiteral, repeat, returnValueWithPosition, roundBracket, sequence, squareBracket, strictLoop, symbol, ValueWithPosition } from "./parserUtils";
+import { anyBlock, anyLiteral, anyString, anyTempateStringLiteral, block, comma, commaList, firstOf, ignoreSpacesAndComments, keyword, lazyBlock, leftHandRecurciveRule, longestOf, map, multiSymbol, noLineTerminatorHere, notAllowed, oneOfSymbols, optional, optionalRaw, rawValue, regexpLiteral, repeat, returnValueWithPosition, roundBracket, sequence, squareBracket, strictLoop, symbol, ValueWithPosition } from "./parserUtils";
 import { isLiteralNextToken, literalToString, makeIsKeywordNextTokenProbe, makeIsSymbolNextTokenProbe } from "./predicats";
 import { IfNode, ImportSepcifier, JsImportNode, JsModuleNode, JsRawNode, JssScriptNode, MultiNode, Node, NodeType, VarDeclaraionNode } from "./syntaxTree";
 import { NextToken } from "./tokenParser";
@@ -916,15 +916,20 @@ function namedImports(stream : TokenStream) : ImportSepcifier[] {
     // { }
     // { ImportsList }
     // { ImportsList , }
-    return block(TokenType.LazyBlock, function(stream : TokenStream) : ImportSepcifier[] {
+    return lazyBlock(TokenType.LazyBlock, function(stream : TokenStream) : ImportSepcifier[] {
         // ImportSpecifier
         // ImportsList , ImportSpecifier
         const result = commaList(importSpecifier, true)(stream);
         if (result.length > 0) {
             optional(comma)(stream);
         }
+
+        if (!stream.eof()) {
+            optional(ignoreSpacesAndComments)(stream);
+        }
+
         return result;
-    })(stream).items;
+    })(stream).parse().items;
 }
 
 function toArray<T>(value: NeverVoid<T>) : [T] {
@@ -968,7 +973,6 @@ export function importDeclaration(stream : TokenStream) : JsImportNode {
     keyword(Keywords._import)(stream);
 
     const clause = optional(importClause)(stream);
-
     const fromString = anyString(stream);
 
     optional(symbol(Symbols.semicolon))(stream);

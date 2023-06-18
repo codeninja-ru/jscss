@@ -7,4 +7,5 @@ export interface InputStream {
     isEof() : boolean;
     readUntil(searchString: string) : string;
     position() : Position;
+    toString() : string;
 }

@@ -17,7 +17,19 @@ The Paragraph test
 test
 
 \`\`\`js
-source code
+source code1
+\`\`\`
+
+\`\`\`js title='main.js'
+source code2
+\`\`\`
+
+\`\`\`js title="main.js"
+source code3
+\`\`\`
+
+\`\`\`css
+
 \`\`\`
 `;
 
@@ -28,8 +40,10 @@ describe('markdownParse()', () => {
             {type: MarkdownNodeType.H2, value: "Header 2"},
             {type: MarkdownNodeType.H3, value: "Header 3"},
             {type: MarkdownNodeType.P, value: "The Paragraph test\ntest"},
-            {type: MarkdownNodeType.SOURCE_CODE, lang: 'js', value: "source code", position: {line: 10, col: 1}}
+            {type: MarkdownNodeType.SOURCE_CODE, lang: 'js', value: "source code1", position: {line: 10, col: 1}},
+            {type: MarkdownNodeType.SOURCE_CODE, lang: 'js', value: "source code2", position: {line: 14, col: 1}, title: 'main.js'},
+            {type: MarkdownNodeType.SOURCE_CODE, lang: 'js', value: "source code3", position: {line: 18, col: 1}, title: 'main.js'},
+            {type: MarkdownNodeType.SOURCE_CODE, lang: 'css', value: "", position: {line: 16, col: 1}},
         ]);
     });
-
 });

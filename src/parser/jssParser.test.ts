@@ -116,7 +116,6 @@ describe('parseJssScript()', () => {
     });
 
     it('parses code with functions', () => {
-        debugger;
         parseCode(`function pad2(n) { return n.length > 1 ? n : "0" + n; }
 function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) + pad2(g.toString(b)); }
 .className {
@@ -307,9 +306,21 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
     it('parses imports', () => {
         parseCode(`import { test } from 'reader/comment';
 import * as _ from '/reader/readers';`).toEqual([
-    {type: NodeType.Raw, position: {col: 1, line: 1}, value: "import { test } from 'reader/comment';"},
+    {type: NodeType.JsImport,
+     path: "'reader/comment'",
+     pathPos: new Position(1, 22),
+     vars: [{
+         name: {value: "test", position: new Position(1, 10)},
+         moduleExportName: undefined,
+     }]},
     {type: NodeType.Ignore, items: expect.anything(),},
-    {type: NodeType.Raw, position: {col: 1, line: 2}, value: "import * as _ from '/reader/readers';"},
+    {type: NodeType.JsImport,
+     path: "'/reader/readers'",
+     pathPos: new Position(2, 20),
+     vars: [{
+         name: {value: "*", position: new Position(2, 8)},
+         moduleExportName: {value: "_", position: new Position(2, 13)},
+     }]},
 ]);
     });
 

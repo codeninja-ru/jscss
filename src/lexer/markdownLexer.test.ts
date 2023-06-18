@@ -11,8 +11,8 @@ describe('markdownLexer()', () => {
 
 Hello world!
 
-\`\`\`js
-alert(1);
+\`\`\`js title='hi'
+alert("1");
 \`\`\`
 `))).toEqual([
     makeSymbolToken('#'), anySpace(),
@@ -23,7 +23,9 @@ alert(1);
     makeSymbolToken('`'), makeSymbolToken('`'), makeSymbolToken('`'),
     makeLiteralToken('js'),
     anySpace(),
-    makeLiteralToken('alert'), makeSymbolToken('('), makeLiteralToken('1'), makeSymbolToken(')'), makeSymbolToken(';'),
+    makeLiteralToken('title'), makeSymbolToken('='), makeSymbolToken("'"), makeLiteralToken('hi'), makeSymbolToken("'"),
+    anySpace(),
+    makeLiteralToken('alert'), makeSymbolToken('('), makeSymbolToken('"'), makeLiteralToken('1'), makeSymbolToken('"'), makeSymbolToken(')'), makeSymbolToken(';'),
     anySpace(),
     makeSymbolToken('`'), makeSymbolToken('`'), makeSymbolToken('`'),
     anySpace(),

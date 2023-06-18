@@ -1,5 +1,22 @@
 # Test for jsslang features
 
+Styles can be duplicated
+```jsslang
+.className { display: block; }
+.className { display: inline; }
+```
+
+Output:
+```css
+.className {
+    display: block;
+}
+
+.className {
+    display: inline;
+}
+```
+
 ## Imports
 
 ### JavaScript imports
@@ -44,4 +61,74 @@ Output:
 @import 'main.css';
 ```
 
-and main.css file should be created from main.jss
+Css or Jss styles can be imported by JavaScript-style import. Content of the imported files will be included in the resulting file.
+
+```jsslang
+import './main.jss';
+import './styles.css';
+```
+
+Output:
+```css
+#main {
+    width: 960px;
+    margin: 0 auto;
+    color: #5a5a5a;
+}
+
+.example {
+    display: block;
+}
+```
+
+You can export code from jss files.
+
+```jsslang title="lib1.jss"
+export const clearfix = @block {
+    clear: both;
+};
+
+export function nightModeColor() { return 'black'; }
+
+export const fontSize = new Px(14);
+
+p {
+    font-size: ${fontSize};
+    padding: 10px;
+}
+```
+
+and import them here
+
+```jsslang
+import { clreafix, nightModeColor, fontSize } from './lib1.jss';
+
+.menu {
+    ...clearfix;
+    background-color: ${nightModeColor()};
+    font-size: ${fontSize};
+}
+```
+
+```css
+.menu {
+    clear: both;
+    background-color: black;
+    font-size: 14px;
+}
+```
+
+It's worth to mention that inner styles are not imported here. You can import the `p` styles calling `import './lib1.jss';`
+
+```jsslang
+import './lib1.jss'
+```
+
+Output:
+
+```css
+p {
+    font-size: 14px;
+    padding: 10px;
+}
+```

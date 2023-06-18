@@ -330,11 +330,11 @@ export function firstOf<R extends TokenParser[]>(...parsers: R) : TokenParser<Fi
         const nextToken = NextNotSpaceToken.fromStream(stream);
         for (var i = 0; i < parsers.length; i++) {
             const parser = parsers[i];
+            if (!nextToken.procede(parser)) {
+                // skip parser
+                continue;
+            }
             try {
-                if (!nextToken.procede(parser)) {
-                    // skip parser
-                    continue;
-                }
                 let parserStream = new LookAheadTokenStream(stream);
                 const result = parser(parserStream);
                 parserStream.flush();
@@ -599,7 +599,7 @@ export function symbol(ch: SyntaxSymbol,
 
 export function multiSymbol(ch: MultiSymbol,
                        peekFn : TokenStreamReader = peekAndSkipSpaces) : TokenParser<SymbolToken> {
-    return function(stream: TokenStream) : SymbolToken {
+    return probe(function(stream: TokenStream) : SymbolToken {
         const token = peekFn(stream);
 
         if (token.type == TokenType.Symbol && token.value == ch.name[0]) {
@@ -620,7 +620,7 @@ export function multiSymbol(ch: MultiSymbol,
         }
 
         throw ParserError.reuse(`${ch.name} is expected`, token);
-    };
+    }, isSymbolNextToken);
 }
 
 export const semicolon = symbol(Symbols.semicolon);

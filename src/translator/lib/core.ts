@@ -54,9 +54,19 @@ export class JssBlockCaller {
     }
 }
 
+export function isJssStyleSheet(obj : any) : obj is StyleSheet {
+    return typeof obj == 'object' && obj.insertBlock
+        && obj.insertCss
+        && obj.insertStyleSheet
+        && obj.toCss
+        && obj.toArray;
+}
+
 export interface StyleSheet {
+    // TODO consider to combine insert* method to the single method
     insertBlock(block : StyleBlock) : void;
     insertCss(cssCode : string) : void;
+    insertStyleSheet(value : StyleSheet) : void;
     toCss() : string;
     toString() : string;
     toArray() : StyleSheetArray;
@@ -95,7 +105,7 @@ export interface ExtendedStyleProp {
     [name : string] : ExtendedStylePropValue;
 }
 
-type TItem = string | StyleBlock;
+type TItem = string | StyleBlock | StyleSheet;
 
 export class JssStyleSheet implements StyleSheet {
     _items : TItem[] = [];
@@ -106,6 +116,10 @@ export class JssStyleSheet implements StyleSheet {
 
     insertCss(cssCode : string) {
         this._items.push(cssCode);
+    }
+
+    insertStyleSheet(block : StyleSheet) {
+        this._items.push(block);
     }
 
     toCss() : string {

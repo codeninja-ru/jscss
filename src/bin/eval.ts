@@ -1,61 +1,34 @@
-import vm from "vm";
-import { createRequire } from 'module';
-import { BasicStackTracePrinter, SourceMappedStackTrace, StackTrace, VmScriptStrackTrace } from "./stackTrace";
-import { SourceMapConsumer } from "source-map";
+import { ModulePath } from "stream/input/modulePath";
+import { JssStyleSheet } from "translator/lib/core";
 import { GeneratedCode } from "translator/translator";
-import { evalContext } from "./evalContext";
-
-export enum EvalStatucCode {
-    Success,
-    Error,
-}
-
-export interface EvalResult {
-    readonly output : string;
-    readonly statusCode: EvalStatucCode;
-}
+import { Compiler } from "./compile";
+import { EvalContext, EvalResult, EvalStatucCode } from "./evalContext";
+import { makeRequire } from "./require";
+import { Script } from "./script";
+import { BasicStackTracePrinter, StackTrace, VmScriptStrackTrace } from "./stackTrace";
 
 export function evalCode(sourceCode : GeneratedCode,
+                         compiler : Compiler,
                          fileName : string,
-                         modulePath : string) : Promise<EvalResult> {
-    const contextRequire = createRequire(modulePath);
-    const context = vm.createContext({
-        'require' : contextRequire,
-        ...evalContext(),
-    });
+                         modulePath : ModulePath) : EvalResult {
+
+    const evalContext = new EvalContext(makeRequire(modulePath, compiler));
 
     try {
-        const script = new vm.Script(sourceCode.value, {
-            filename: fileName,
-        });
+        const script = new Script<JssStyleSheet>(sourceCode.value, fileName);
+        const toCssScript = new Script<string>("_styles.toCss();", fileName);
 
-        vm.createContext(context);
-        return Promise.resolve({
-            output: script.runInContext(context, {
-                displayErrors: false,
-            }).toCss(),
-            statusCode: EvalStatucCode.Success,
-        });
+        evalContext.runInContext(script);
+        return evalContext.runInContext(toCssScript);
     } catch(e) {
-        return new Promise((resolve, reject) => {
-            SourceMapConsumer.fromSourceMap(sourceCode.sourceMapGen)
-                .then((consumer) => {
-                    const stackTrace = new SourceMappedStackTrace(
-                        consumer,
-                        VmScriptStrackTrace.fromStackTrace(StackTrace.fromError(e)),
-                    );
+        const stackTrace = VmScriptStrackTrace.fromStackTrace(StackTrace.fromError(e));
 
-                    const printer = new BasicStackTracePrinter();
-                    printer.print(stackTrace);
+        const printer = new BasicStackTracePrinter();
+        printer.print(stackTrace);
 
-                    reject({
-                        evalCode: EvalStatucCode.Error,
-                    });
-                }).catch((err) => {
-                    console.log(e);
-                    throw err;
-                });
-
-        });
+        return {
+            statusCode: EvalStatucCode.Error,
+            output: '',
+        };
     }
 }

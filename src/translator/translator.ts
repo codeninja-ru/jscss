@@ -287,7 +287,14 @@ function esImport2Js(node : JsImportNode,
                      fileName : string) : SourceNode {
     const path = makeSourceNode(node.pathPos, fileName, node.path);
     if (node.vars.length == 0) {
-        return tag`require(${path});\n`;
+        return tag`(function() {
+    var _r = require(${path});
+    if (isJssStyleSheet(_r)) {
+        ${EXPORT_VAR_NAME}.insertStyleSheet(_r);
+    } else if (typeof _r == 'string') {
+        ${EXPORT_VAR_NAME}.insertCss(_r);
+    }
+})();\n`;
     }
 
     const globalImports = node.vars

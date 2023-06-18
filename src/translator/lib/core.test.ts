@@ -12,6 +12,39 @@ describe('class JssStyleSheet', () => {
         expect(jssStyleSheet.toCss()).toEqual("@import 'main.css';\n\n.className { }\n\n@import 'test.css';");
         expect(jssStyleSheet2.toCss()).toEqual("");
     });
+
+    it('can be extended by anather JssStyleSheet', () => {
+        const jssStyleSheet = new JssStyleSheet();
+        const jssStyleSheet2 = new JssStyleSheet();
+        const block = new JssStyleBlock(['.className']);
+        jssStyleSheet.insertCss("@import 'main.css';");
+        jssStyleSheet.insertBlock(block);
+        jssStyleSheet.insertCss("@import 'test.css';");
+
+        jssStyleSheet2.insertBlock(new JssStyleBlock('div.menu', {
+            'display': 'block',
+            'color': 'red',
+        }));
+
+        jssStyleSheet.insertStyleSheet(jssStyleSheet2);
+
+        expect(jssStyleSheet.toCss()).toEqual(`@import 'main.css';\n\n.className { }\n\n@import 'test.css';\n\ndiv.menu {
+    display: block;
+    color: red;
+}`);
+        expect(jssStyleSheet.toArray()).toEqual([
+            "@import 'main.css';",
+            {name: '.className', value: {}},
+            "@import 'test.css';",
+            {name: 'div.menu', value: {
+                color: "red",
+                display: "block",
+            }},
+        ]);
+
+    });
+
+
 });
 
 describe('class JssStyleBlock', () => {
