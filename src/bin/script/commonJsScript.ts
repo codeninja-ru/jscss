@@ -1,6 +1,6 @@
 import vm from "vm";
 
-export class Script<R> {
+export class CommonJsScript<R> {
     public readonly script : vm.Script;
     constructor(sourceCode : string,
                 fileName : string) {

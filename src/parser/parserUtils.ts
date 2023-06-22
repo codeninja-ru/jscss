@@ -197,7 +197,7 @@ export function sequenceName(name: string,
 type SequenceReturn<R extends TokenParser<any>[]> = ReturnTypeMap<R>;
 
 export function sequence<R extends TokenParser[]>(...parsers: R) : TokenParser<SequenceReturn<R>> {
-    return function sequenceInst(stream: TokenStream) : SequenceReturn<R> {
+    return probe(function sequenceInst(stream: TokenStream) : SequenceReturn<R> {
         const parserStream = new LookAheadTokenStream(stream);
         const results = [];
         for (var i = 0; i < parsers.length; i++) {
@@ -217,11 +217,11 @@ export function sequence<R extends TokenParser[]>(...parsers: R) : TokenParser<S
         // TODO flush might be not needed if we call sequence inside firstOf/or
         parserStream.flush();
         return results as SequenceReturn<R>;
-    };
+    }, parsers[0].probe);
 }
 
 export function sequenceVoid(...parsers: TokenParser[]) : TokenParser<void> {
-    return function(stream: TokenStream) : void {
+    return probe(function(stream: TokenStream) : void {
         for (var i = 0; i < parsers.length; i++) {
             try {
                 parsers[i](stream);
@@ -233,11 +233,11 @@ export function sequenceVoid(...parsers: TokenParser[]) : TokenParser<void> {
                 }
             }
         }
-    };
+    }, parsers[0].probe);
 }
 
 export function sequenceWithPosition(...parsers: TokenParser[]) : TokenParserArrayWithPosition {
-    return function(stream: TokenStream) : ParsedSourceWithPosition[] {
+    return probe(function(stream: TokenStream) : ParsedSourceWithPosition[] {
         const parserStream = new LookAheadTokenStream(stream);
         const result = [] as ParsedSourceWithPosition[];
         for (var i = 0; i < parsers.length; i++) {
@@ -273,7 +273,7 @@ export function sequenceWithPosition(...parsers: TokenParser[]) : TokenParserArr
         // TODO flush might be not needed if we call sequence inside firstOf/or
         parserStream.flush();
         return result;
-    };
+    }, parsers[0].probe);
 }
 
 export function map<S, D>(parser : TokenParser<S>, mapFn: (item : S) => D) : TokenParser<D> {

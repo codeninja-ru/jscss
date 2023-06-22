@@ -352,7 +352,11 @@ function jssVariableStatement(stream : TokenStream) : JssVarDeclarationNode {
         ),
         identifier,
         symbol(Symbols.eq),
-        keyword(Keywords._new),
+        firstOf(
+            // TODO remove new
+            keyword(Keywords._new), // @deprecated we should not use new not to cause any ambiguousness
+            sequence(symbol(Symbols.at), keyword(Keywords.jssBlock))
+        ),
         noLineTerminatorHere,
         jssBlockStatement,
         optional(symbol(Symbols.semicolon)),

@@ -3,7 +3,8 @@ import { Position } from 'stream/position';
 import { File } from "./file";
 import { FsModulePath, ModulePath } from "./modulePath";
 import { TestFile } from "./testFile";
-import Module from 'module';
+import { SwcTransformer } from 'bin/transformer/swcTransformer';
+import { requireString } from 'bin/requireString';
 
 export interface VirtualFile {
     readonly startPos : Position;
@@ -23,15 +24,12 @@ export class TestModulePath implements ModulePath {
     }
     createRequire(): NodeRequire {
         const req = this._modulePath.createRequire();
+        const transformer = new SwcTransformer();
 
         const newReq = (id : string) : any => {
             if (this.virtualFiles[id]) {
-                var parent = module.parent;
-                var m = new Module(id, parent == null ? undefined : parent);
-                m.filename = id;
-                // @ts-ignore
-                m._compile(this.virtualFiles[id].content, id);
-                return m.exports;
+                var sourceCode = transformer.transform(this.virtualFiles[id].content);
+                return requireString(sourceCode, id);
             } else {
                 return req(id);
             }

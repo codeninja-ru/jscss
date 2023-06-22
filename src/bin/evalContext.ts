@@ -2,22 +2,24 @@ import { HexColor, RgbColor } from "translator/lib/colors/color";
 import { isJssStyleSheet, JssAtRuleBlock, JssBlock, JssBlockCaller, JssMediaQueryBlock, JssStyleBlock, JssStyleSheet, JssSupportsBlock } from "translator/lib/core";
 import { Em, Percent, Px, Units } from "translator/lib/units/unit";
 import vm from "vm";
-import { Script } from "./script";
+import { CommonJsScript } from "./script/commonJsScript";
 
 export enum EvalStatucCode {
     Success,
     Error,
 }
 
-export interface EvalResult<T = string> {
+export interface EvalResult<T = string, E = any> {
     readonly output : T;
     readonly statusCode: EvalStatucCode;
+    readonly exports : any;
 }
 
 export class EvalContext {
     private readonly context : vm.Context;
     constructor(requireFunction : NodeRequire) {
         this.context = vm.createContext({
+            'exports' : {},
             'require' : requireFunction,
             'JssStylesheet': JssStyleSheet,
             'JssStyleBlock': JssStyleBlock,
@@ -37,11 +39,12 @@ export class EvalContext {
         vm.createContext(this.context);
     }
 
-    runInContext<R>(script : Script<R>) : EvalResult<R> {
+    runInContext<R>(script : CommonJsScript<R>) : EvalResult<R> {
         return {
             output: script.script.runInContext(this.context, {
                 displayErrors: false,
             }),
+            exports: this.context.exports,
             statusCode: EvalStatucCode.Success,
         };
     }

@@ -176,16 +176,17 @@ return self;
 }
 
 function jssVarBlock2js(node : JssVarDeclarationNode, fileName : string, bindName = 'caller') : SourceNode {
-    const exportSourceNode = node.hasExport && node.exportPos ? makeSourceNode(node.exportPos,
-                                                             fileName,
-                                                                               'export ') : null;
+    const exportSourceNode = node.hasExport && node.exportPos
+        ? makeSourceNode(node.exportPos,
+                         fileName,
+                         `\nexports.${node.name} = ${node.name};`) : null;
     const keyword = makeSourceNode(node.keywordPos,
                                    fileName,
                                    node.keyword);
     const varName = makeSourceNode(node.namePos,
                                    fileName,
                                    node.name);
-    return tag`${exportSourceNode ? exportSourceNode : ''}${keyword} ${varName} = new (class extends JssBlockCaller {
+    return tag`${keyword} ${varName} = new (class extends JssBlockCaller {
 call(${bindName}) {
 var self = new JssBlock();
 (function() {
@@ -194,7 +195,7 @@ ${declarations2js(node.items, fileName, bindName)}
 
 return self;
 }
-})();`;
+})();${exportSourceNode ? exportSourceNode : ''}\n`;
 }
 
 function insertSourceCssImport(node : CssImportNode, fileName : string) : SourceNode {

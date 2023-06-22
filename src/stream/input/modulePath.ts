@@ -14,7 +14,9 @@ export class FsModulePath implements ModulePath {
 
     createRequire(): NodeRequire {
         return createRequire(path.join(
-            this._modulePath,
+            path.resolve(
+                this._modulePath,
+            ),
             this.fileName
         ));
     }

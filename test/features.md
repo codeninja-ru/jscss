@@ -98,7 +98,8 @@ p {
 }
 ```
 
-and import them here
+an
+d import them here
 
 ```jsslang
 import { clreafix, nightModeColor, fontSize } from './lib1.jss';

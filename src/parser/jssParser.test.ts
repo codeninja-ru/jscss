@@ -179,6 +179,9 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
         parseCode(`export const hidden = new { "display": none }`).toEqual([{type: NodeType.JssVarDeclaration, name: 'hidden', keyword: 'const',
                                                                hasExport: true, items: expectedItems(29, 40),
                                                                keywordPos: {line: 1, col: 8}, namePos: {line: 1, col:14}, exportPos: {line: 1, col:1}}]);
+        parseCode(`export const hidden = @block { "display": none }`).toEqual([{type: NodeType.JssVarDeclaration, name: 'hidden', keyword: 'const',
+                                                               hasExport: true, items: expectedItems(32, 43),
+                                                               keywordPos: {line: 1, col: 8}, namePos: {line: 1, col:14}, exportPos: {line: 1, col:1}}]);
     });
 
     it('parses without semicolons', () => {

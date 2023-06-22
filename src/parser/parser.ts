@@ -29,6 +29,7 @@ export function functionExpression(stream: TokenStream) : Node {
         type: NodeType.FunctionExpression
     };
 }
+functionExpression.probe = makeIsKeywordNextTokenProbe(Keywords._function);
 
 function superPropery(stream: TokenStream) : void {
     firstOf(
@@ -166,6 +167,7 @@ function classDeclaration(stream : TokenStream) : void {
     optional(bindingIdentifier)(stream);
     classTail(stream);
 }
+classDeclaration.probe = makeIsKeywordNextTokenProbe(Keywords._class);
 
 const classExpression = classDeclaration;
 
@@ -677,6 +679,7 @@ function ifStatement(stream : TokenStream) : IfNode {
         right: right,
     }
 }
+ifStatement.probe = makeIsKeywordNextTokenProbe(Keywords._if);
 
 function breakableStatement(stream : TokenStream) : void {
     longestOf(
@@ -721,6 +724,7 @@ function continueStatement(stream : TokenStream) : void {
     )(stream),
     symbol(Symbols.semicolon)(stream);
 }
+continueStatement.probe = makeIsKeywordNextTokenProbe(Keywords._continue);
 
 function breakStatement(stream : TokenStream) : void {
     keyword(Keywords._break),
@@ -732,6 +736,7 @@ function breakStatement(stream : TokenStream) : void {
     )(stream),
     symbol(Symbols.semicolon)(stream);
 }
+breakStatement.probe = makeIsKeywordNextTokenProbe(Keywords._break);
 
 function returnStatement(stream : TokenStream) : void {
     keyword(Keywords._return)(stream);
@@ -743,12 +748,14 @@ function returnStatement(stream : TokenStream) : void {
     )(stream),
     symbol(Symbols.semicolon)(stream);
 }
+returnStatement.probe = makeIsKeywordNextTokenProbe(Keywords._return);
 
 function withStatement(stream : TokenStream) : void {
     keyword(Keywords._with)(stream);
     roundBracket(stream);
     parseJsStatement(stream);
 }
+withStatement.probe = makeIsKeywordNextTokenProbe(Keywords._with);
 
 function lableStatement(stream : TokenStream) : void {
     // LabelIdentifier[?Yield, ?Await] : LabelledItem[?Yield, ?Await, ?Return]
@@ -769,6 +776,7 @@ function throwStatement(stream : TokenStream) : void {
     expression(stream);
     symbol(Symbols.semicolon);
 }
+throwStatement.probe = makeIsKeywordNextTokenProbe(Keywords._throw);
 
 function tryStatement(stream : TokenStream) : void {
     keyword(Keywords._try)(stream);
@@ -784,6 +792,7 @@ function tryStatement(stream : TokenStream) : void {
         anyBlock,
     ))(stream);
 }
+tryStatement.probe = makeIsKeywordNextTokenProbe(Keywords._try);
 
 export function parseJsStatement(stream : TokenStream) : JsRawNode {
     longestOf(
@@ -1030,6 +1039,7 @@ function exportDeclaration(stream : TokenStream) : JsRawNode {
 
     return returnRawNode(stream);
 }
+exportDeclaration.probe = makeIsKeywordNextTokenProbe(Keywords._export);
 
 export function moduleItem(stream : TokenStream) : JsRawNode | JsImportNode {
     return firstOf(

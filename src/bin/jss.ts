@@ -11,7 +11,7 @@ import { ProcessArgsInputStream } from 'stream/input/ProcessArgsInputStream';
 import { evalCode } from './eval';
 import { BasicStackTracePrinter, StackTrace } from './stackTrace';
 import { EvalStatucCode } from './evalContext';
-import { JssCompiler } from './compile';
+import { JssCompiler } from './compiler';
 import { FsModulePath } from 'stream/input/modulePath';
 
 

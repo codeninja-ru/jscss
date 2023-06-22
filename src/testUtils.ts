@@ -1,7 +1,7 @@
-import { JssCompiler } from "bin/compile";
+import { JssCompiler } from "bin/compiler";
 import { EvalContext } from "bin/evalContext";
 import { makeRequire } from "bin/require";
-import { Script } from "bin/script";
+import { CommonJsScript } from "bin/script/commonJsScript";
 import { parseJssScript } from "parser/jssParser";
 import { ArrayTokenStream } from "parser/tokenStream";
 import path from 'path';
@@ -37,7 +37,7 @@ export function evalTestCode(css : string,
     ));
 
     try {
-        const script = new Script<JssStyleSheet>(sourceCode.value, resultFileName);
+        const script = new CommonJsScript<JssStyleSheet>(sourceCode.value, resultFileName);
         return evalContext.runInContext(script).output;
     } catch(e) {
         console.log(sourceCode);

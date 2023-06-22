@@ -74,4 +74,6 @@ export const Keywords = {
     cssNamespace: new Keyword('namespace'),
     cssKeyframes: new Keyword('keyframes'),
     cssFont: new Keyword('font'),
+
+    jssBlock: new Keyword('block'),
 }
