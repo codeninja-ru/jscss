@@ -98,11 +98,10 @@ p {
 }
 ```
 
-an
-d import them here
+and import them here
 
 ```jsslang
-import { clreafix, nightModeColor, fontSize } from './lib1.jss';
+import { clearfix, nightModeColor, fontSize } from './lib1.jss';
 
 .menu {
     ...clearfix;

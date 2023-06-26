@@ -12,7 +12,24 @@ export interface File {
 }
 
 export class FsFile implements File {
-    constructor(private readonly infilepath : string) {}
+    private readonly infilepath : string;
+    constructor(infilepath : string) {
+        this.infilepath = this.fixFilePath(infilepath);
+    }
+
+    private fixFilePath(infilepath : string) : string {
+        const ext = path.extname(infilepath);
+
+        if (ext == '') {
+            if (fs.existsSync(infilepath)) {
+                return infilepath;
+            } else {
+                return infilepath + '.js';
+            }
+        } else {
+            return infilepath;
+        }
+    }
 
     filePath(): string {
         return this.infilepath;

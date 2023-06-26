@@ -8,6 +8,7 @@ describe('class Script', () => {
 
         const result = evalContext.runInContext(script);
         expect(result.exports.test).toEqual(3);
+        expect(result.exports.test).toEqual(3);
     });
 
 });
