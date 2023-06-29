@@ -120,12 +120,18 @@ export class LookAheadTokenStream implements FlushableTokenStream {
     }
 
     sourceFragment(fromPos? : number) : SourceFragment {
-        const tokens = [];
-        for (let i = fromPos ? fromPos : this.startPos; i < this.pos; i++) {
-            tokens.push(this.parent.take(i));
-        }
+        if (this.startPos >= this.length()) {
+            return new ArraySourceFragment(this.parent.take(this.parent.length() - 1).position, []);
+        } else {
+            const tokens = [];
+            const startPos = fromPos ? fromPos : this.startPos;
+            //TODO can be optimized with slice
+            for (let i = startPos; i < this.pos; i++) {
+                tokens.push(this.parent.take(i));
+            }
 
-        return new ArraySourceFragment(tokens);
+            return new ArraySourceFragment(this.parent.take(startPos).position, tokens);
+        }
     }
 
     flush() {

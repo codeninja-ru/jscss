@@ -4,7 +4,7 @@ import { StringInputStream } from "stream/input";
 import { Symbols } from "symbols";
 import { LiteralToken, TokenType } from "token";
 import { BlockParserError, ParserError, SequenceError } from "./parserError";
-import { anyLiteral, anyString, block, commaList, firstOf, ignoreSpacesAndComments, keyword, longestOf, map, multiSymbol, noLineTerminatorHere, noSpacesHere, notAllowed, oneOfSimpleSymbols, oneOfSymbols, optional, probe, regexpLiteral, repeatUntil, sequence, symbol } from "./parserUtils";
+import { anyLiteral, anyString, block, commaList, firstOf, ignoreSpacesAndComments, keyword, longestOf, map, multiSymbol, noLineTerminatorHere, noSpacesHere, notAllowed, oneOfSimpleSymbols, oneOfSymbols, optional, probe, regexpLiteral, repeat, repeatUntil, returnRawValue, sequence, symbol } from "./parserUtils";
 import { isLiteralNextToken } from "./predicats";
 import { BlockType, NodeType } from "./syntaxTree";
 import { ArrayTokenStream, TokenStream } from "./tokenStream";
@@ -724,4 +724,27 @@ describe('parserUtils', () => {
 
     });
 
+    describe('returnRawValue()', () => {
+        it('returns string', () => {
+            const stream = ArrayTokenStream.fromString('1 2 / 3 4');
+            const result = returnRawValue(repeat(anyLiteral))(stream);
+
+            expect(result).toEqual('1 2');
+        });
+
+        it('returns an empty string if nothing was parsed', () => {
+            const stream = ArrayTokenStream.fromString('1 2 / 3 4');
+            const result = returnRawValue(optional(anyString))(stream);
+
+            expect(result).toEqual('');
+        });
+
+        it('throws an error', () => {
+            const stream = ArrayTokenStream.fromString('1 2 / 3 4');
+            expect(() => returnRawValue(anyString)(stream)).toThrowError();
+
+        });
+
+
+    });
 });

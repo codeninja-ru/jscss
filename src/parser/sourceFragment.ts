@@ -14,11 +14,11 @@ export interface SourceFragment {
 }
 
 export class ArraySourceFragment implements SourceFragment {
-    constructor(private _tokens : Token[]) {
-    }
+    constructor(private readonly _startPosition : Position,
+                private readonly _tokens : Token[]) {}
 
     get position() : Position {
-        return this._tokens[0].position;
+        return this._startPosition;
     }
 
     get value() : string {
@@ -57,7 +57,12 @@ export class LeftTrimSourceFragment implements SourceFragment {
     }
 
     get position() : Position {
-        return this.fragment.tokens[this.findStartPos()].position;
+        const pos = this.findStartPos();
+        if (this.fragment.tokens[pos]) {
+            return this.fragment.tokens[pos].position;
+        } else {
+            return this.fragment.position;
+        }
     }
 
     get value() : string {

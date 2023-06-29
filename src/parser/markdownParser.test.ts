@@ -43,7 +43,7 @@ describe('markdownParse()', () => {
             {type: MarkdownNodeType.SOURCE_CODE, lang: 'js', value: "source code1", position: {line: 10, col: 1}},
             {type: MarkdownNodeType.SOURCE_CODE, lang: 'js', value: "source code2", position: {line: 14, col: 1}, title: 'main.js'},
             {type: MarkdownNodeType.SOURCE_CODE, lang: 'js', value: "source code3", position: {line: 18, col: 1}, title: 'main.js'},
-            {type: MarkdownNodeType.SOURCE_CODE, lang: 'css', value: "", position: {line: 16, col: 1}},
+            {type: MarkdownNodeType.SOURCE_CODE, lang: 'css', value: "", position: {line: 21, col: 7}},
         ]);
     });
 });
