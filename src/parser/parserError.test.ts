@@ -11,6 +11,7 @@ describe('class ParserError', () => {
                 col: 4,
             }
         } as LiteralToken;
+        debugger;
         expect(() => {
             throw new ParserError("Error message", token);
         }).toThrowError("(3:4) : Error message");

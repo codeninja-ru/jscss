@@ -1,5 +1,5 @@
 import { Symbols } from "symbols";
-import { ParserError, SequenceError, UnexpectedEndError } from "./parserError";
+import { ErrorMessage, ParserError, SequenceError, UnexpectedEndError } from "./parserError";
 import { anyLiteral, anyString, firstOf, leftHandRecurciveRule, map, multiSymbol, noSpacesHere, oneOfSymbols, optional, returnRawValue, sequence, symbol } from "./parserUtils";
 import { TokenParser } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
@@ -205,7 +205,7 @@ function nothing(stream : TokenStream) : NothginArgNode {
     throw new Error('nothing is expected');
 }
 
-function processError(e : Error) : CommandErrorArgNode {
+function processError(e : ErrorMessage) : CommandErrorArgNode {
     if (e instanceof UnexpectedEndError) {
         return {
             type: ArgNodeType.CommandError,

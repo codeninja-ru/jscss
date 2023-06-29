@@ -1,6 +1,6 @@
 import { InputStream } from "stream/input";
 import { Position } from "stream/position";
-import { SpaceToken, Token, TokenType } from "token";
+import { Token, TokenType } from "token";
 import { TokenStream } from "./tokenStream";
 
 function formatError(position : Position, errorMessage : string) : string {
@@ -8,34 +8,36 @@ function formatError(position : Position, errorMessage : string) : string {
 }
 
 const STUB_POSITION = new Position(0, 0);
-const stubToken = {type: TokenType.Space,
-                   value: '',
-                   position: STUB_POSITION} as SpaceToken;
 
-export class ParserError extends Error {
-    constructor(message : string, token : Token) {
-        super(formatError(token.position, message));
+export interface ErrorMessage {
+    readonly message : string;
+}
+
+export class ParserError implements ErrorMessage {
+    constructor(private readonly _message : string,
+                private readonly token : Token) {
     }
 
-    private static readonly DEFAULT = new ParserError('no', stubToken);
+    get message() : string {
+        return formatError(this.token.position, this._message);
+    }
 
     static reuse(message : string, token : Token) : ParserError {
-        this.DEFAULT.message = formatError(token.position, message);
-
-        return this.DEFAULT;
+        return new ParserError(message, token);
     }
 }
 
-export class SyntaxRuleError extends Error {
-    constructor(message : string, position : Position) {
-        super(formatError(position, message));
+export class SyntaxRuleError implements ErrorMessage {
+    constructor(private readonly _message : string,
+                private readonly position : Position) {
     }
 
-    private static readonly DEFAULT = new SyntaxRuleError('', STUB_POSITION);
+    get message() : string {
+        return formatError(this.position, this._message);
+    }
 
     static reuse(message : string, position : Position) : SyntaxRuleError {
-        this.DEFAULT.message = formatError(position, message);
-        return this.DEFAULT;
+        return new SyntaxRuleError(message, position);
     }
 }
 
@@ -60,30 +62,28 @@ export class BlockParserError extends Error {
 /**
  * error in the middle of the sequence
  * */
-export class SequenceError extends Error {
-    public cause: Error;
-    constructor(error : ParserError | SyntaxRuleError,
-                sequenceIndex : number = 0) {
-        // Error.prototype.cause has been avaliable since ecma-262 (2022)
-        //super(error.message, {cause: error}); // TODO uncomment if switch to esnext
-        super(error.message + ` at index ${sequenceIndex}`);
-        this.cause = error;
+export class SequenceError implements ErrorMessage {
+    constructor(public readonly cause : ErrorMessage,
+                private readonly sequenceIndex : number = 0) {
     }
 
-    private static readonly DEFAULT = new SequenceError(new Error('no'));
+    get message() : string {
+        return this.cause.message + ` at index ${this.sequenceIndex}`;
+    }
 
-    static reuse(error : ParserError | SyntaxRuleError,
+    static reuse(error : ErrorMessage,
                 sequenceIndex : number = 0) {
-        this.DEFAULT.cause = error;
-        this.DEFAULT.message = error.message + ` at index ${sequenceIndex}`;
-
-        return this.DEFAULT;
+        return new SequenceError(error, sequenceIndex);
     }
 }
 
-export class EmptyStreamError extends Error {
-    constructor(message : string, stream : TokenStream) {
-        super(formatError(stream.startStreamPosition, message));
+export class EmptyStreamError implements ErrorMessage {
+    constructor(private readonly _message : string,
+                private readonly stream : TokenStream) {
+    }
+
+    get message() : string {
+        return formatError(this.stream.startStreamPosition, this._message);
     }
 }
 
@@ -99,15 +99,17 @@ function lastToken(stream : TokenStream) : Token {
     }
 }
 
-export class UnexpectedEndError extends Error {
-    static fromStream(stream : TokenStream, message = 'Unexpected end of the stream') : UnexpectedEndError {
-        return new UnexpectedEndError(formatError(lastToken(stream).position, message));
+export class UnexpectedEndError implements ErrorMessage {
+    constructor(private readonly stream : TokenStream,
+                private readonly _message = 'Unexpected end of the stream') {
+
     }
 
-    private static DEFAULT = new UnexpectedEndError('no');
+    get message() : string {
+        return formatError(lastToken(this.stream).position, this._message);
+    }
 
     static reuse(stream : TokenStream, message = 'Unexpected end of the stream') {
-        this.DEFAULT.message = formatError(lastToken(stream).position, message);
-        return this.DEFAULT;
+        return new UnexpectedEndError(stream, message);
     }
 }
