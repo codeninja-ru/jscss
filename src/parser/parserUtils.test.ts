@@ -689,7 +689,6 @@ describe('parserUtils', () => {
 
             expect(parserError instanceof ParserError).toBeTruthy();
             expect(blockError instanceof BlockParserError).toBeTruthy();
-            expect(blockError instanceof Error).toBeTruthy();
         });
 
     });

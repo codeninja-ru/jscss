@@ -41,9 +41,13 @@ export class SyntaxRuleError implements ErrorMessage {
     }
 }
 
-export class LexerError extends Error {
-    constructor(message : string, stream : InputStream) {
-        super(formatError(stream.position(), message));
+export class LexerError implements ErrorMessage {
+    constructor(private readonly _message : string,
+                private readonly stream : InputStream) {
+    }
+
+    get message() : string {
+        return formatError(this.stream.position(), this._message);
     }
 }
 
@@ -52,10 +56,12 @@ export class LexerError extends Error {
  * somethime there is an error insede a block (round brackets for example),
  * while parsing such block it's handy to see the error thrown from the block rather than see message that the whole block rule is invalid
  * */
-export class BlockParserError extends Error {
-    constructor(error : ParserError) {
-        // @ts-ignore
-        super(error.message, {cause: error});
+export class BlockParserError implements ErrorMessage {
+    constructor(public readonly cause : ParserError) {
+    }
+
+    get message() : string {
+        return this.cause.message;
     }
 }
 
@@ -102,7 +108,6 @@ function lastToken(stream : TokenStream) : Token {
 export class UnexpectedEndError implements ErrorMessage {
     constructor(private readonly stream : TokenStream,
                 private readonly _message = 'Unexpected end of the stream') {
-
     }
 
     get message() : string {
