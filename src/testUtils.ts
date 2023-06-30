@@ -1,6 +1,4 @@
-import { JssCompiler } from "bin/compiler";
 import { EvalContext } from "bin/evalContext";
-import { makeRequire } from "bin/require";
 import { CommonJsScript } from "bin/script/commonJsScript";
 import { parseJssScript } from "parser/jssParser";
 import { ArrayTokenStream } from "parser/tokenStream";
@@ -31,10 +29,7 @@ export function evalTestCode(css : string,
                              sourceFileName = 'result.jss',
                              resultFileName = 'result.css') : JssStyleSheet {
     const sourceCode = translateToJs(css, line, col, sourceFileName, resultFileName);
-    const evalContext = new EvalContext(makeRequire(
-        modulePath,
-        new JssCompiler(),
-    ));
+    const evalContext = new EvalContext(modulePath.createRequire());
 
     try {
         const script = new CommonJsScript<JssStyleSheet>(sourceCode.value, resultFileName);

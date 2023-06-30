@@ -1,4 +1,3 @@
-import { Compiler } from "bin/compiler";
 import { File } from "stream/input/file";
 import { ModulePath } from "stream/input/modulePath";
 import { EsmLoader } from "./esmLoader";
@@ -14,11 +13,9 @@ export class MainLoader implements Loader {
     private plainLoader : PlainLoader;
     private esmLoader : EsmLoader;
 
-    // TODO modulePath is only needed for error massage. error massage can be moved out
-    constructor(modulePath : ModulePath,
-                compiler : Compiler) {
+    constructor(modulePath : ModulePath) {
 
-        this.jssLoader = new JssLoader(compiler, modulePath);
+        this.jssLoader = new JssLoader(modulePath);
         this.plainLoader = new PlainLoader(modulePath);
         this.esmLoader = new EsmLoader();
     }

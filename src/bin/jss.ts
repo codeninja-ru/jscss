@@ -11,7 +11,6 @@ import { ProcessArgsInputStream } from 'stream/input/ProcessArgsInputStream';
 import { evalCode } from './eval';
 import { BasicStackTracePrinter, StackTrace } from './stackTrace';
 import { EvalStatucCode } from './evalContext';
-import { JssCompiler } from './compiler';
 import { FsModulePath } from 'stream/input/modulePath';
 
 
@@ -56,11 +55,11 @@ function processInput(node : InputAndOutputArgNode) {
     }
 
     const inputFileName = path.basename(infilepath);
-    const compiler = new JssCompiler();
     const modulePath = new FsModulePath(
         path.dirname(infilepath),
         inputFileName,
     );
+    const compiler = modulePath.compiler();
     const generatedCode = compiler.compile(
         modulePath.file(path.basename(infilepath)),
         outfilepath
@@ -70,7 +69,6 @@ function processInput(node : InputAndOutputArgNode) {
         console.log(generatedCode.value);
     } else {
         const result = evalCode(generatedCode,
-                                compiler,
                                 inputFileName,
                                 modulePath);
 

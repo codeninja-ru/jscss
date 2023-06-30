@@ -1,18 +1,15 @@
 import { ModulePath } from "stream/input/modulePath";
 import { JssStyleSheet } from "translator/lib/core";
 import { GeneratedCode } from "translator/translator";
-import { Compiler } from "./compiler";
 import { EvalContext, EvalResult, EvalStatucCode } from "./evalContext";
-import { makeRequire } from "./require";
 import { CommonJsScript } from "./script/commonJsScript";
 import { BasicStackTracePrinter, StackTrace, VmScriptStrackTrace } from "./stackTrace";
 
 export function evalCode(sourceCode : GeneratedCode,
-                         compiler : Compiler,
                          fileName : string,
                          modulePath : ModulePath) : EvalResult {
 
-    const evalContext = new EvalContext(makeRequire(modulePath, compiler));
+    const evalContext = new EvalContext(modulePath.createRequire());
 
     try {
         const script = new CommonJsScript<JssStyleSheet>(sourceCode.value, fileName);
