@@ -522,7 +522,7 @@ _export_named_export(exports, {'y':'y', 'y2':'y1'}, require('./lib'));
 
         it('translates named exports', () => {
             expect(translateToJs(`export { y, y1 as y2 };`).value)
-                .toEqual('todo');
+                .toEqual(`_export(exports, { y: function() { return y; }, y2: function() { return y1; }})`);
         });
 
         it('translates variable exports', () => {
@@ -531,12 +531,12 @@ export var x1 = 1;
 export var y1 = 1, y2 = y2;`).value)
                 .toEqual(`
 var x;
-_export_var(exports, 'x', function() { return x; });
+_export(exports, {'x': function() { return x; }});
 
 var x1 = 1;
-_export_var(exports, 'x1', function() { return x1; });
+_export(exports, {'x1': function() { return x1; }});
 
-var y1 = 1, y2 = y2;
+var y1 = 1, y2 = 2;
 _export(exports, {y1 : function() {return y1;}, y2: function() {return y2;}});
 `);
         });
@@ -546,23 +546,43 @@ _export(exports, {y1 : function() {return y1;}, y2: function() {return y2;}});
 export class C1 {}
 export const x1 = 1;
 export let {y1, y2} = func();
-export let [y1, y2] = func();`).value)
-                .toEqual('todo');
+export let [z1, z2] = func();`).value)
+                .toEqual(`function f1() {}
+_export(exports, {'f1': function() { return f1; }});
+class C1 {}
+_export(exports, {'C1': function() { return C1; }});
+const x1 = 1;
+_export(exports, {'x1': function() { return x1; }});
+let {y1, y2} = func();
+_export(exports, {y1 : function() {return y1;}, y2: function() {return y2;}});
+export let [z1, z2] = func();
+_export(exports, {z1 : function() {return z1;}, z2: function() {return z2;}});
+`);
         });
 
         it('translates default hoistableDeclaration', () => {
             expect(translateToJs(`export default function() {}`).value)
-                .toEqual('todo');
+                .toEqual(`var _default = function() {};
+_export(exports, {'default': function() { return _default; }});`);
         });
 
         it('translates default classDeclaration', () => {
             expect(translateToJs(`export default class TestClass {}`).value)
-                .toEqual('todo');
+                .toEqual(`class TestClass {}
+_export(exports, {'default': function() { return TestClass; }});`);
         });
+
+        it('translates default classDeclaration without name', () => {
+            expect(translateToJs(`export default class {}`).value)
+                .toEqual(`var _default = class {};
+_export(exports, { 'default': function() { return _default; } })`);
+        });
+
 
         it('translates default assigmentExpression', () => {
             expect(translateToJs(`export default 1 + 2;`).value)
-                .toEqual('todo');
+                .toEqual(`const _default = 1 + 2;
+_export(exports, { 'default': function() { return _default; } });`);
         });
 
     });

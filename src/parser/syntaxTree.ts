@@ -179,6 +179,11 @@ export interface JsRawNode extends Node, SourceMappedNode {
     readonly value: string;
 }
 
+export interface JsExportNode extends Node {
+    readonly type: NodeType.ExportDeclaration,
+    readonly child: JsRawNode;
+}
+
 export interface CssMediaNode extends Node, SourceMappedNode {
     readonly type: NodeType.CssMedia,
     readonly mediaList: string[],
