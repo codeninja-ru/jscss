@@ -1001,8 +1001,12 @@ function exportFromClause(stream : TokenStream) : void {
         // * as IdentifierName
         sequence(
             symbol(Symbols.astersik),
-            optional(keyword(Keywords._as)),
-            identifierName,
+            optional(
+                sequence(
+                    keyword(Keywords._as),
+                    identifierName,
+                )
+            )
         ),
         // NamedExports
         anyBlock,

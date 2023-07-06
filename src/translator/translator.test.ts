@@ -473,7 +473,7 @@ p:after {
     });
 });
 
-describe('ES6 translates into commonjs', () => {
+describe('ES6 is translated into commonjs', () => {
     it('translates imports to require', () => {
         expect(translateToJs(`import _ from 'lodash';
 import './lib.js';
@@ -506,6 +506,65 @@ const {yy:yy1, 'zz':zz1} = require('lib');
 
 _styles;
 //# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbInJlc3VsdC5qc3MiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7TUFBTyxDLFdBQU8sUTs7cUJBQ1AsVTs7Ozs7OztNQUNLLEcsV0FBUyxLO09BQ2IsSyxFQUFPLEssWUFBWSxRO09BQ25CLEksRUFBTSxDLENBQUssRSxFQUFJLEcsQ0FBTyxDLFlBQVEsSztNQUMvQixDLFdBQWlDLEs7T0FBN0IsRSxDQUFNLEcsRUFBSyxJLENBQVEsRyxZQUFVLEsiLCJmaWxlIjoicmVzdWx0LmpzcyJ9`);
+    });
+
+    describe('esm exports', () => {
+        it('translates exportFromClause', () => {
+            expect(translateToJs(`export * from './lib';
+export * as x from './lib';
+export { y, y1 as y2 } from './lib';`).value)
+                .toEqual(`
+_export_star(exports, require('./lib'));
+exports.x = require('./lib');
+_export_named_export(exports, {'y':'y', 'y2':'y1'}, require('./lib'));
+`);
+        });
+
+        it('translates named exports', () => {
+            expect(translateToJs(`export { y, y1 as y2 };`).value)
+                .toEqual('todo');
+        });
+
+        it('translates variable exports', () => {
+            expect(translateToJs(`export var x;
+export var x1 = 1;
+export var y1 = 1, y2 = y2;`).value)
+                .toEqual(`
+var x;
+_export_var(exports, 'x', function() { return x; });
+
+var x1 = 1;
+_export_var(exports, 'x1', function() { return x1; });
+
+var y1 = 1, y2 = y2;
+_export(exports, {y1 : function() {return y1;}, y2: function() {return y2;}});
+`);
+        });
+
+        it('translates declaration', () => {
+            expect(translateToJs(`export function f1() {}
+export class C1 {}
+export const x1 = 1;
+export let {y1, y2} = func();
+export let [y1, y2] = func();`).value)
+                .toEqual('todo');
+        });
+
+        it('translates default hoistableDeclaration', () => {
+            expect(translateToJs(`export default function() {}`).value)
+                .toEqual('todo');
+        });
+
+        it('translates default classDeclaration', () => {
+            expect(translateToJs(`export default class TestClass {}`).value)
+                .toEqual('todo');
+        });
+
+        it('translates default assigmentExpression', () => {
+            expect(translateToJs(`export default 1 + 2;`).value)
+                .toEqual('todo');
+        });
+
     });
 
 });
