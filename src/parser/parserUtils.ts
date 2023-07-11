@@ -276,7 +276,8 @@ export function sequenceWithPosition(...parsers: TokenParser[]) : TokenParserArr
     }, parsers[0].probe);
 }
 
-export function map<S, D>(parser : TokenParser<S>, mapFn: (item : S) => D) : TokenParser<D> {
+export function map<S, D>(parser : TokenParser<S>,
+                          mapFn: (item : S) => D) : TokenParser<D> {
     return probe(function(stream : TokenStream) : D {
         return mapFn(parser(stream));
     }, parser.probe);

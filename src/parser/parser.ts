@@ -1,15 +1,17 @@
 import { Keywords, ReservedWords } from "keywords";
 import { AssignmentOperator, Symbols } from "symbols";
 import { LiteralToken, TokenType } from "token";
+import { ExportFromClause, ExportSpecifier, FromClause, NamedExports } from "./exportsNodes";
 import { ParserError, UnexpectedEndError } from "./parserError";
-import { anyBlock, anyLiteral, anyString, anyTempateStringLiteral, block, comma, commaList, firstOf, ignoreSpacesAndComments, keyword, lazyBlock, leftHandRecurciveRule, longestOf, map, multiSymbol, noLineTerminatorHere, notAllowed, oneOfSymbols, optional, optionalRaw, rawValue, regexpLiteral, repeat, returnValueWithPosition, roundBracket, sequence, squareBracket, strictLoop, symbol, ValueWithPosition } from "./parserUtils";
+import { anyBlock, anyLiteral, anyString, anyTempateStringLiteral, block, comma, commaList, firstOf, ignoreSpacesAndComments, keyword, lazyBlock, leftHandRecurciveRule, longestOf, map, multiSymbol, noLineTerminatorHere, notAllowed, oneOfSymbols, optional, optionalRaw, rawValue, regexpLiteral, repeat, returnRawValue, returnValueWithPosition, roundBracket, sequence, squareBracket, strictLoop, symbol, ValueWithPosition } from "./parserUtils";
 import { isLiteralNextToken, literalToString, makeIsKeywordNextTokenProbe, makeIsSymbolNextTokenProbe } from "./predicats";
-import { IfNode, ImportSepcifier, JsImportNode, JsModuleNode, JsRawNode, JssScriptNode, MultiNode, Node, NodeType, VarDeclaraionNode } from "./syntaxTree";
+import { AsyncFunctionEpressionNode, AsyncGeneratorEpressionNode, BlockType, ClassDeclarationNode, FunctionEpressionNode, GeneratorEpressionNode, IfNode, ImportSepcifier, JsImportNode, JsModuleNode, JsRawNode, JssScriptNode, MultiNode, Node, NodeType, VarDeclaraionNode, VarStatementNode } from "./syntaxTree";
 import { NextToken } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
 import { peekAndSkipSpaces, peekNextToken, peekNoLineTerminatorHere } from "./tokenStreamReader";
 import { NeverVoid } from "./types";
 
+//TODO turn into a decorator
 function returnRawNode(stream : TokenStream) : JsRawNode {
     const source = rawValue(stream);
     return {
@@ -19,14 +21,15 @@ function returnRawNode(stream : TokenStream) : JsRawNode {
     };
 }
 
-export function functionExpression(stream: TokenStream) : Node {
+export function functionExpression(stream: TokenStream) : FunctionEpressionNode {
     keyword(Keywords._function)(stream);
-    optional(identifier)(stream);
+    const name = optional(identifier)(stream);
     roundBracket(stream);
     anyBlock(stream);
 
     return {
-        type: NodeType.FunctionExpression
+        type: NodeType.FunctionExpression,
+        name,
     };
 }
 functionExpression.probe = makeIsKeywordNextTokenProbe(Keywords._function);
@@ -162,10 +165,15 @@ function classHeritage(stream: TokenStream) : void {
     leftHandSideExpression(stream);
 }
 
-function classDeclaration(stream : TokenStream) : void {
+function classDeclaration(stream : TokenStream) : ClassDeclarationNode {
     keyword(Keywords._class)(stream);
-    optional(bindingIdentifier)(stream);
+    const name = optional(bindingIdentifier)(stream);
     classTail(stream);
+
+    return {
+        type: NodeType.ClassDeclaration,
+        name,
+    };
 }
 classDeclaration.probe = makeIsKeywordNextTokenProbe(Keywords._class);
 
@@ -248,16 +256,29 @@ function literal(stream : TokenStream) : void {
     )(stream);
 }
 
-function generatorExpression(stream : TokenStream) : any[] {
-    return sequence(keyword(Keywords._function), symbol(Symbols.astersik), identifier, roundBracket, anyBlock)(stream);
+function generatorExpression(stream : TokenStream) : GeneratorEpressionNode {
+    const [,,name] = sequence(keyword(Keywords._function), symbol(Symbols.astersik), optional(identifier), roundBracket, anyBlock)(stream);
+
+    return {
+        type: NodeType.GeneratorExpression,
+        name,
+    };
 }
 
-function asyncFunctionExpression(stream : TokenStream) : any[] {
-    return sequence(keyword(Keywords._async), keyword(Keywords._function), identifier, roundBracket, anyBlock)(stream);
+function asyncFunctionExpression(stream : TokenStream) : AsyncFunctionEpressionNode {
+    const [,,name] = sequence(keyword(Keywords._async), keyword(Keywords._function), optional(identifier), roundBracket, anyBlock)(stream);
+    return {
+        type: NodeType.AsyncFunctionExpression,
+        name,
+    };
 }
 
-function asyncGeneratorExpression(stream : TokenStream) : any[] {
-    return sequence(keyword(Keywords._async), keyword(Keywords._function), symbol(Symbols.dot), identifier, roundBracket, anyBlock)(stream);
+function asyncGeneratorExpression(stream : TokenStream) : AsyncGeneratorEpressionNode {
+    const [,,,name] = sequence(keyword(Keywords._async), keyword(Keywords._function), symbol(Symbols.dot), optional(identifier), roundBracket, anyBlock)(stream);
+    return {
+        type: NodeType.AsyncGeneratorExpression,
+        name,
+    };
 }
 
 function primaryExpression(stream: TokenStream) : void {
@@ -621,7 +642,7 @@ export function assignmentExpression(stream : TokenStream) : Node {
     )(stream);
 }
 
-export function parseJsVarStatement(stream: TokenStream) : MultiNode {
+export function parseJsVarStatement(stream: TokenStream) : VarStatementNode {
     firstOf(keyword(Keywords._var), keyword(Keywords._const), keyword(Keywords._let))(stream);
 
     const items = commaList(variableDeclaration)(stream);
@@ -826,11 +847,14 @@ export function parseJsStatement(stream : TokenStream) : JsRawNode {
         sequence(keyword(Keywords._debugger), symbol(Symbols.semicolon)),
     )(stream);
 
+    //TODO remove, the function shuld return void or some type. returnRawNode isn't required since it's called in statementItem
     return returnRawNode(stream);
 }
 
-function hoistableDeclaration(stream : TokenStream) : void {
-    firstOf(
+type HoistableDeclaration = FunctionEpressionNode | GeneratorEpressionNode
+    | AsyncFunctionEpressionNode | AsyncGeneratorEpressionNode;
+function hoistableDeclaration(stream : TokenStream) : HoistableDeclaration {
+    return firstOf(
         //NOTE I replaced declation by expression
         // FunctionDeclaration[?Yield, ?Await, ?Default]
         functionExpression,
@@ -843,8 +867,9 @@ function hoistableDeclaration(stream : TokenStream) : void {
     )(stream);
 }
 
-function declaration(stream : TokenStream) : JsRawNode {
-    firstOf(
+type Declaration = HoistableDeclaration | ClassDeclarationNode | VarDeclaraionNode;
+function declaration(stream : TokenStream) : Declaration {
+    return firstOf(
         // HoistableDeclaration[?Yield, ?Await, ~Default]
         hoistableDeclaration,
         // ClassDeclaration[?Yield, ?Await, ~Default]
@@ -852,15 +877,15 @@ function declaration(stream : TokenStream) : JsRawNode {
         // LexicalDeclaration[+In, ?Yield, ?Await]
         variableDeclaration,
     )(stream);
-
-    return returnRawNode(stream);
 }
 
 export function statementListItem(stream : TokenStream) : JsRawNode {
-    return firstOf(
+    firstOf(
         parseJsStatement,
         declaration,
     )(stream);
+
+    return returnRawNode(stream);
 }
 
 // Script
@@ -995,39 +1020,97 @@ export function importDeclaration(stream : TokenStream) : JsImportNode {
 }
 importDeclaration.probe = makeIsKeywordNextTokenProbe(Keywords._import);
 
-function exportFromClause(stream : TokenStream) : void {
-    firstOf(
+function exportFromClause(stream : TokenStream) : FromClause {
+    return firstOf(
         // *
         // * as IdentifierName
-        sequence(
-            symbol(Symbols.astersik),
-            optional(
-                sequence(
-                    keyword(Keywords._as),
-                    identifierName,
+        map(
+            sequence(
+                symbol(Symbols.astersik),
+                optional(
+                    sequence(
+                        keyword(Keywords._as),
+                        identifierName,
+                    )
                 )
-            )
+            ),
+            ([, optIdent]) => {
+                if (optIdent) {
+                    const [, name] = optIdent;
+                    return name;
+                } else {
+                    return '*';
+                }
+            }
         ),
         // NamedExports
-        anyBlock,
+        namedExports,
     )(stream);
+}
+
+function exportSpecifier(stream : TokenStream) : ExportSpecifier {
+    return map(sequence(identifierName, optional(
+        sequence(keyword(Keywords._as), identifierName),
+    )), function([ident1,opt]) : ExportSpecifier {
+        if (opt) {
+            const [, ident2] = opt;
+            return new ExportSpecifier(ident1, ident2);
+        } else {
+            return new ExportSpecifier(ident1);
+        }
+    })(stream);
+}
+
+function namedExports(stream : TokenStream) : NamedExports {
+    // { }
+    // { ExportsList }
+    // { ExportsList , }
+    return lazyBlock(TokenType.LazyBlock, function(stream : TokenStream) : NamedExports {
+
+        // ExportSpecifier
+        // ExportsList , ExportSpecifier
+        const result = commaList(exportSpecifier, true)(stream);
+        if (result.length > 0) {
+            optional(comma)(stream);
+        }
+
+        if (!stream.eof()) {
+            optional(ignoreSpacesAndComments)(stream);
+        }
+
+        return result;
+    })(stream).parse().items;
 }
 
 function exportDeclaration(stream : TokenStream) : JsRawNode {
     keyword(Keywords._export)(stream);
     firstOf(
         // export ExportFromClause FromClause ;
-        sequence(exportFromClause, keyword(Keywords._from), anyString, symbol(Symbols.semicolon)),
+        map(
+            sequence(exportFromClause, keyword(Keywords._from), anyString, symbol(Symbols.semicolon)),
+            ([clauseToken,,pathToken]) => {
+                return new ExportFromClause(clauseToken, pathToken);
+            }
+        ),
         // export NamedExports ;
-        sequence(anyBlock, symbol(Symbols.semicolon)),
+        map(
+            sequence(namedExports, symbol(Symbols.semicolon)),
+            ([items,]) => items
+        ),
         // export VariableStatement[~Yield, ~Await]
         parseJsVarStatement,
         // export Declaration[~Yield, ~Await]
         declaration,
         // export default HoistableDeclaration[~Yield, ~Await, +Default]
-        sequence(keyword(Keywords._default), hoistableDeclaration),
+        map(
+            sequence(keyword(Keywords._default), hoistableDeclaration),
+            ([, value]) => value,
+        ),
         // export default ClassDeclaration[~Yield, ~Await, +Default]
-        sequence(keyword(Keywords._default), classDeclaration),
+        map(
+            sequence(keyword(Keywords._default), classDeclaration),
+            ([, value]) => value,
+        ),
         // export default [lookahead ∉ { function, async [no LineTerminator here] function, class }] AssignmentExpression[+In, ~Yield, ~Await] ;
         sequence(
             keyword(Keywords._default),

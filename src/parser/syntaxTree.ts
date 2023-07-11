@@ -18,12 +18,16 @@ export enum NodeType {
     Raw,
     VarDeclaration,
     VarStatement,
+    ClassDeclaration,
     JsStatement,
     CssBlock,
     CssImport,
     CssRaw,
     JsScript,
     FunctionExpression,
+    GeneratorExpression,
+    AsyncGeneratorExpression,
+    AsyncFunctionExpression,
     IfStatement,
     ExpressionStatement,
     Expression,
@@ -104,6 +108,11 @@ export interface VarDeclaraionNode extends Node {
     value?: Node,
 }
 
+export interface VarStatementNode extends MultiNode {
+    readonly type: NodeType.VarStatement,
+    readonly items: VarDeclaraionNode[],
+}
+
 export interface MultiNode extends Node {
     items: Node[];
 }
@@ -181,7 +190,7 @@ export interface JsRawNode extends Node, SourceMappedNode {
 
 export interface JsExportNode extends Node {
     readonly type: NodeType.ExportDeclaration,
-    readonly child: JsRawNode;
+    readonly value: JsRawNode;
 }
 
 export interface CssMediaNode extends Node, SourceMappedNode {
@@ -265,4 +274,29 @@ export interface ErrorNode extends Node, SourceMappedNode {
     readonly errorMessage: string,
     readonly exception: Error,
     readonly parserName: string,
+}
+
+export interface ClassDeclarationNode extends Node {
+    readonly type: NodeType.ClassDeclaration,
+    readonly name? : string;
+}
+
+export interface FunctionEpressionNode extends Node {
+    readonly type: NodeType.FunctionExpression;
+    readonly name? : string;
+}
+
+export interface AsyncFunctionEpressionNode extends Node {
+    readonly type: NodeType.AsyncFunctionExpression;
+    readonly name? : string;
+}
+
+export interface GeneratorEpressionNode extends Node {
+    readonly type: NodeType.GeneratorExpression;
+    readonly name? : string;
+}
+
+export interface AsyncGeneratorEpressionNode extends Node {
+    readonly type: NodeType.AsyncGeneratorExpression;
+    readonly name? : string;
 }
