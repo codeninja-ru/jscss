@@ -3,23 +3,13 @@ import { AssignmentOperator, Symbols } from "symbols";
 import { LiteralToken, TokenType } from "token";
 import { ExportFromClause, ExportSpecifier, FromClause, NamedExports } from "./exportsNodes";
 import { ParserError, UnexpectedEndError } from "./parserError";
-import { anyBlock, anyLiteral, anyString, anyTempateStringLiteral, block, comma, commaList, firstOf, ignoreSpacesAndComments, keyword, lazyBlock, leftHandRecurciveRule, longestOf, map, multiSymbol, noLineTerminatorHere, notAllowed, oneOfSymbols, optional, optionalRaw, rawValue, regexpLiteral, repeat, returnRawValue, returnValueWithPosition, roundBracket, sequence, squareBracket, strictLoop, symbol, ValueWithPosition } from "./parserUtils";
+import { anyBlock, anyLiteral, anyString, anyTempateStringLiteral, block, comma, commaList, firstOf, ignoreSpacesAndComments, keyword, lazyBlock, leftHandRecurciveRule, longestOf, map, multiSymbol, noLineTerminatorHere, notAllowed, oneOfSymbols, optional, optionalRaw, regexpLiteral, repeat, returnRawNode, returnValueWithPosition, roundBracket, sequence, squareBracket, strictLoop, symbol, ValueWithPosition } from "./parserUtils";
 import { isLiteralNextToken, literalToString, makeIsKeywordNextTokenProbe, makeIsSymbolNextTokenProbe } from "./predicats";
-import { AsyncFunctionEpressionNode, AsyncGeneratorEpressionNode, BlockType, ClassDeclarationNode, FunctionEpressionNode, GeneratorEpressionNode, IfNode, ImportSepcifier, JsImportNode, JsModuleNode, JsRawNode, JssScriptNode, MultiNode, Node, NodeType, VarDeclaraionNode, VarStatementNode } from "./syntaxTree";
+import { AsyncFunctionEpressionNode, AsyncGeneratorEpressionNode, ClassDeclarationNode, FunctionEpressionNode, GeneratorEpressionNode, IfNode, ImportSepcifier, JsImportNode, JsModuleNode, JsRawNode, JssScriptNode, MultiNode, Node, NodeType, VarDeclaraionNode, VarStatementNode } from "./syntaxTree";
 import { NextToken } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
 import { peekAndSkipSpaces, peekNextToken, peekNoLineTerminatorHere } from "./tokenStreamReader";
 import { NeverVoid } from "./types";
-
-//TODO turn into a decorator
-function returnRawNode(stream : TokenStream) : JsRawNode {
-    const source = rawValue(stream);
-    return {
-        type: NodeType.Raw,
-        value: source.value,
-        position: source.position,
-    };
-}
 
 export function functionExpression(stream: TokenStream) : FunctionEpressionNode {
     keyword(Keywords._function)(stream);
@@ -686,11 +676,11 @@ export function expressionStatement(stream : TokenStream) : Node {
 function ifStatement(stream : TokenStream) : IfNode {
     keyword(Keywords._if)(stream);
     const cond = roundBracket(stream);
-    const left = parseJsStatement(stream);
+    const left = returnRawNode(parseJsStatement)(stream);
     const hasElse = optional(keyword(Keywords._else))(stream);
     let right;
     if (hasElse) {
-        right = parseJsStatement(stream);
+        right = returnRawNode(parseJsStatement)(stream);
     }
 
     return {
@@ -815,7 +805,7 @@ function tryStatement(stream : TokenStream) : void {
 }
 tryStatement.probe = makeIsKeywordNextTokenProbe(Keywords._try);
 
-export function parseJsStatement(stream : TokenStream) : JsRawNode {
+export function parseJsStatement(stream : TokenStream) : void {
     longestOf(
         // BlockStatement[?Yield, ?Await, ?Return]
         anyBlock,
@@ -846,9 +836,6 @@ export function parseJsStatement(stream : TokenStream) : JsRawNode {
         // DebuggerStatement
         sequence(keyword(Keywords._debugger), symbol(Symbols.semicolon)),
     )(stream);
-
-    //TODO remove, the function shuld return void or some type. returnRawNode isn't required since it's called in statementItem
-    return returnRawNode(stream);
 }
 
 type HoistableDeclaration = FunctionEpressionNode | GeneratorEpressionNode
@@ -880,12 +867,12 @@ function declaration(stream : TokenStream) : Declaration {
 }
 
 export function statementListItem(stream : TokenStream) : JsRawNode {
-    firstOf(
-        parseJsStatement,
-        declaration,
+    return returnRawNode(
+        firstOf(
+            parseJsStatement,
+            declaration,
+        )
     )(stream);
-
-    return returnRawNode(stream);
 }
 
 // Script
@@ -1082,7 +1069,7 @@ function namedExports(stream : TokenStream) : NamedExports {
     })(stream).parse().items;
 }
 
-function exportDeclaration(stream : TokenStream) : JsRawNode {
+function exportDeclaration(stream : TokenStream) : void {
     keyword(Keywords._export)(stream);
     firstOf(
         // export ExportFromClause FromClause ;
@@ -1112,19 +1099,20 @@ function exportDeclaration(stream : TokenStream) : JsRawNode {
             ([, value]) => value,
         ),
         // export default [lookahead ∉ { function, async [no LineTerminator here] function, class }] AssignmentExpression[+In, ~Yield, ~Await] ;
-        sequence(
-            keyword(Keywords._default),
-            notAllowed([
-                keyword(Keywords._function),
-                sequence(keyword(Keywords._async), keyword(Keywords._function, peekNoLineTerminatorHere)),
-                keyword(Keywords._class),
-            ], 'export declaration cannot be started with...'),
-            assignmentExpression,
-            symbol(Symbols.semicolon)
+        map(
+            sequence(
+                keyword(Keywords._default),
+                notAllowed([
+                    keyword(Keywords._function),
+                    sequence(keyword(Keywords._async), keyword(Keywords._function, peekNoLineTerminatorHere)),
+                    keyword(Keywords._class),
+                ], 'export declaration cannot be started with...'),
+                assignmentExpression,
+                symbol(Symbols.semicolon)
+            ),
+            ([,,value]) => value,
         )
     )(stream);
-
-    return returnRawNode(stream);
 }
 exportDeclaration.probe = makeIsKeywordNextTokenProbe(Keywords._export);
 
@@ -1133,7 +1121,9 @@ export function moduleItem(stream : TokenStream) : JsRawNode | JsImportNode {
         // ImportDeclaration
         importDeclaration,
         // ExportDeclaration
-        exportDeclaration,
+        returnRawNode(
+            exportDeclaration,
+        ),
         // StatementListItem
         statementListItem,
     )(stream);

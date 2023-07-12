@@ -7,7 +7,7 @@ import { ExtractType, isToken, LiteralToken, OneOfBlockToken, SpaceToken, Square
 import { BlockParserError, EmptyStreamError, LexerError, ParserError, SequenceError, UnexpectedEndError } from "./parserError";
 import { isRoundBracketNextToken, isStringNextToken, isSymbolNextToken } from "./predicats";
 import { LeftTrimSourceFragment, SourceFragment } from "./sourceFragment";
-import { BlockNode, BlockType, IgnoreNode, LazyNode, NodeType } from "./syntaxTree";
+import { BlockNode, BlockType, IgnoreNode, JsRawNode, LazyNode, NodeType } from "./syntaxTree";
 import { NextNotSpaceToken, NextToken, ParsedSourceWithPosition, ProbeFn, TokenParser, TokenParserArrayWithPosition } from "./tokenParser";
 import { ArrayTokenStream, FlushableTokenStream, LookAheadTokenStream, TokenStream } from "./tokenStream";
 import { isSpaceOrComment, peekAndSkipSpaces, peekNextToken, TokenStreamReader } from "./tokenStreamReader";
@@ -981,4 +981,17 @@ export function skip(parser : TokenParser) : TokenParser {
 export function probe(parser : TokenParser, probeFn?: ProbeFn) : TokenParser {
     parser.probe = probeFn;
     return parser;
+}
+
+export function returnRawNode(parser : TokenParser<any>) : TokenParser<JsRawNode> {
+    return probe(function(stream : TokenStream) : JsRawNode {
+        parser(stream);
+        const source = rawValue(stream);
+        return {
+            type: NodeType.Raw,
+            value: source.value,
+            position: source.position,
+        };
+
+    }, parser.probe);
 }

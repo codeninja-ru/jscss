@@ -2,6 +2,7 @@ import { jssLexer } from "lexer/jssLexer";
 import { StringInputStream } from "stream/input";
 import { Position } from "stream/position";
 import { importDeclaration, parseJsModule, parseJsScript, parseJsStatement, parseJsVarStatement } from "./parser";
+import { returnRawNode } from "./parserUtils";
 import { Node, NodeType } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { ArrayTokenStream, LookAheadTokenStream } from "./tokenStream";
@@ -90,14 +91,14 @@ for (var i = 0; i < 10; i++) {
 }`;
         const tokens = jssLexer(new StringInputStream(script))
         const stream = new LookAheadTokenStream(new ArrayTokenStream(tokens));
-        const node = parseJsStatement(stream);
+        const node = returnRawNode(parseJsStatement)(stream);
         expect(stream.sourceFragment().value).toEqual(script);
         expect(node).toEqual({"type": NodeType.Raw, value: script, position: {line: 1, col: 1}});
     });
 
     it('console.log()', () => {
         const script = `console.log(1)`;
-        const node = testParserFunction(parseJsStatement, script);
+        const node = testParserFunction(returnRawNode(parseJsStatement), script);
         expect(node).toEqual({type: NodeType.Raw, value: script, position: {line: 1, col: 1}});
     });
 });
