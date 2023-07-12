@@ -5,7 +5,7 @@ import { ExportFromClause, ExportSpecifier, FromClause, NamedExports } from "./e
 import { ParserError, UnexpectedEndError } from "./parserError";
 import { anyBlock, anyLiteral, anyString, anyTempateStringLiteral, block, comma, commaList, firstOf, ignoreSpacesAndComments, keyword, lazyBlock, leftHandRecurciveRule, longestOf, map, multiSymbol, noLineTerminatorHere, notAllowed, oneOfSymbols, optional, optionalRaw, regexpLiteral, repeat, returnRawNode, returnValueWithPosition, roundBracket, sequence, squareBracket, strictLoop, symbol, ValueWithPosition } from "./parserUtils";
 import { isLiteralNextToken, literalToString, makeIsKeywordNextTokenProbe, makeIsSymbolNextTokenProbe } from "./predicats";
-import { AsyncFunctionEpressionNode, AsyncGeneratorEpressionNode, ClassDeclarationNode, FunctionEpressionNode, GeneratorEpressionNode, IfNode, ImportSepcifier, JsImportNode, JsModuleNode, JsRawNode, JssScriptNode, MultiNode, Node, NodeType, VarDeclaraionNode, VarStatementNode } from "./syntaxTree";
+import { AsyncFunctionEpressionNode, AsyncGeneratorEpressionNode, ClassDeclarationNode, Declaration, ExportDeclarationNode, FunctionEpressionNode, GeneratorEpressionNode, HoistableDeclaration, IfNode, ImportSepcifier, ImportDeclarationNode, JsModuleNode, JsRawNode, JssScriptNode, NodeType, VarDeclaraionNode, VarStatementNode } from "./syntaxTree";
 import { NextToken } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
 import { peekAndSkipSpaces, peekNextToken, peekNoLineTerminatorHere } from "./tokenStreamReader";
@@ -609,8 +609,8 @@ function asyncArrowFunction(stream : TokenStream) : void {
     firstOf(anyBlock, assignmentExpression)(stream);
 }
 
-export function assignmentExpression(stream : TokenStream) : Node {
-    return longestOf(
+export function assignmentExpression(stream : TokenStream) : void {
+    longestOf(
         // ConditionalExpression[?In, ?Yield, ?Await]
         conditionalExpression,
         // [+Yield]YieldExpression[?In, ?Await]
@@ -644,18 +644,14 @@ export function parseJsVarStatement(stream: TokenStream) : VarStatementNode {
     }
 }
 
-export function expression(stream : TokenStream) : MultiNode {
+export function expression(stream : TokenStream) : void {
     // Expression :
     // AssignmentExpression[?In, ?Yield, ?Await]
     // Expression[?In, ?Yield, ?Await] , AssignmentExpression[?In, ?Yield, ?Await]
-
-    return {
-        type: NodeType.Expression,
-        items: commaList(assignmentExpression)(stream)
-    };
+    commaList(assignmentExpression)(stream);
 }
 
-export function expressionStatement(stream : TokenStream) : Node {
+export function expressionStatement(stream : TokenStream) : void {
     //[lookahead ∉ { {, function, async [no LineTerminator here] function, class, let [ }] Expression[+In, ?Yield, ?Await] ;
     notAllowed([
         anyBlock,
@@ -665,12 +661,10 @@ export function expressionStatement(stream : TokenStream) : Node {
         keyword(Keywords._let),
     ], 'expression cannot be started with...')(stream);
 
-    const expr = expression(stream);
+    expression(stream);
 
     // NOTE here it's optional, but in the spec it's mandatory
     optional(symbol(Symbols.semicolon))(stream);
-
-    return expr;
 }
 
 function ifStatement(stream : TokenStream) : IfNode {
@@ -838,8 +832,6 @@ export function parseJsStatement(stream : TokenStream) : void {
     )(stream);
 }
 
-type HoistableDeclaration = FunctionEpressionNode | GeneratorEpressionNode
-    | AsyncFunctionEpressionNode | AsyncGeneratorEpressionNode;
 function hoistableDeclaration(stream : TokenStream) : HoistableDeclaration {
     return firstOf(
         //NOTE I replaced declation by expression
@@ -854,7 +846,6 @@ function hoistableDeclaration(stream : TokenStream) : HoistableDeclaration {
     )(stream);
 }
 
-type Declaration = HoistableDeclaration | ClassDeclarationNode | VarDeclaraionNode;
 function declaration(stream : TokenStream) : Declaration {
     return firstOf(
         // HoistableDeclaration[?Yield, ?Await, ~Default]
@@ -990,7 +981,7 @@ function importClause(stream : TokenStream) : ImportSepcifier[] {
     return clause;
 }
 
-export function importDeclaration(stream : TokenStream) : JsImportNode {
+export function importDeclaration(stream : TokenStream) : ImportDeclarationNode {
     keyword(Keywords._import)(stream);
 
     const clause = optional(importClause)(stream);
@@ -999,7 +990,7 @@ export function importDeclaration(stream : TokenStream) : JsImportNode {
     optional(symbol(Symbols.semicolon))(stream);
 
     return {
-        type: NodeType.JsImport,
+        type: NodeType.ImportDeclaration,
         path: fromString.value,
         pathPos: fromString.position,
         vars: clause ? clause : [],
@@ -1065,13 +1056,13 @@ function namedExports(stream : TokenStream) : NamedExports {
             optional(ignoreSpacesAndComments)(stream);
         }
 
-        return result;
+        return new NamedExports(result);
     })(stream).parse().items;
 }
 
-function exportDeclaration(stream : TokenStream) : void {
+function exportDeclaration(stream : TokenStream) : ExportDeclarationNode {
     keyword(Keywords._export)(stream);
-    firstOf(
+    const value = firstOf(
         // export ExportFromClause FromClause ;
         map(
             sequence(exportFromClause, keyword(Keywords._from), anyString, symbol(Symbols.semicolon)),
@@ -1107,23 +1098,28 @@ function exportDeclaration(stream : TokenStream) : void {
                     sequence(keyword(Keywords._async), keyword(Keywords._function, peekNoLineTerminatorHere)),
                     keyword(Keywords._class),
                 ], 'export declaration cannot be started with...'),
-                assignmentExpression,
+                returnRawNode(
+                    assignmentExpression,
+                ),
                 symbol(Symbols.semicolon)
             ),
             ([,,value]) => value,
         )
     )(stream);
+
+    return {
+        type: NodeType.ExportDeclaration,
+        value,
+    };
 }
 exportDeclaration.probe = makeIsKeywordNextTokenProbe(Keywords._export);
 
-export function moduleItem(stream : TokenStream) : JsRawNode | JsImportNode {
+export function moduleItem(stream : TokenStream) : JsRawNode | ImportDeclarationNode | ExportDeclarationNode {
     return firstOf(
         // ImportDeclaration
         importDeclaration,
         // ExportDeclaration
-        returnRawNode(
-            exportDeclaration,
-        ),
+        exportDeclaration,
         // StatementListItem
         statementListItem,
     )(stream);

@@ -1,5 +1,6 @@
 import { Position } from "stream/position";
 import { SquareBracketsToken } from "token";
+import { ExportFromClause, NamedExports } from "./exportsNodes";
 import { ValueWithPosition } from "./parserUtils";
 
 export type SyntaxTree = JssNode[];
@@ -8,12 +9,11 @@ export type JssNode = IgnoreNode | JsRawNode |
     JssBlockNode | CssImportNode | JssSelectorNode |
     CommentNode | JssVarDeclarationNode | CssCharsetNode | JssAtRuleNode |
     JssSupportsNode | FontFaceNode | CssRawNode | JssPageNode |
-    JsImportNode | JssDeclarationNode;
+    ImportDeclarationNode | JssDeclarationNode | ExportDeclarationNode;
 
 export enum NodeType {
     Error,
 
-    JsImport,
     Comment,
     Raw,
     VarDeclaration,
@@ -30,10 +30,11 @@ export enum NodeType {
     AsyncFunctionExpression,
     IfStatement,
     ExpressionStatement,
-    Expression,
     JsModule,
     ImportDeclaration,
     ExportDeclaration,
+    ExportFromClause,
+    NamedExports,
 
     Lazy,
     Block,
@@ -90,8 +91,8 @@ export interface ImportSepcifier {
 }
 
 // import defaultVar as asName, { var1 as asName1, var2 as asName2 } from 'path';
-export interface JsImportNode extends Node {
-    type: NodeType.JsImport;
+export interface ImportDeclarationNode extends Node {
+    type: NodeType.ImportDeclaration;
     readonly path: string;
     readonly pathPos: Position;
     readonly vars: ImportSepcifier[];
@@ -186,11 +187,6 @@ export interface SourceMappedNode {
 export interface JsRawNode extends Node, SourceMappedNode {
     readonly type: NodeType.Raw,
     readonly value: string;
-}
-
-export interface JsExportNode extends Node {
-    readonly type: NodeType.ExportDeclaration,
-    readonly value: JsRawNode;
 }
 
 export interface CssMediaNode extends Node, SourceMappedNode {
@@ -299,4 +295,16 @@ export interface GeneratorEpressionNode extends Node {
 export interface AsyncGeneratorEpressionNode extends Node {
     readonly type: NodeType.AsyncGeneratorExpression;
     readonly name? : string;
+}
+
+export type HoistableDeclaration = FunctionEpressionNode | GeneratorEpressionNode
+    | AsyncFunctionEpressionNode | AsyncGeneratorEpressionNode;
+export type ExportDeclaration = ExportFromClause | NamedExports | VarStatementNode
+    | Declaration | HoistableDeclaration | ClassDeclarationNode | JsRawNode;
+export type Declaration = HoistableDeclaration | ClassDeclarationNode
+    | VarDeclaraionNode;
+
+export interface ExportDeclarationNode extends Node {
+    readonly type: NodeType.ExportDeclaration,
+    readonly value: ExportDeclaration;
 }

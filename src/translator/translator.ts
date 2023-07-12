@@ -1,7 +1,10 @@
+import { ExportSpecifier, NamedExports } from 'parser/exportsNodes';
 import { ValueWithPosition } from 'parser/parserUtils';
-import { CssDeclarationNode, CssImportNode, CssRawNode, FontFaceNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssAtRuleNode, JssNode, JssSelectorNode, JssSpreadNode, JssSupportsNode, JssVarDeclarationNode, NodeType, SyntaxTree, JssPageNode, JsImportNode, ImportSepcifier } from 'parser/syntaxTree';
+import { isLiteralToken } from 'parser/predicats';
+import { CssDeclarationNode, CssImportNode, CssRawNode, ExportDeclarationNode, FontFaceNode, ImportDeclarationNode, ImportSepcifier, JssAtRuleNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssNode, JssPageNode, JssSelectorNode, JssSpreadNode, JssSupportsNode, JssVarDeclarationNode, NodeType, SyntaxTree } from 'parser/syntaxTree';
 import { SourceMapGenerator, SourceNode } from 'source-map';
 import { Position } from 'stream/position';
+import { LiteralToken } from 'token';
 import { SourceMappingUrl } from './sourceMappingUrl';
 
 const STYLES_VAR_NAME = '_styles';
@@ -285,7 +288,55 @@ function importSpecifier2jsonPair(node : ImportSepcifier,
         return makeValue(node.name, fileName);
     }
 }
-function esImport2Js(node : JsImportNode,
+
+function node2escapedSourceNode(node : LiteralToken,
+                               fileName : string) : SourceNode {
+    return makeSourceNode(node.position, fileName, quoteEscape(node.value));
+}
+
+function exportSpecifiers2js(nodes : ExportSpecifier[],
+                            fileName : string) : SourceNode {
+    const result = makeNullSourceNode('{');
+
+    const items = nodes.map((item) => {
+        if (item.asName) {
+            return tag`'${node2escapedSourceNode(item.name, fileName)}':'${node2escapedSourceNode(item.asName, fileName)}'`;
+        } else {
+            return tag`'${node2escapedSourceNode(item.name, fileName)}':'${node2escapedSourceNode(item.name, fileName)}'`;
+        }
+    });
+
+    result.add(makeNullSourceNode(items).join(', '));
+
+    result.add('}');
+
+    return result;
+}
+
+function esExport2Js(node : ExportDeclarationNode,
+                     fileName : string) : SourceNode {
+    const value = node.value;
+    switch(value.type) {
+        case NodeType.ExportFromClause:
+            const path = makeSourceNode(value.path.position,
+                                        fileName,
+                                        value.path.value);
+            if (value.clause == '*') {
+                return tag`_export_star(exports, require(${path}));\n`
+            } else if (value.clause instanceof NamedExports) {
+                value.clause.value;
+                return tag`_export_named_export(exports, ${exportSpecifiers2js(value.clause.value, fileName)}, require(${path}));\n`;
+            } else if (isLiteralToken(value.clause)) {
+                return tag`_export_named_export(exports, ${exportSpecifiers2js([new ExportSpecifier(value.clause)], fileName)}, require(${path}));\n`;
+            } else {
+                throw new Error(`unsported expertClause ${value}`);
+            }
+        default:
+            throw new Error(`export declaration number ${node.type} is not supported`);
+    }
+}
+
+function esImport2Js(node : ImportDeclarationNode,
                      fileName : string) : SourceNode {
     const path = makeSourceNode(node.pathPos, fileName, node.path);
     if (node.vars.length == 0) {
@@ -324,7 +375,8 @@ function esImport2Js(node : JsImportNode,
 
 }
 
-function translateNode(node : JssNode, fileName : string) : SourceNode {
+function translateNode(node : JssNode,
+                       fileName : string) : SourceNode {
     switch(node.type) {
         case NodeType.Ignore:
             return new SourceNode();
@@ -356,8 +408,10 @@ function translateNode(node : JssNode, fileName : string) : SourceNode {
             return tag`${STYLES_VAR_NAME}.insertBlock(${supports2js(node, fileName)});\n`;
         case NodeType.JssPage:
             return tag`${STYLES_VAR_NAME}.insertBlock(${page2js(node, fileName)});\n`;
-        case NodeType.JsImport:
+        case NodeType.ImportDeclaration:
             return esImport2Js(node, fileName);
+        case NodeType.ExportDeclaration:
+            return esExport2Js(node, fileName);
         case NodeType.JssDeclaration:
         case NodeType.Comment:
         default:

@@ -65,6 +65,7 @@ export default function (program: ts.Program) {
                                 case 'strictLoop':
                                 case 'repeat':
                                 case 'repeat1':
+                                case 'returnRawNode':
                                 case 'map':
                                 case 'oneOfSymbols':
                                 case 'oneOfSimpleSymbols':
@@ -75,7 +76,6 @@ export default function (program: ts.Program) {
                                 case 'optionalRaw':
                                 case 'optionalVoid':
                                 case 'leftHandRecurciveRule':
-                                //case 'probe':
                                     return wrapFn(node, combinatorIdx++);
                                 default:
                                     break;

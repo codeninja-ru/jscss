@@ -34,7 +34,7 @@ describe('parseJssScript()', () => {
         expect(stream.sourceFragment().value).toEqual(SIMPLE);
         expect(stream.eof()).toBeTruthy();
         expect(node).toEqual([
-            {type: NodeType.JsImport, path: "'lodash'",
+            {type: NodeType.ImportDeclaration, path: "'lodash'",
              pathPos: new Position(1, 15),
              vars: [{name: {value: '*', position: new Position(1, 8)},
                      moduleExportName: {value: '_', position: new Position(1, 8)}}]},
@@ -309,7 +309,7 @@ function rgb(r,g,b) { return "#" + pad2(r.toString(16)) + pad2(g.toString(16)) +
     it('parses imports', () => {
         parseCode(`import { test } from 'reader/comment';
 import * as _ from '/reader/readers';`).toEqual([
-    {type: NodeType.JsImport,
+    {type: NodeType.ImportDeclaration,
      path: "'reader/comment'",
      pathPos: new Position(1, 22),
      vars: [{
@@ -317,7 +317,7 @@ import * as _ from '/reader/readers';`).toEqual([
          moduleExportName: undefined,
      }]},
     {type: NodeType.Ignore, items: expect.anything(),},
-    {type: NodeType.JsImport,
+    {type: NodeType.ImportDeclaration,
      path: "'/reader/readers'",
      pathPos: new Position(2, 20),
      vars: [{
