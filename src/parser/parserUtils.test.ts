@@ -93,6 +93,11 @@ describe('parserUtils', () => {
             }).toThrowError('(10:10) : list of elements is expected')
         });
 
+        it('ignores last comma', () => {
+            const tokens = jssLexer(new StringInputStream(`var, var , `))
+            const node = commaList(keyword(Keywords._var))(new ArrayTokenStream(tokens));
+            expect(node.map((item : LiteralToken) => item.value)).toEqual(['var', 'var']);
+        });
     });
 
     describe('firstOf()', () => {

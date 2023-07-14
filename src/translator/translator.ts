@@ -313,6 +313,26 @@ function exportSpecifiers2js(nodes : ExportSpecifier[],
     return result;
 }
 
+function exportSpecifiers2jsGetters(nodes : ExportSpecifier[],
+                                    fileName : string) : SourceNode {
+
+    const result = makeNullSourceNode('{');
+
+    const items = nodes.map((item) => {
+        if (item.asName) {
+            return tag`'${node2escapedSourceNode(item.asName, fileName)}':function() { return ${node2escapedSourceNode(item.name, fileName)}; }`;
+        } else {
+            return tag`'${node2escapedSourceNode(item.name, fileName)}':function() { return ${node2escapedSourceNode(item.name, fileName)}; }`;
+        }
+    });
+
+    result.add(makeNullSourceNode(items).join(', '));
+
+    result.add('}');
+
+    return result;
+}
+
 function esExport2Js(node : ExportDeclarationNode,
                      fileName : string) : SourceNode {
     const value = node.value;
@@ -324,13 +344,19 @@ function esExport2Js(node : ExportDeclarationNode,
             if (value.clause == '*') {
                 return tag`_export_star(exports, require(${path}));\n`
             } else if (value.clause instanceof NamedExports) {
-                value.clause.value;
                 return tag`_export_named_export(exports, ${exportSpecifiers2js(value.clause.value, fileName)}, require(${path}));\n`;
             } else if (isLiteralToken(value.clause)) {
                 return tag`_export_named_export(exports, ${exportSpecifiers2js([new ExportSpecifier(value.clause)], fileName)}, require(${path}));\n`;
             } else {
                 throw new Error(`unsported expertClause ${value}`);
             }
+        case NodeType.NamedExports:
+            return tag`_export(exports, ${exportSpecifiers2jsGetters(value.value, fileName)});\n`;
+        case NodeType.VarStatement:
+            const varNames = value
+                    .items
+                    .map((item) => new ExportSpecifier(item.name));
+            return tag`${value.rawValue ? value.rawValue : ''}\n_export(exports, ${exportSpecifiers2jsGetters(varNames, fileName)});\n`;
         default:
             throw new Error(`export declaration number ${node.type} is not supported`);
     }

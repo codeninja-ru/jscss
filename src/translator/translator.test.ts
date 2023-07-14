@@ -524,24 +524,30 @@ ${EXPECTED_FOOTER}`);
         });
 
         it('translates named exports', () => {
-            expect(translateToJs(`export { y, y1 as y2 };`).value)
-                .toEqual(`_export(exports, { y: function() { return y; }, y2: function() { return y1; }})`);
+            expect(codeWithoutSourceMap(translateToJs(`export { y, y1 as y2 };`)))
+                .toEqual(`${EXPEXTED_HEADER}
+
+_export(exports, {'y':function() { return y; }, 'y2':function() { return y1; }});
+
+${EXPECTED_FOOTER}`);
         });
 
         it('translates variable exports', () => {
-            expect(translateToJs(`export var x;
+            expect(codeWithoutSourceMap(translateToJs(`export var x;
 export var x1 = 1;
-export var y1 = 1, y2 = y2;`).value)
-                .toEqual(`
+export var y1 = 1, y2 = y2;`)))
+                .toEqual(`${EXPEXTED_HEADER}
+
 var x;
-_export(exports, {'x': function() { return x; }});
+_export(exports, {'x':function() { return x; }});
 
 var x1 = 1;
-_export(exports, {'x1': function() { return x1; }});
+_export(exports, {'x1':function() { return x1; }});
 
 var y1 = 1, y2 = 2;
-_export(exports, {y1 : function() {return y1;}, y2: function() {return y2;}});
-`);
+_export(exports, {y1:function() {return y1;}, y2:function() { return y2; }});
+
+${EXPECTED_FOOTER}`);
         });
 
         it('translates declaration', () => {
@@ -549,6 +555,7 @@ _export(exports, {y1 : function() {return y1;}, y2: function() {return y2;}});
 export class C1 {}
 export const x1 = 1;
 export let {y1, y2} = func();
+export const {a1, aa3:a3, ...a2} = func();
 export let [z1, z2] = func();`).value)
                 .toEqual(`function f1() {}
 _export(exports, {'f1': function() { return f1; }});
@@ -558,6 +565,8 @@ const x1 = 1;
 _export(exports, {'x1': function() { return x1; }});
 let {y1, y2} = func();
 _export(exports, {y1 : function() {return y1;}, y2: function() {return y2;}});
+const {a1, aa3:a3, ...a2} = func();
+_export(exports, {a1 : function() {return a1;}, a2: function() {return a2;}});
 export let [z1, z2] = func();
 _export(exports, {z1 : function() {return z1;}, z2: function() {return z2;}});
 `);

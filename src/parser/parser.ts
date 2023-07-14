@@ -3,10 +3,10 @@ import { AssignmentOperator, Symbols } from "symbols";
 import { LiteralToken, TokenType } from "token";
 import { ExportFromClause, ExportSpecifier, FromClause, NamedExports } from "./exportsNodes";
 import { ParserError, UnexpectedEndError } from "./parserError";
-import { anyBlock, anyLiteral, anyString, anyTempateStringLiteral, block, comma, commaList, firstOf, ignoreSpacesAndComments, keyword, lazyBlock, leftHandRecurciveRule, longestOf, map, multiSymbol, noLineTerminatorHere, notAllowed, oneOfSymbols, optional, optionalRaw, regexpLiteral, repeat, returnRawNode, returnValueWithPosition, roundBracket, sequence, squareBracket, strictLoop, symbol, ValueWithPosition } from "./parserUtils";
+import { anyBlock, anyLiteral, anyString, anyTempateStringLiteral, block, comma, commaList, firstOf, ignoreSpacesAndComments, keyword, lazyBlock, LazyBlockParser, leftHandRecurciveRule, longestOf, map, multiSymbol, noLineTerminatorHere, notAllowed, oneOfSymbols, optional, optionalBool, optionalRaw, regexpLiteral, repeat, returnRawNode, returnValueWithPosition, roundBracket, sequence, sequenceVoid, squareBracket, strictLoop, symbol, ValueWithPosition } from "./parserUtils";
 import { isLiteralNextToken, literalToString, makeIsKeywordNextTokenProbe, makeIsSymbolNextTokenProbe } from "./predicats";
 import { AsyncFunctionEpressionNode, AsyncGeneratorEpressionNode, ClassDeclarationNode, Declaration, ExportDeclarationNode, FunctionEpressionNode, GeneratorEpressionNode, HoistableDeclaration, IfNode, ImportSepcifier, ImportDeclarationNode, JsModuleNode, JsRawNode, JssScriptNode, NodeType, VarDeclaraionNode, VarStatementNode } from "./syntaxTree";
-import { NextToken } from "./tokenParser";
+import { NextToken, TokenParser } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
 import { peekAndSkipSpaces, peekNextToken, peekNoLineTerminatorHere } from "./tokenStreamReader";
 import { NeverVoid } from "./types";
@@ -346,6 +346,7 @@ export function identifier(stream: TokenStream) : string {
     return bindingIdentifier.value;
 }
 
+// TODO return LiteralToken for soruceMap
 function bindingIdentifier(stream : TokenStream) : string {
     return firstOf(
         // Identifier
@@ -357,21 +358,111 @@ function bindingIdentifier(stream : TokenStream) : string {
     )(stream);
 }
 
+function bindingRestProperty(stream : TokenStream) : string {
+    // ... BindingIdentifier
+    multiSymbol(Symbols.dot3)(stream);
+    return bindingIdentifier(stream);
+}
+
+function initilizer(stream : TokenStream) : void {
+    // = AssignmentExpression
+    sequenceVoid(symbol(Symbols.eq), assignmentExpression)(stream);
+}
+initilizer.probe = makeIsSymbolNextTokenProbe(Symbols.eq);
+
+function singleNameBinding(stream : TokenStream) : void {
+    sequenceVoid(bindingIdentifier, optionalBool(
+        // Initializer[In, Yield, Await] :
+        initilizer,
+    ))(stream);
+}
+
+function bindingPattern(stream : TokenStream) : void {
+    firstOf(
+        // ObjectBindingPattern[?Yield, ?Await]
+        objectBindingPattern,
+        // ArrayBindingPattern[?Yield, ?Await]
+        arrayBindingPattern,
+    )(stream);
+}
+
+function bindingElement(stream : TokenStream) : void {
+    firstOf(
+        // SingleNameBinding[?Yield, ?Await]
+        singleNameBinding,
+        // BindingPattern[?Yield, ?Await] Initializer[+In, ?Yield, ?Await]opt
+        sequence(bindingPattern, initilizer),
+    )(stream);
+}
+
+function bindingProperty(stream : TokenStream) : void {
+    firstOf(
+        // SingleNameBinding[?Yield, ?Await]
+        singleNameBinding,
+        // PropertyName[?Yield, ?Await] : BindingElement[?Yield, ?Await]
+        sequence(propertyName, symbol(Symbols.colon), bindingElement),
+    )(stream);
+}
+
+function objectBindingPattern(stream : TokenStream) : LazyBlockParser<LiteralToken[]> {
+    return lazyBlock(TokenType.LazyBlock, function(stream : TokenStream) : LiteralToken[] {
+        // { }
+        // { BindingRestProperty[?Yield, ?Await] }
+        // { BindingPropertyList[?Yield, ?Await] }
+        // { BindingPropertyList[?Yield, ?Await] , BindingRestProperty[?Yield, ?Await]opt }
+        const names = [];
+        const props = commaList(bindingProperty, true)(stream);
+        const rest = optional(bindingRestProperty)(stream);
+        optional(anyString)(stream);
+        names.push(...props);
+        if (rest) {
+            names.push(...rest);
+        }
+
+        return names;
+    })(stream);
+}
+
+function bindingRestElement(stream : TokenStream) : void {
+    multiSymbol(Symbols.dot3);
+    firstOf(
+        // ... BindingIdentifier[?Yield, ?Await]
+        bindingIdentifier,
+        // ... BindingPattern[?Yield, ?Await]
+        bindingPattern,
+    )(stream);
+}
+bindingRestElement.probe = makeIsSymbolNextTokenProbe(Symbols.dot);
+
+
+function arrayBindingPattern(stream : TokenStream) : LazyBlockParser<void> {
+    return lazyBlock(TokenType.SquareBrackets, function(stream : TokenStream) : void {
+        commaList(firstOf(
+            elision,
+        ))(stream);
+
+        optionalBool(bindingRestElement)(stream);
+
+        firstOf(
+            //TODO
+            // [ Elisionopt BindingRestElement[?Yield, ?Await]opt ]
+            // [ BindingElementList[?Yield, ?Await] ]
+            // [ BindingElementList[?Yield, ?Await] , Elisionopt BindingRestElement[?Yield, ?Await]opt ]
+        )(stream);
+
+    })(stream);
+}
+
 function variableDeclaration(stream : TokenStream) : VarDeclaraionNode {
     const name = firstOf(
         // BindingIdentifier
         bindingIdentifier,
         // BindingPatten
-        squareBracket, //TODO we do not parse and do not validate the content yet
-        anyBlock, //TODO we do not parse and do not validate the content yet
+        bindingPattern,
     )(stream);
 
     // Initializer
-    const eq = optional(symbol(Symbols.eq))(stream);
-
-    if (eq) {
-       assignmentExpression(stream);
-    }
+    optionalBool(initilizer)(stream);
 
     return {
         type: NodeType.VarDeclaration,
