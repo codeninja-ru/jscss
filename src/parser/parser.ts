@@ -1,12 +1,12 @@
 import { Keywords, ReservedWords } from "keywords";
 import { AssignmentOperator, Symbols } from "symbols";
 import { LiteralToken, TokenType } from "token";
-import { ExportFromClause, ExportSpecifier, FromClause, NamedExports } from "./exportsNodes";
+import { ArrayBindingPattern, BindingPattern, BindingPatternType, ExportFromClause, ExportSpecifier, FromClause, NamedExports, ObjectBindingPattern } from "./exportsNodes";
 import { ParserError, UnexpectedEndError } from "./parserError";
-import { anyBlock, anyLiteral, anyString, anyTempateStringLiteral, block, comma, commaList, firstOf, ignoreSpacesAndComments, keyword, lazyBlock, LazyBlockParser, leftHandRecurciveRule, longestOf, map, multiSymbol, noLineTerminatorHere, notAllowed, oneOfSymbols, optional, optionalBool, optionalRaw, regexpLiteral, repeat, returnRawNode, returnValueWithPosition, roundBracket, sequence, sequenceVoid, squareBracket, strictLoop, symbol, ValueWithPosition } from "./parserUtils";
+import { anyBlock, anyLiteral, anySpace, anyString, anyTempateStringLiteral, block, comma, commaList, firstOf, ignoreSpacesAndComments, keyword, lazyBlock, leftHandRecurciveRule, longestOf, map, multiSymbol, noLineTerminatorHere, notAllowed, oneOfSymbols, optional, optionalBool, optionalRaw, regexpLiteral, repeat, returnRawNode, returnValueWithPosition, roundBracket, sequence, sequenceVoid, squareBracket, strictLoop, symbol, ValueWithPosition } from "./parserUtils";
 import { isLiteralNextToken, literalToString, makeIsKeywordNextTokenProbe, makeIsSymbolNextTokenProbe } from "./predicats";
-import { AsyncFunctionEpressionNode, AsyncGeneratorEpressionNode, ClassDeclarationNode, Declaration, ExportDeclarationNode, FunctionEpressionNode, GeneratorEpressionNode, HoistableDeclaration, IfNode, ImportSepcifier, ImportDeclarationNode, JsModuleNode, JsRawNode, JssScriptNode, NodeType, VarDeclaraionNode, VarStatementNode } from "./syntaxTree";
-import { NextToken, TokenParser } from "./tokenParser";
+import { AsyncFunctionEpressionNode, AsyncGeneratorEpressionNode, ClassDeclarationNode, Declaration, ExportDeclarationNode, FunctionEpressionNode, GeneratorEpressionNode, HoistableDeclaration, IfNode, ImportDeclarationNode, ImportSepcifier, JsModuleNode, JsRawNode, JssScriptNode, NodeType, VarDeclaraionNode, VarStatementNode } from "./syntaxTree";
+import { NextToken } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
 import { peekAndSkipSpaces, peekNextToken, peekNoLineTerminatorHere } from "./tokenStreamReader";
 import { NeverVoid } from "./types";
@@ -370,15 +370,17 @@ function initilizer(stream : TokenStream) : void {
 }
 initilizer.probe = makeIsSymbolNextTokenProbe(Symbols.eq);
 
-function singleNameBinding(stream : TokenStream) : void {
-    sequenceVoid(bindingIdentifier, optionalBool(
+function singleNameBinding(stream : TokenStream) : string {
+    const [name,] = sequence(bindingIdentifier, optionalBool(
         // Initializer[In, Yield, Await] :
         initilizer,
     ))(stream);
+
+    return name;
 }
 
-function bindingPattern(stream : TokenStream) : void {
-    firstOf(
+function bindingPattern(stream : TokenStream) : BindingPattern {
+    return firstOf(
         // ObjectBindingPattern[?Yield, ?Await]
         objectBindingPattern,
         // ArrayBindingPattern[?Yield, ?Await]
@@ -386,46 +388,58 @@ function bindingPattern(stream : TokenStream) : void {
     )(stream);
 }
 
-function bindingElement(stream : TokenStream) : void {
-    firstOf(
+function bindingElement(stream : TokenStream) : string | BindingPattern {
+    return firstOf(
         // SingleNameBinding[?Yield, ?Await]
         singleNameBinding,
         // BindingPattern[?Yield, ?Await] Initializer[+In, ?Yield, ?Await]opt
-        sequence(bindingPattern, initilizer),
+        map(
+            sequence(bindingPattern, initilizer),
+            ([pattern,]) => pattern
+        ),
     )(stream);
 }
 
-function bindingProperty(stream : TokenStream) : void {
-    firstOf(
+function bindingProperty(stream : TokenStream) : string | BindingPattern {
+    return firstOf(
         // SingleNameBinding[?Yield, ?Await]
         singleNameBinding,
         // PropertyName[?Yield, ?Await] : BindingElement[?Yield, ?Await]
-        sequence(propertyName, symbol(Symbols.colon), bindingElement),
+        map(
+            sequence(propertyName, symbol(Symbols.colon), bindingElement),
+            ([,,name]) => name,
+        ),
     )(stream);
 }
 
-function objectBindingPattern(stream : TokenStream) : LazyBlockParser<LiteralToken[]> {
-    return lazyBlock(TokenType.LazyBlock, function(stream : TokenStream) : LiteralToken[] {
+function objectBindingPattern(stream : TokenStream) : BindingPattern {
+    return new BindingPattern(BindingPatternType.ObjectBinding, lazyBlock(TokenType.LazyBlock, function(stream : TokenStream) : ObjectBindingPattern {
         // { }
         // { BindingRestProperty[?Yield, ?Await] }
         // { BindingPropertyList[?Yield, ?Await] }
         // { BindingPropertyList[?Yield, ?Await] , BindingRestProperty[?Yield, ?Await]opt }
-        const names = [];
         const props = commaList(bindingProperty, true)(stream);
-        const rest = optional(bindingRestProperty)(stream);
-        optional(anyString)(stream);
-        names.push(...props);
-        if (rest) {
-            names.push(...rest);
+        const restName = optional(function(stream : TokenStream) : string {
+            if (props.length > 0) {
+                comma(stream);
+            }
+
+            return bindingRestProperty(stream);
+        })(stream);
+
+        optional(anySpace)(stream);
+        const names = props;
+        if (restName) {
+            names.push(restName);
         }
 
-        return names;
-    })(stream);
+        return new ObjectBindingPattern(names);
+    })(stream));
 }
 
-function bindingRestElement(stream : TokenStream) : void {
+function bindingRestElement(stream : TokenStream) : string | BindingPattern {
     multiSymbol(Symbols.dot3);
-    firstOf(
+    return firstOf(
         // ... BindingIdentifier[?Yield, ?Await]
         bindingIdentifier,
         // ... BindingPattern[?Yield, ?Await]
@@ -434,23 +448,55 @@ function bindingRestElement(stream : TokenStream) : void {
 }
 bindingRestElement.probe = makeIsSymbolNextTokenProbe(Symbols.dot);
 
+function elision(stream : TokenStream) : void {
+    // ,
+    // Elision ,
+    var count = 0;
+    while (!stream.eof()) {
+        if (!optional(comma)(stream)) {
+            break;
+        }
+        count++;
+    }
 
-function arrayBindingPattern(stream : TokenStream) : LazyBlockParser<void> {
-    return lazyBlock(TokenType.SquareBrackets, function(stream : TokenStream) : void {
-        commaList(firstOf(
-            elision,
-        ))(stream);
+    if (count == 0) {
+        throw new ParserError('elision is expected', stream.peek());
+    }
+}
 
-        optionalBool(bindingRestElement)(stream);
 
-        firstOf(
-            //TODO
-            // [ Elisionopt BindingRestElement[?Yield, ?Await]opt ]
-            // [ BindingElementList[?Yield, ?Await] ]
-            // [ BindingElementList[?Yield, ?Await] , Elisionopt BindingRestElement[?Yield, ?Await]opt ]
-        )(stream);
+function bindingElisionElement(stream : TokenStream) : string | BindingPattern {
+    // Elisionopt BindingElement[?Yield, ?Await]
+    optionalBool(elision)(stream);
+    return bindingElement(stream);
+}
 
-    })(stream);
+
+function arrayBindingPattern(stream : TokenStream) : BindingPattern {
+    return new BindingPattern(BindingPatternType.ArrayBinding, lazyBlock(TokenType.SquareBrackets, function(stream : TokenStream) : ArrayBindingPattern {
+        // [ Elisionopt BindingRestElement[?Yield, ?Await]opt ]
+        // [ BindingElementList[?Yield, ?Await] ]
+        // [ BindingElementList[?Yield, ?Await] , Elisionopt BindingRestElement[?Yield, ?Await]opt ]
+        const props = commaList(bindingElisionElement, true)(stream);
+
+        const restName = optional(function(stream : TokenStream) : string | BindingPattern {
+            if (props.length > 0) {
+                comma(stream);
+            }
+
+            optionalBool(elision)(stream);
+
+            return bindingRestElement(stream);
+        })(stream);
+
+        optional(anySpace)(stream);
+        const names = props;
+        if (restName) {
+            names.push(restName);
+        }
+
+        return new ArrayBindingPattern(names);
+    })(stream));
 }
 
 function variableDeclaration(stream : TokenStream) : VarDeclaraionNode {
@@ -1151,7 +1197,7 @@ function namedExports(stream : TokenStream) : NamedExports {
     })(stream).parse().items;
 }
 
-function exportDeclaration(stream : TokenStream) : ExportDeclarationNode {
+export function exportDeclaration(stream : TokenStream) : ExportDeclarationNode {
     keyword(Keywords._export)(stream);
     const value = firstOf(
         // export ExportFromClause FromClause ;

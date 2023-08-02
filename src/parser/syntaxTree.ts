@@ -1,6 +1,5 @@
 import { Position } from "stream/position";
-import { SquareBracketsToken } from "token";
-import { ExportFromClause, NamedExports } from "./exportsNodes";
+import { BindingPattern, ExportFromClause, NamedExports } from "./exportsNodes";
 import { ValueWithPosition } from "./parserUtils";
 
 export type SyntaxTree = JssNode[];
@@ -105,8 +104,7 @@ export interface CommentNode extends Node {
 
 export interface VarDeclaraionNode extends Node {
     type: NodeType.VarDeclaration,
-    name: string | LazyNode | SquareBracketsToken,
-    value?: Node,
+    name: string | BindingPattern,
 }
 
 export interface VarStatementNode extends MultiNode {

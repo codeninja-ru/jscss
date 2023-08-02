@@ -1,13 +1,13 @@
 import { jssLexer } from "lexer/jssLexer";
 import { StringInputStream } from "stream/input";
 import { Position } from "stream/position";
-import { importDeclaration, parseJsModule, parseJsScript, parseJsStatement, parseJsVarStatement } from "./parser";
+import { exportDeclaration, importDeclaration, parseJsModule, parseJsScript, parseJsStatement, parseJsVarStatement } from "./parser";
 import { returnRawNode } from "./parserUtils";
-import { Node, NodeType } from "./syntaxTree";
+import { NodeType } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { ArrayTokenStream, LookAheadTokenStream } from "./tokenStream";
 
-function testParserFunction(fn : TokenParser , script : string) : Node {
+function testParserFunction<R>(fn : TokenParser<R>, script : string) : R {
     const tokens = jssLexer(new StringInputStream(script))
     const stream = new LookAheadTokenStream(new ArrayTokenStream(tokens));
     const node = fn(stream);
@@ -272,6 +272,13 @@ import {name1, name2} from "module";
 export function func() {};
 export const varName = name1;
 export default class {};`);
-
     });
+
+    it('parses an objectBinding in the lazy way', () => {
+        const node1 = testParserFunction(exportDeclaration, `export const {a1} = {a1:1};`);
+        expect(node1.type).toEqual(NodeType.ExportDeclaration);
+        expect(node1.value.type).toEqual(NodeType.VarDeclaration);
+        expect(node1.value).toEqual('todo');
+    });
+
 });

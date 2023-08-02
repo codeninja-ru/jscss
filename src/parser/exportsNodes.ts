@@ -1,4 +1,5 @@
 import { LiteralToken, StringToken } from "token";
+import { LazyBlockParser } from "./parserUtils";
 import { NodeType } from "./syntaxTree";
 
 type IdentifierName = LiteralToken;
@@ -31,4 +32,25 @@ export class NamedExports {
         return obj instanceof NamedExports;
     }
 
+}
+
+export enum BindingPatternType {
+    ObjectBinding,
+    ArrayBinding,
+}
+
+export class BindingPattern {
+    constructor(readonly type : BindingPatternType,
+                readonly pattern : LazyBlockParser<ObjectBindingPattern | ArrayBindingPattern>) {
+    }
+}
+
+export class ObjectBindingPattern {
+    readonly type = BindingPatternType.ObjectBinding;
+    constructor(readonly names : (string | BindingPattern)[]) {}
+}
+
+export class ArrayBindingPattern {
+    readonly type = BindingPatternType.ArrayBinding;
+    constructor(readonly names : (string | BindingPattern)[]) {}
 }
