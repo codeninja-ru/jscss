@@ -1,10 +1,9 @@
-import { BindingPattern, BindingPatternType, ExportSpecifier, NamedExports, ObjectBindingPattern, VarNames } from 'parser/exportsNodes';
-import { ValueWithPosition } from 'parser/parserUtils';
+import { BindingPattern, ExportSpecifier, NamedExports, VarNames } from 'parser/exportsNodes';
 import { isLiteralToken } from 'parser/predicats';
-import { CssDeclarationNode, CssImportNode, CssRawNode, ExportDeclarationNode, FontFaceNode, ImportDeclarationNode, ImportSepcifier, JssAtRuleNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssNode, JssPageNode, JssSelectorNode, JssSpreadNode, JssSupportsNode, JssVarDeclarationNode, NodeType, SyntaxTree, VarDeclarationNode } from 'parser/syntaxTree';
+import { CssDeclarationNode, CssImportNode, CssRawNode, ExportDeclarationNode, FontFaceNode, ImportDeclarationNode, ImportSepcifier, JssAtRuleNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssNode, JssPageNode, JssSelectorNode, JssSpreadNode, JssSupportsNode, JssVarDeclarationNode, NodeType, SyntaxTree } from 'parser/syntaxTree';
 import { SourceMapGenerator, SourceNode } from 'source-map';
 import { Position } from 'stream/position';
-import { LiteralToken } from 'token';
+import { BaseToken, LiteralToken } from 'token';
 import { SourceMappingUrl } from './sourceMappingUrl';
 
 const STYLES_VAR_NAME = '_styles';
@@ -276,7 +275,7 @@ ${declarations2js(items, fileName)}
 }).bind(${bindName})();`;
 }
 
-function makeValue(value : ValueWithPosition<string>,
+function makeValue(value : BaseToken,
                    fileName : string) : SourceNode {
     return makeSourceNode(value.position, fileName, value.value);
 }
@@ -333,7 +332,7 @@ function exportSpecifiers2jsGetters(nodes : ExportSpecifier[],
     return result;
 }
 
-function extractVarNames(varNames : VarNames[]) : string[] {
+function extractVarNames(varNames : VarNames[]) : LiteralToken[] {
     var result = [];
     for (var i = 0; i < varNames.length; i++) {
         const name = varNames[i];
@@ -373,10 +372,8 @@ function esExport2Js(node : ExportDeclarationNode,
         case NodeType.NamedExports:
             return tag`_export(exports, ${exportSpecifiers2jsGetters(value.value, fileName)});\n`;
         case NodeType.VarStatement:
-            const varNames = extractVarNames(value.items.map(item => item.name));
-            const varNames = value
-                    .items
-                    .map((item) => new ExportSpecifier(item.name));
+            const varNames = extractVarNames(value.items.map(item => item.name))
+                    .map(item => new ExportSpecifier(item));
             return tag`${value.rawValue ? value.rawValue : ''}\n_export(exports, ${exportSpecifiers2jsGetters(varNames, fileName)});\n`;
         default:
             throw new Error(`export declaration number ${node.type} is not supported`);

@@ -1,6 +1,6 @@
 import { Position } from "stream/position";
+import { LiteralToken, StringToken, SymbolToken } from "token";
 import { ExportFromClause, NamedExports, VarNames } from "./exportsNodes";
-import { ValueWithPosition } from "./parserUtils";
 
 export type SyntaxTree = JssNode[];
 
@@ -85,8 +85,8 @@ export interface IgnoreNode extends Node {
 }
 
 export interface ImportSepcifier {
-    readonly name: ValueWithPosition<string>,
-    readonly moduleExportName?: ValueWithPosition<string>;
+    readonly name?: LiteralToken | SymbolToken | StringToken,
+    readonly moduleExportName?: LiteralToken;
 }
 
 // import defaultVar as asName, { var1 as asName1, var2 as asName2 } from 'path';
@@ -272,27 +272,27 @@ export interface ErrorNode extends Node, SourceMappedNode {
 
 export interface ClassDeclarationNode extends Node {
     readonly type: NodeType.ClassDeclaration,
-    readonly name? : string;
+    readonly name? : LiteralToken;
 }
 
 export interface FunctionEpressionNode extends Node {
     readonly type: NodeType.FunctionExpression;
-    readonly name? : string;
+    readonly name? : LiteralToken;
 }
 
 export interface AsyncFunctionEpressionNode extends Node {
     readonly type: NodeType.AsyncFunctionExpression;
-    readonly name? : string;
+    readonly name? : LiteralToken;
 }
 
 export interface GeneratorEpressionNode extends Node {
     readonly type: NodeType.GeneratorExpression;
-    readonly name? : string;
+    readonly name? : LiteralToken;
 }
 
 export interface AsyncGeneratorEpressionNode extends Node {
     readonly type: NodeType.AsyncGeneratorExpression;
-    readonly name? : string;
+    readonly name? : LiteralToken;
 }
 
 export type HoistableDeclaration = FunctionEpressionNode | GeneratorEpressionNode

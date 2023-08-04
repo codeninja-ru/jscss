@@ -45,7 +45,7 @@ export class BindingPattern {
     }
 }
 
-export type VarNames = string | BindingPattern;
+export type VarNames = LiteralToken | BindingPattern;
 export class ObjectBindingPattern {
     readonly type = BindingPatternType.ObjectBinding;
     constructor(readonly names : VarNames[]) {}

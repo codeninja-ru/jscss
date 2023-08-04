@@ -1,6 +1,7 @@
 import { jssLexer } from "lexer/jssLexer";
 import { StringInputStream } from "stream/input";
 import { Position } from "stream/position";
+import { TokenType } from "token";
 import { exportDeclaration, importDeclaration, parseJsModule, parseJsScript, parseJsStatement, parseJsVarStatement } from "./parser";
 import { returnRawNode } from "./parserUtils";
 import { NodeType } from "./syntaxTree";
@@ -183,8 +184,10 @@ console.log('hi');
                       path: "'lodash'",
                       pathPos: new Position(1, 15),
                       vars: [{
-                          name: {value: "*", position: new Position(1, 8)},
-                          moduleExportName: {value: "_", position: new Position(1, 8)},
+                          name: undefined,
+                          moduleExportName: {value: "_",
+                                             position: new Position(1, 8),
+                                             type: TokenType.Literal},
                       }]});
         expect(testParserFunction(importDeclaration, `import {  } from 'lodash';`))
             .toEqual({type: NodeType.ImportDeclaration,
@@ -206,18 +209,26 @@ console.log('hi');
                       path: "'lib'",
                       pathPos: new Position(1, 22),
                       vars: [{
-                          name: {value: "*", position: new Position(1, 8)},
-                          moduleExportName: {value: 'lib', position: new Position(1, 13)}
+                          name: {value: "*",
+                                 position: new Position(1, 8),
+                                 type: TokenType.Literal},
+                          moduleExportName: {value: 'lib',
+                                             position: new Position(1, 13),
+                                             type: TokenType.Literal}
                       }]});
         expect(testParserFunction(importDeclaration, `import {name1, name2} from "module";`))
             .toEqual({type: NodeType.ImportDeclaration,
                       path: '"module"',
                       pathPos: new Position(1, 28),
                       vars: [{
-                          name: {value: "name1", position: new Position(1, 9)},
+                          name: {value: "name1",
+                                 position: new Position(1, 9),
+                                 type: TokenType.Literal},
                           moduleExportName: undefined,
                       }, {
-                          name: {value: "name2", position: new Position(1, 16)},
+                          name: {value: "name2",
+                                 position: new Position(1, 16),
+                                 type: TokenType.Literal},
                           moduleExportName: undefined,
                       }]});
         expect(testParserFunction(importDeclaration, `import { name1,/* comment */ name2 } from "module";`))
@@ -225,10 +236,14 @@ console.log('hi');
                       path: '"module"',
                       pathPos: new Position(1, 43),
                       vars: [{
-                          name: {value: "name1", position: new Position(1, 10)},
+                          name: {value: "name1",
+                                 position: new Position(1, 10),
+                                 type: TokenType.Literal},
                           moduleExportName: undefined,
                       }, {
-                          name: {value: "name2", position: new Position(1, 19)},
+                          name: {value: "name2",
+                                 position: new Position(1, 19),
+                                 type: TokenType.Literal},
                           moduleExportName: undefined,
                       }]});
         expect(testParserFunction(importDeclaration, `import {test, y as y1, 'z' as z1} from 'lib';`))
@@ -236,28 +251,50 @@ console.log('hi');
                       path: "'lib'",
                       pathPos: new Position(1, 40),
                       vars: [{
-                          name: {value: "test", position: new Position(1, 9)},
+                          name: {value: "test",
+                                 position: new Position(1, 9),
+                                 type: TokenType.Literal},
                           moduleExportName: undefined,
                       }, {
-                          name: {value: "y", position: new Position(1, 15)},
-                          moduleExportName: {value: "y1", position: new Position(1, 20)},
+                          name: {value: "y",
+                                 position: new Position(1, 15),
+                                 type: TokenType.Literal},
+                          moduleExportName: {value: "y1",
+                                             position: new Position(1, 20),
+                                             type: TokenType.Literal},
                       }, {
-                          name: {value: "'z'", position: new Position(1, 24)},
-                          moduleExportName: {value: "z1", position: new Position(1, 31)},
+                          name: {value: "'z'",
+                                 position: new Position(1, 24),
+                                 type: TokenType.Literal},
+                          moduleExportName: {value: "z1",
+                                             position: new Position(1, 31),
+                                             type: TokenType.Literal},
                       }]});
         expect(testParserFunction(importDeclaration, `import z, {y as y1, 'z' as z1} from 'lib';`))
             .toEqual({type: NodeType.ImportDeclaration,
                       path: "'lib'",
                       pathPos: new Position(1, 37),
                       vars: [{
-                          name: {value: "*", position: new Position(1, 8)},
-                          moduleExportName: {value: "z", position: new Position(1, 8)},
+                          name: {value: "*",
+                                 position: new Position(1, 8),
+                                 type: TokenType.Literal},
+                          moduleExportName: {value: "z",
+                                             position: new Position(1, 8),
+                                             type: TokenType.Literal},
                       }, {
-                          name: {value: "y", position: new Position(1, 12)},
-                          moduleExportName: {value: "y1", position: new Position(1, 17)},
+                          name: {value: "y",
+                                 position: new Position(1, 12),
+                                 type: TokenType.Literal},
+                          moduleExportName: {value: "y1",
+                                             position: new Position(1, 17),
+                                             type: TokenType.Literal},
                       }, {
-                          name: {value: "'z'", position: new Position(1, 21)},
-                          moduleExportName: {value: "z1", position: new Position(1, 28)},
+                          name: {value: "'z'",
+                                 position: new Position(1, 21),
+                                 type: TokenType.Literal},
+                          moduleExportName: {value: "z1",
+                                             position: new Position(1, 28),
+                                             type: TokenType.Literal},
                       }]});
     });
 

@@ -34,7 +34,7 @@ export function isToken(obj : any) : obj is BaseToken {
     return obj !== undefined && obj.type !== undefined && obj.position != undefined && obj.value != undefined;
 }
 
-interface BaseToken extends WithPosition {
+export interface BaseToken extends WithPosition {
     readonly type: TokenType;
     value: string;
 }

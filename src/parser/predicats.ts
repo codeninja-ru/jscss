@@ -67,7 +67,3 @@ export function makeIsTokenTypeNextTokenProbe(tokenType : TokenType) : ProbeFn {
         return nextToken.token.type == tokenType;
     }
 }
-
-export function literalToString(token : LiteralToken) : string {
-    return token.value;
-}

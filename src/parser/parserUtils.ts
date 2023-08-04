@@ -119,21 +119,6 @@ export function returnRawValueWithPosition(parser : TokenParser) : TokenParser<S
     };
 }
 
-export class ValueWithPosition<R> {
-    constructor(readonly value: NeverVoid<R>, readonly position: Position) {}
-}
-
-export function returnValueWithPosition<R>(parser : TokenParser<NeverVoid<R>>) : TokenParser<ValueWithPosition<R>> {
-    return function returnValueWithPositionInst(stream: TokenStream) : ValueWithPosition<R> {
-        const childStream = new LookAheadTokenStream(stream);
-        const value = parser(childStream);
-        const result = new LeftTrimSourceFragment(childStream.sourceFragment());
-        childStream.flush();
-
-        return new ValueWithPosition(value, result.position);
-    };
-}
-
 export function returnRawValue(parser : TokenParser) : TokenParser<string> {
     return function returnRawValueInst(stream: TokenStream) : string {
         const childStream = new LookAheadTokenStream(stream);
