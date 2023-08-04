@@ -1,5 +1,5 @@
 import { Position } from "stream/position";
-import { BindingPattern, ExportFromClause, NamedExports } from "./exportsNodes";
+import { ExportFromClause, NamedExports, VarNames } from "./exportsNodes";
 import { ValueWithPosition } from "./parserUtils";
 
 export type SyntaxTree = JssNode[];
@@ -102,14 +102,14 @@ export interface CommentNode extends Node {
     value: string;
 }
 
-export interface VarDeclaraionNode extends Node {
+export interface VarDeclarationNode extends Node {
     type: NodeType.VarDeclaration,
-    name: string | BindingPattern,
+    name: VarNames,
 }
 
 export interface VarStatementNode extends MultiNode {
     readonly type: NodeType.VarStatement,
-    readonly items: VarDeclaraionNode[],
+    readonly items: VarDeclarationNode[],
 }
 
 export interface MultiNode extends Node {
@@ -300,7 +300,7 @@ export type HoistableDeclaration = FunctionEpressionNode | GeneratorEpressionNod
 export type ExportDeclaration = ExportFromClause | NamedExports | VarStatementNode
     | Declaration | HoistableDeclaration | ClassDeclarationNode | JsRawNode;
 export type Declaration = HoistableDeclaration | ClassDeclarationNode
-    | VarDeclaraionNode;
+    | VarDeclarationNode;
 
 export interface ExportDeclarationNode extends Node {
     readonly type: NodeType.ExportDeclaration,

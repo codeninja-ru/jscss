@@ -5,7 +5,7 @@ import { ArrayBindingPattern, BindingPattern, BindingPatternType, ExportFromClau
 import { ParserError, UnexpectedEndError } from "./parserError";
 import { anyBlock, anyLiteral, anySpace, anyString, anyTempateStringLiteral, block, comma, commaList, firstOf, ignoreSpacesAndComments, keyword, lazyBlock, leftHandRecurciveRule, longestOf, map, multiSymbol, noLineTerminatorHere, notAllowed, oneOfSymbols, optional, optionalBool, optionalRaw, regexpLiteral, repeat, returnRawNode, returnValueWithPosition, roundBracket, sequence, sequenceVoid, squareBracket, strictLoop, symbol, ValueWithPosition } from "./parserUtils";
 import { isLiteralNextToken, literalToString, makeIsKeywordNextTokenProbe, makeIsSymbolNextTokenProbe } from "./predicats";
-import { AsyncFunctionEpressionNode, AsyncGeneratorEpressionNode, ClassDeclarationNode, Declaration, ExportDeclarationNode, FunctionEpressionNode, GeneratorEpressionNode, HoistableDeclaration, IfNode, ImportDeclarationNode, ImportSepcifier, JsModuleNode, JsRawNode, JssScriptNode, NodeType, VarDeclaraionNode, VarStatementNode } from "./syntaxTree";
+import { AsyncFunctionEpressionNode, AsyncGeneratorEpressionNode, ClassDeclarationNode, Declaration, ExportDeclarationNode, FunctionEpressionNode, GeneratorEpressionNode, HoistableDeclaration, IfNode, ImportDeclarationNode, ImportSepcifier, JsModuleNode, JsRawNode, JssScriptNode, NodeType, VarDeclarationNode, VarStatementNode } from "./syntaxTree";
 import { NextToken } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
 import { peekAndSkipSpaces, peekNextToken, peekNoLineTerminatorHere } from "./tokenStreamReader";
@@ -499,7 +499,7 @@ function arrayBindingPattern(stream : TokenStream) : BindingPattern {
     })(stream));
 }
 
-function variableDeclaration(stream : TokenStream) : VarDeclaraionNode {
+function variableDeclaration(stream : TokenStream) : VarDeclarationNode {
     const name = firstOf(
         // BindingIdentifier
         bindingIdentifier,

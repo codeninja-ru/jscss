@@ -45,12 +45,13 @@ export class BindingPattern {
     }
 }
 
+export type VarNames = string | BindingPattern;
 export class ObjectBindingPattern {
     readonly type = BindingPatternType.ObjectBinding;
-    constructor(readonly names : (string | BindingPattern)[]) {}
+    constructor(readonly names : VarNames[]) {}
 }
 
 export class ArrayBindingPattern {
     readonly type = BindingPatternType.ArrayBinding;
-    constructor(readonly names : (string | BindingPattern)[]) {}
+    constructor(readonly names : VarNames[]) {}
 }
