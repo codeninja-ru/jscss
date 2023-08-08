@@ -2,9 +2,10 @@ import { jssLexer } from "lexer/jssLexer";
 import { StringInputStream } from "stream/input";
 import { Position } from "stream/position";
 import { TokenType } from "token";
+import { BindingPattern, BindingPatternType } from "./exportsNodes";
 import { exportDeclaration, importDeclaration, parseJsModule, parseJsScript, parseJsStatement, parseJsVarStatement } from "./parser";
 import { returnRawNode } from "./parserUtils";
-import { NodeType } from "./syntaxTree";
+import { NodeType, VarStatementNode } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { ArrayTokenStream, LookAheadTokenStream } from "./tokenStream";
 
@@ -33,7 +34,13 @@ describe('parsers', () => {
             const stream = new ArrayTokenStream(tokens);
             const node = parseJsVarStatement(stream);
             expect(node).toEqual({"type": NodeType.VarStatement, items: [
-                {type: NodeType.VarDeclaration, name: "a"}
+                {type: NodeType.VarDeclaration,
+                 name: {
+                     type: TokenType.Literal,
+                     value: 'a',
+                     position: new Position(1, 7),
+                 }
+                }
             ]});
             expect(stream.currentPosition()).toEqual(8);
         });
@@ -43,7 +50,13 @@ describe('parsers', () => {
             const stream = new LookAheadTokenStream(new ArrayTokenStream(tokens));
             const node = parseJsVarStatement(stream);
             expect(node).toEqual({"type": NodeType.VarStatement, items: [
-                {type: NodeType.VarDeclaration, name: "fn"}
+                {type: NodeType.VarDeclaration,
+                 name: {
+                     type: TokenType.Literal,
+                     value: 'fn',
+                     position: new Position(1, 5),
+                 }
+                }
             ]});
             expect(stream.sourceFragment().value).toEqual('let fn = function(test) {};');
             expect(stream.currentPosition()).toEqual(11);
@@ -54,8 +67,18 @@ describe('parsers', () => {
             const stream = new LookAheadTokenStream(new ArrayTokenStream(tokens));
             const node = parseJsVarStatement(stream);
             expect(node).toEqual({"type": NodeType.VarStatement, items: [
-                {name: {type: NodeType.Lazy, value: "{a, b}"}, type: NodeType.VarDeclaration}
+                {name: expect.anything(),
+                 type: NodeType.VarDeclaration}
             ]});
+            const vars = (node.items[0].name as BindingPattern)
+                             .pattern
+                             .parse()
+                             .items
+                             .names;
+            expect(vars).toEqual([
+                {type: TokenType.Literal, value: "a", position: new Position(1, 6)},
+                {type: TokenType.Literal, value: "b", position: new Position(1, 9)},
+            ]);
             expect(stream.sourceFragment().value).toEqual('let {a, b} = fn(kek)[1].test');
             expect(stream.currentPosition()).toEqual(11);
         });
@@ -65,9 +88,21 @@ describe('parsers', () => {
             const stream = new LookAheadTokenStream(new ArrayTokenStream(tokens));
             const node = parseJsVarStatement(stream);
             expect(node).toEqual({"type": NodeType.VarStatement, items: [
-                {type: NodeType.VarDeclaration, name: 't1'},
-                {type: NodeType.VarDeclaration, name: 't2'},
-                {type: NodeType.VarDeclaration, name: 't3'},
+                {type: NodeType.VarDeclaration, name: {
+                    type: TokenType.Literal,
+                    value: 't1',
+                    position: new Position(1, 5),
+                }},
+                {type: NodeType.VarDeclaration, name: {
+                    type: TokenType.Literal,
+                    value: 't2',
+                    position: new Position(1, 13),
+                }},
+                {type: NodeType.VarDeclaration, name: {
+                    type: TokenType.Literal,
+                    value: 't3',
+                    position: new Position(1, 22),
+                }},
             ]});
             expect(stream.sourceFragment().value).toEqual('var t1 = 1, t2 = .2, t3 = 3;');
             expect(stream.currentPosition()).toEqual(23);
@@ -211,7 +246,7 @@ console.log('hi');
                       vars: [{
                           name: {value: "*",
                                  position: new Position(1, 8),
-                                 type: TokenType.Literal},
+                                 type: TokenType.Symbol},
                           moduleExportName: {value: 'lib',
                                              position: new Position(1, 13),
                                              type: TokenType.Literal}
@@ -265,7 +300,7 @@ console.log('hi');
                       }, {
                           name: {value: "'z'",
                                  position: new Position(1, 24),
-                                 type: TokenType.Literal},
+                                 type: TokenType.String},
                           moduleExportName: {value: "z1",
                                              position: new Position(1, 31),
                                              type: TokenType.Literal},
@@ -275,9 +310,7 @@ console.log('hi');
                       path: "'lib'",
                       pathPos: new Position(1, 37),
                       vars: [{
-                          name: {value: "*",
-                                 position: new Position(1, 8),
-                                 type: TokenType.Literal},
+                          name: undefined,
                           moduleExportName: {value: "z",
                                              position: new Position(1, 8),
                                              type: TokenType.Literal},
@@ -291,7 +324,7 @@ console.log('hi');
                       }, {
                           name: {value: "'z'",
                                  position: new Position(1, 21),
-                                 type: TokenType.Literal},
+                                 type: TokenType.String},
                           moduleExportName: {value: "z1",
                                              position: new Position(1, 28),
                                              type: TokenType.Literal},
@@ -314,8 +347,16 @@ export default class {};`);
     it('parses an objectBinding in the lazy way', () => {
         const node1 = testParserFunction(exportDeclaration, `export const {a1} = {a1:1};`);
         expect(node1.type).toEqual(NodeType.ExportDeclaration);
-        expect(node1.value.type).toEqual(NodeType.VarDeclaration);
-        expect(node1.value).toEqual('todo');
+        expect(node1.value.type).toEqual(NodeType.VarStatement);
+        const varNode = (node1.value as VarStatementNode);
+        const binding = (varNode.items[0].name as BindingPattern);
+        const parsedName = binding.pattern.parse();
+        expect(parsedName.items).toEqual({
+            type: BindingPatternType.ObjectBinding,
+            names: [
+                {type: TokenType.Literal, value: 'a1', position: new Position(1, 15)}
+            ]
+        });
     });
 
 });

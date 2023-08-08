@@ -36,8 +36,10 @@ describe('parseJssScript()', () => {
         expect(node).toEqual([
             {type: NodeType.ImportDeclaration, path: "'lodash'",
              pathPos: new Position(1, 15),
-             vars: [{name: {value: '*', position: new Position(1, 8)},
-                     moduleExportName: {value: '_', position: new Position(1, 8)}}]},
+             vars: [{name: undefined,
+                     moduleExportName: {value: '_',
+                                        position: new Position(1, 8),
+                                       type: TokenType.Literal}}]},
             {type: NodeType.Ignore, items: ["\n"]},
             {type: NodeType.CssImport, path: "'style.css'", rawValue: "@import 'style.css';", position: {line: 2, col: 1}},
             {type: NodeType.Ignore, items: expect.anything()},
@@ -313,7 +315,7 @@ import * as _ from '/reader/readers';`).toEqual([
      path: "'reader/comment'",
      pathPos: new Position(1, 22),
      vars: [{
-         name: {value: "test", position: new Position(1, 10)},
+         name: {value: "test", position: new Position(1, 10), type: TokenType.Literal},
          moduleExportName: undefined,
      }]},
     {type: NodeType.Ignore, items: expect.anything(),},
@@ -321,8 +323,8 @@ import * as _ from '/reader/readers';`).toEqual([
      path: "'/reader/readers'",
      pathPos: new Position(2, 20),
      vars: [{
-         name: {value: "*", position: new Position(2, 8)},
-         moduleExportName: {value: "_", position: new Position(2, 13)},
+         name: {value: "*", position: new Position(2, 8), type: TokenType.Symbol},
+         moduleExportName: {value: "_", position: new Position(2, 13), type: TokenType.Literal},
      }]},
 ]);
     });

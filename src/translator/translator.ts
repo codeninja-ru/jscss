@@ -279,12 +279,17 @@ function makeValue(value : BaseToken,
                    fileName : string) : SourceNode {
     return makeSourceNode(value.position, fileName, value.value);
 }
+
 function importSpecifier2jsonPair(node : ImportSepcifier,
                                   fileName : string) : SourceNode {
-    if (node.moduleExportName) {
-        return tag`${makeValue(node.name, fileName)}:${makeValue(node.moduleExportName, fileName)}`;
+    if (node.name) {
+        if (node.moduleExportName) {
+            return tag`${makeValue(node.name, fileName)}:${makeValue(node.moduleExportName, fileName)}`;
+        } else {
+            return makeValue(node.name, fileName);
+        }
     } else {
-        return makeValue(node.name, fileName);
+        throw new Error(`wrong ImportSepcifier ${node}`);
     }
 }
 
@@ -395,7 +400,7 @@ function esImport2Js(node : ImportDeclarationNode,
     }
 
     const globalImports = node.vars
-        .filter(item => item.name.value == '*')
+        .filter(item => item.name === undefined || item.name.value == '*')
         .map(item => {
             if (item.moduleExportName == undefined) {
                 throw new Error(`moduleExportName cannot be undefined node: ${node}`);
@@ -403,7 +408,7 @@ function esImport2Js(node : ImportDeclarationNode,
             return tag`const ${makeValue(item.moduleExportName, fileName)} = require(${path});\n`;
         });
     const namedImports = node.vars
-        .filter(item => item.name.value !== '*')
+        .filter(item => item.name !== undefined && item.name.value !== '*')
         .map(item => importSpecifier2jsonPair(item, fileName));
 
     const result = makeNullSourceNode('')
