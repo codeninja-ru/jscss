@@ -1,6 +1,6 @@
 import { Position } from "stream/position";
 import { LiteralToken, StringToken, SymbolToken } from "token";
-import { ExportFromClause, NamedExports, VarNames } from "./exportsNodes";
+import { ExportDeclaration, VarNames } from "./exportsNodes";
 
 export type SyntaxTree = JssNode[];
 
@@ -31,9 +31,8 @@ export enum NodeType {
     ExpressionStatement,
     JsModule,
     ImportDeclaration,
+    AssigmentExpression,
     ExportDeclaration,
-    ExportFromClause,
-    NamedExports,
 
     Lazy,
     Block,
@@ -295,14 +294,11 @@ export interface AsyncGeneratorEpressionNode extends Node {
     readonly name? : LiteralToken;
 }
 
-export type HoistableDeclaration = FunctionEpressionNode | GeneratorEpressionNode
-    | AsyncFunctionEpressionNode | AsyncGeneratorEpressionNode;
-export type ExportDeclaration = ExportFromClause | NamedExports | VarStatementNode
-    | Declaration | HoistableDeclaration | ClassDeclarationNode | JsRawNode;
-export type Declaration = HoistableDeclaration | ClassDeclarationNode
-    | VarDeclarationNode;
-
 export interface ExportDeclarationNode extends Node {
     readonly type: NodeType.ExportDeclaration,
     readonly value: ExportDeclaration;
+}
+
+export interface AssigmentExpressionNode extends Node {
+    readonly type: NodeType.AssigmentExpression,
 }

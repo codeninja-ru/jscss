@@ -2,10 +2,10 @@ import { jssLexer } from "lexer/jssLexer";
 import { StringInputStream } from "stream/input";
 import { Position } from "stream/position";
 import { TokenType } from "token";
-import { BindingPattern, BindingPatternType } from "./exportsNodes";
+import { BindingPattern, BindingPatternType, ExportDeclarationType, ExportVarStatement } from "./exportsNodes";
 import { exportDeclaration, importDeclaration, parseJsModule, parseJsScript, parseJsStatement, parseJsVarStatement } from "./parser";
 import { returnRawNode } from "./parserUtils";
-import { NodeType, VarStatementNode } from "./syntaxTree";
+import { NodeType } from "./syntaxTree";
 import { TokenParser } from "./tokenParser";
 import { ArrayTokenStream, LookAheadTokenStream } from "./tokenStream";
 
@@ -347,9 +347,9 @@ export default class {};`);
     it('parses an objectBinding in the lazy way', () => {
         const node1 = testParserFunction(exportDeclaration, `export const {a1} = {a1:1};`);
         expect(node1.type).toEqual(NodeType.ExportDeclaration);
-        expect(node1.value.type).toEqual(NodeType.VarStatement);
-        const varNode = (node1.value as VarStatementNode);
-        const binding = (varNode.items[0].name as BindingPattern);
+        expect(node1.value.type).toEqual(ExportDeclarationType.VarStatement);
+        const varNode = (node1.value as ExportVarStatement).value;
+        const binding = (varNode[1].items[0].name as BindingPattern);
         const parsedName = binding.pattern.parse();
         expect(parsedName.items).toEqual({
             type: BindingPatternType.ObjectBinding,

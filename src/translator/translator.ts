@@ -1,9 +1,9 @@
-import { BindingPattern, ExportSpecifier, NamedExports, VarNames } from 'parser/exportsNodes';
+import { BindingPattern, DeclarationNode, DefaultNode, ExportDeclarationType, ExportSpecifier, ExportVarStatement, NamedExports, VarNames } from 'parser/exportsNodes';
 import { isLiteralToken } from 'parser/predicats';
 import { CssDeclarationNode, CssImportNode, CssRawNode, ExportDeclarationNode, FontFaceNode, ImportDeclarationNode, ImportSepcifier, JssAtRuleNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssNode, JssPageNode, JssSelectorNode, JssSpreadNode, JssSupportsNode, JssVarDeclarationNode, NodeType, SyntaxTree } from 'parser/syntaxTree';
 import { SourceMapGenerator, SourceNode } from 'source-map';
 import { Position } from 'stream/position';
-import { BaseToken, LiteralToken } from 'token';
+import { BaseToken, LiteralToken, TokenType } from 'token';
 import { SourceMappingUrl } from './sourceMappingUrl';
 
 const STYLES_VAR_NAME = '_styles';
@@ -341,7 +341,7 @@ function extractVarNames(varNames : VarNames[]) : LiteralToken[] {
     var result = [];
     for (var i = 0; i < varNames.length; i++) {
         const name = varNames[i];
-        if (typeof name == 'string') {
+        if (name.type && name.type == TokenType.Literal) {
             result.push(name);
         } else if (name instanceof BindingPattern) {
             const parsedNames = name.pattern
@@ -350,18 +350,87 @@ function extractVarNames(varNames : VarNames[]) : LiteralToken[] {
                 .names;
             result.push(...extractVarNames(parsedNames));
         } else {
-            throw new Error('unsported var name type');
+            throw new Error(`unsupported var name type ${JSON.stringify(name)}`);
         }
     }
 
     return result;
 }
 
+function makeExportVarCode(name : string) {
+    return tag`_export(exports, {'default': function() { return ${name}; }});`;
+}
+
+function esDefault2Js(node : DefaultNode,
+                      fileName : string) : SourceNode {
+    const [source, value] = node.value;
+    const sourceNode = makeSourceNode(source.position, fileName, source.value);
+    switch(value.type) {
+        case NodeType.AssigmentExpression:
+            if (source.value[source.value.length - 1] != ';') {
+                sourceNode.add(';');
+            }
+            return tag`var _default = ${sourceNode}\n`
+                .add(makeExportVarCode('_default'));
+        case NodeType.ClassDeclaration:
+        case NodeType.FunctionExpression:
+        case NodeType.AsyncFunctionExpression:
+        case NodeType.GeneratorExpression:
+        case NodeType.AsyncGeneratorExpression:
+            if (value.name) {
+                return tag`${sourceNode}\n`
+                    .add(makeExportVarCode(value.name.value));
+            } else {
+                if (source.value[source.value.length - 1] != ';') {
+                    sourceNode.add(';');
+                }
+                return tag`var _default = ${sourceNode}\n`
+                    .add(makeExportVarCode('_default'));
+            }
+        default:
+            throw new Error(`unsupported default node ${value}`);
+    }
+}
+
+function esDeclaration2Js(node : DeclarationNode,
+                      fileName : string) : SourceNode {
+    const [source, value] = node.value;
+    const sourceNode = makeSourceNode(source.position, fileName, source.value);
+    switch(value.type) {
+        case NodeType.ClassDeclaration:
+        case NodeType.FunctionExpression:
+        case NodeType.AsyncFunctionExpression:
+        case NodeType.GeneratorExpression:
+        case NodeType.AsyncGeneratorExpression:
+            if (value.name) {
+                return tag`${sourceNode}\n`
+                    .add(makeExportVarCode(value.name.value));
+
+            } else {
+                throw new Error('name is expected');
+            }
+        default:
+            throw new Error(`unsupported declaration type ${value.type}`);
+    }
+}
+
+function esVarStatement2Js(node : ExportVarStatement,
+                      fileName : string) : SourceNode {
+    const [source, value] = node.value;
+    const sourceNode = makeSourceNode(source.position, fileName, source.value);
+    if (source.value[source.value.length - 1] != ';') {
+        sourceNode.add(';');
+    }
+    const varNames = extractVarNames(value.items.map(item => item.name))
+            .map(item => new ExportSpecifier(item));
+    return tag`${sourceNode}\n_export(exports, ${exportSpecifiers2jsGetters(varNames, fileName)});\n`;
+
+}
 function esExport2Js(node : ExportDeclarationNode,
                      fileName : string) : SourceNode {
     const value = node.value;
     switch(value.type) {
-        case NodeType.ExportFromClause:
+        case ExportDeclarationType.ExportFromClause:
             const path = makeSourceNode(value.path.position,
                                         fileName,
                                         value.path.value);
@@ -372,16 +441,18 @@ function esExport2Js(node : ExportDeclarationNode,
             } else if (isLiteralToken(value.clause)) {
                 return tag`_export_named_export(exports, ${exportSpecifiers2js([new ExportSpecifier(value.clause)], fileName)}, require(${path}));\n`;
             } else {
-                throw new Error(`unsported expertClause ${value}`);
+                throw new Error(`unsupported expertClause ${value}`);
             }
-        case NodeType.NamedExports:
+        case ExportDeclarationType.NamedExports:
             return tag`_export(exports, ${exportSpecifiers2jsGetters(value.value, fileName)});\n`;
-        case NodeType.VarStatement:
-            const varNames = extractVarNames(value.items.map(item => item.name))
-                    .map(item => new ExportSpecifier(item));
-            return tag`${value.rawValue ? value.rawValue : ''}\n_export(exports, ${exportSpecifiers2jsGetters(varNames, fileName)});\n`;
+        case ExportDeclarationType.VarStatement:
+            return esVarStatement2Js(value, fileName);
+        case ExportDeclarationType.Default:
+            return esDefault2Js(value, fileName);
+        case ExportDeclarationType.Declaration:
+            return esDeclaration2Js(value, fileName);
         default:
-            throw new Error(`export declaration number ${node.type} is not supported`);
+            throw new Error(`export declaration number ${value} is not supported`);
     }
 }
 
@@ -421,7 +492,6 @@ function esImport2Js(node : ImportDeclarationNode,
     }
 
     return result;
-
 }
 
 function translateNode(node : JssNode,

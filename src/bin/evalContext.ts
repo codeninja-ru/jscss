@@ -1,4 +1,5 @@
 import { HexColor, RgbColor } from "translator/lib/colors/color";
+import { _export, _export_named_export, _export_star } from "translator/lib/commonJs";
 import { isJssStyleSheet, JssAtRuleBlock, JssBlock, JssBlockCaller, JssMediaQueryBlock, JssStyleBlock, JssStyleSheet, JssSupportsBlock } from "translator/lib/core";
 import { Em, Percent, Px, Units } from "translator/lib/units/unit";
 import vm from "vm";
@@ -35,6 +36,11 @@ export class EvalContext {
             'RgbColor': RgbColor,
             'HexColor': HexColor,
             'isJssStyleSheet' : isJssStyleSheet,
+
+            // esm 2 commonjs utils
+            '_export': _export,
+            '_export_start': _export_star,
+            '_export_named_export': _export_named_export,
         });
         vm.createContext(this.context);
     }

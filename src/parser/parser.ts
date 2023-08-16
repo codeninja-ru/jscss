@@ -1,11 +1,11 @@
 import { Keywords, ReservedWords } from "keywords";
 import { AssignmentOperator, Symbols } from "symbols";
 import { LiteralToken, TokenType } from "token";
-import { ArrayBindingPattern, BindingPattern, BindingPatternType, ExportFromClause, ExportSpecifier, FromClause, NamedExports, ObjectBindingPattern, VarNames } from "./exportsNodes";
+import { ArrayBindingPattern, BindingPattern, BindingPatternType, Declaration, DeclarationNode, DefaultNode, ExportFromClause, ExportSpecifier, ExportVarStatement, FromClause, HoistableDeclaration, NamedExports, ObjectBindingPattern, VarNames } from "./exportsNodes";
 import { ParserError, UnexpectedEndError } from "./parserError";
-import { anyBlock, anyLiteral, anySpace, anyString, anyTempateStringLiteral, block, comma, commaList, firstOf, ignoreSpacesAndComments, keyword, lazyBlock, leftHandRecurciveRule, longestOf, map, multiSymbol, noLineTerminatorHere, notAllowed, oneOfSymbols, optional, optionalBool, optionalRaw, regexpLiteral, repeat, returnRawNode, roundBracket, sequence, sequenceVoid, squareBracket, strictLoop, symbol } from "./parserUtils";
+import { anyBlock, anyLiteral, anySpace, anyString, anyTempateStringLiteral, block, comma, commaList, firstOf, ignoreSpacesAndComments, keyword, lazyBlock, leftHandRecurciveRule, longestOf, map, multiSymbol, noLineTerminatorHere, notAllowed, oneOfSymbols, optional, optionalBool, optionalRaw, regexpLiteral, repeat, returnRawNode, returnSourceAndValue, roundBracket, sequence, sequenceVoid, squareBracket, strictLoop, symbol } from "./parserUtils";
 import { isLiteralNextToken, makeIsKeywordNextTokenProbe, makeIsSymbolNextTokenProbe } from "./predicats";
-import { AsyncFunctionEpressionNode, AsyncGeneratorEpressionNode, ClassDeclarationNode, Declaration, ExportDeclarationNode, FunctionEpressionNode, GeneratorEpressionNode, HoistableDeclaration, IfNode, ImportDeclarationNode, ImportSepcifier, JsModuleNode, JsRawNode, JssScriptNode, NodeType, VarDeclarationNode, VarStatementNode } from "./syntaxTree";
+import { AssigmentExpressionNode, AsyncFunctionEpressionNode, AsyncGeneratorEpressionNode, ClassDeclarationNode, ExportDeclarationNode, FunctionEpressionNode, GeneratorEpressionNode, IfNode, ImportDeclarationNode, ImportSepcifier, JsModuleNode, JsRawNode, JssScriptNode, NodeType, VarDeclarationNode, VarStatementNode } from "./syntaxTree";
 import { NextToken } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
 import { peekAndSkipSpaces, peekNextToken, peekNoLineTerminatorHere } from "./tokenStreamReader";
@@ -402,13 +402,14 @@ function bindingElement(stream : TokenStream) : VarNames {
 
 function bindingProperty(stream : TokenStream) : VarNames {
     return firstOf(
-        // SingleNameBinding[?Yield, ?Await]
-        singleNameBinding,
+        //NOTE changed order to solve the conflicts
         // PropertyName[?Yield, ?Await] : BindingElement[?Yield, ?Await]
         map(
             sequence(propertyName, symbol(Symbols.colon), bindingElement),
             ([,,name]) => name,
         ),
+        // SingleNameBinding[?Yield, ?Await]
+        singleNameBinding,
     )(stream);
 }
 
@@ -746,7 +747,8 @@ function asyncArrowFunction(stream : TokenStream) : void {
     firstOf(anyBlock, assignmentExpression)(stream);
 }
 
-export function assignmentExpression(stream : TokenStream) : void {
+export function assignmentExpression(stream : TokenStream) : AssigmentExpressionNode {
+    //TODO get rid of longestOf
     longestOf(
         // ConditionalExpression[?In, ?Yield, ?Await]
         conditionalExpression,
@@ -767,6 +769,10 @@ export function assignmentExpression(stream : TokenStream) : void {
             assignmentExpression,
         )
     )(stream);
+
+    return {
+        type: NodeType.AssigmentExpression,
+    };
 }
 
 export function parseJsVarStatement(stream: TokenStream) : VarStatementNode {
@@ -1212,18 +1218,24 @@ export function exportDeclaration(stream : TokenStream) : ExportDeclarationNode 
             ([items,]) => items
         ),
         // export VariableStatement[~Yield, ~Await]
-        parseJsVarStatement,
+        map(
+            returnSourceAndValue(parseJsVarStatement),
+            (value) => new ExportVarStatement(value),
+        ),
         // export Declaration[~Yield, ~Await]
-        declaration,
+        map(
+            returnSourceAndValue(declaration),
+            (value) => new DeclarationNode(value),
+        ),
         // export default HoistableDeclaration[~Yield, ~Await, +Default]
         map(
-            sequence(keyword(Keywords._default), hoistableDeclaration),
-            ([, value]) => value,
+            sequence(keyword(Keywords._default), returnSourceAndValue(hoistableDeclaration)),
+            ([, value]) => new DefaultNode(value),
         ),
         // export default ClassDeclaration[~Yield, ~Await, +Default]
         map(
-            sequence(keyword(Keywords._default), classDeclaration),
-            ([, value]) => value,
+            sequence(keyword(Keywords._default), returnSourceAndValue(classDeclaration)),
+            ([, value]) => new DefaultNode(value),
         ),
         // export default [lookahead ∉ { function, async [no LineTerminator here] function, class }] AssignmentExpression[+In, ~Yield, ~Await] ;
         map(
@@ -1234,12 +1246,12 @@ export function exportDeclaration(stream : TokenStream) : ExportDeclarationNode 
                     sequence(keyword(Keywords._async), keyword(Keywords._function, peekNoLineTerminatorHere)),
                     keyword(Keywords._class),
                 ], 'export declaration cannot be started with...'),
-                returnRawNode(
+                returnSourceAndValue(
                     assignmentExpression,
                 ),
                 symbol(Symbols.semicolon)
             ),
-            ([,,value]) => value,
+            ([,,value]) => new DefaultNode(value),
         )
     )(stream);
 

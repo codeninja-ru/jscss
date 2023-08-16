@@ -9,7 +9,7 @@ export function isSourceFragment(obj : any) : obj is SourceFragment {
 
 export interface SourceFragment {
     readonly position: Position;
-    value : string;
+    readonly value : string;
     readonly tokens: Token[];
 }
 

@@ -119,6 +119,18 @@ export function returnRawValueWithPosition(parser : TokenParser) : TokenParser<S
     };
 }
 
+export type SourceAndValue<R> = [SourceFragment, R];
+export function returnSourceAndValue<R>(parser : TokenParser<R>) : TokenParser<SourceAndValue<R>> {
+    return function (stream: TokenStream) : SourceAndValue<R> {
+        const childStream = new LookAheadTokenStream(stream);
+        const result = parser(childStream);
+        const source = new LeftTrimSourceFragment(childStream.sourceFragment());
+        childStream.flush();
+
+        return [source, result];
+    };
+}
+
 export function returnRawValue(parser : TokenParser) : TokenParser<string> {
     return function returnRawValueInst(stream: TokenStream) : string {
         const childStream = new LookAheadTokenStream(stream);

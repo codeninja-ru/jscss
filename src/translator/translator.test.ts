@@ -26,6 +26,13 @@ function codeWithoutSourceMap(code : GeneratedCode) : string {
     return code.value.replace(/\/\/# sourceMappingURL.*/, '').trim();
 }
 
+function codeWithoutHeaderAndFooter(code : GeneratedCode) : string {
+    return codeWithoutSourceMap(code)
+        .replace(EXPEXTED_HEADER, '')
+        .replace(EXPECTED_FOOTER, '')
+        .trim();
+}
+
 describe('translator()', () => {
     it('translates simple css', () => {
         const result = translator(parseJssScript(ArrayTokenStream.fromString(CSS)),
@@ -524,39 +531,29 @@ ${EXPECTED_FOOTER}`);
         });
 
         it('translates named exports', () => {
-            expect(codeWithoutSourceMap(translateToJs(`export { y, y1 as y2 };`)))
-                .toEqual(`${EXPEXTED_HEADER}
-
-_export(exports, {'y':function() { return y; }, 'y2':function() { return y1; }});
-
-${EXPECTED_FOOTER}`);
+            expect(codeWithoutHeaderAndFooter(translateToJs(`export { y, y1 as y2 };`)))
+                .toEqual(`_export(exports, {'y':function() { return y; }, 'y2':function() { return y1; }});`);
         });
 
         it('translates variable exports', () => {
-            expect(codeWithoutSourceMap(translateToJs(`export var x;
+            expect(codeWithoutHeaderAndFooter(translateToJs(`export var x;
 export var x1 = 1;
 export var y1 = 1, y2 = y2;`)))
-                .toEqual(`${EXPEXTED_HEADER}
-
-var x;
+                .toEqual(`var x;
 _export(exports, {'x':function() { return x; }});
-
 var x1 = 1;
 _export(exports, {'x1':function() { return x1; }});
-
-var y1 = 1, y2 = 2;
-_export(exports, {y1:function() {return y1;}, y2:function() { return y2; }});
-
-${EXPECTED_FOOTER}`);
+var y1 = 1, y2 = y2;
+_export(exports, {'y1':function() { return y1; }, 'y2':function() { return y2; }});`);
         });
 
         it('translates declaration', () => {
-            expect(translateToJs(`export function f1() {}
+            expect(codeWithoutHeaderAndFooter(translateToJs(`export function f1() {}
 export class C1 {}
 export const x1 = 1;
 export let {y1, y2} = func();
 export const {a1, aa3:a3, ...a2} = func();
-export let [z1, z2] = func();`).value)
+export let [z1, z2] = func();`)))
                 .toEqual(`function f1() {}
 _export(exports, {'f1': function() { return f1; }});
 class C1 {}
@@ -573,28 +570,28 @@ _export(exports, {z1 : function() {return z1;}, z2: function() {return z2;}});
         });
 
         it('translates default hoistableDeclaration', () => {
-            expect(translateToJs(`export default function() {}`).value)
+            expect(codeWithoutHeaderAndFooter(translateToJs(`export default function() {}`)))
                 .toEqual(`var _default = function() {};
 _export(exports, {'default': function() { return _default; }});`);
         });
 
         it('translates default classDeclaration', () => {
-            expect(translateToJs(`export default class TestClass {}`).value)
+            expect(codeWithoutHeaderAndFooter(translateToJs(`export default class TestClass {}`)))
                 .toEqual(`class TestClass {}
 _export(exports, {'default': function() { return TestClass; }});`);
         });
 
         it('translates default classDeclaration without name', () => {
-            expect(translateToJs(`export default class {}`).value)
+            expect(codeWithoutHeaderAndFooter(translateToJs(`export default class {}`)))
                 .toEqual(`var _default = class {};
-_export(exports, { 'default': function() { return _default; } })`);
+_export(exports, {'default': function() { return _default; }});`);
         });
 
 
         it('translates default assigmentExpression', () => {
-            expect(translateToJs(`export default 1 + 2;`).value)
-                .toEqual(`const _default = 1 + 2;
-_export(exports, { 'default': function() { return _default; } });`);
+            expect(codeWithoutHeaderAndFooter(translateToJs(`export default 1 + 2;`)))
+                .toEqual(`var _default = 1 + 2;
+_export(exports, {'default': function() { return _default; }});`);
         });
 
     });
