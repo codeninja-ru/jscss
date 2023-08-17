@@ -202,10 +202,22 @@ return self;
 }
 
 function insertSourceCssImport(node : CssImportNode, fileName : string) : SourceNode {
+    var cssFilePath = node.path;
+    if (node.path.includes('.jss')) {
+        const quate = node.path[0];
+        const filePath = node.path.substr(1, node.path.length - 2).trim();
+
+        const lastDotIdx = filePath.lastIndexOf('.');
+        if (lastDotIdx != -1) {
+            cssFilePath = quate + filePath.substr(0, lastDotIdx)
+                + filePath.substr(lastDotIdx)
+                    .replace(/.jss$/, '.css') + quate;
+        }
+    }
     return makeSourceNode(
         node.position,
         fileName,
-        `@import ${quoteEscape(node.path)};`);
+        `@import ${quoteEscape(cssFilePath)};`);
 }
 
 function insertSourceCssRaw(node : CssRawNode, fileName : string) : SourceNode {
