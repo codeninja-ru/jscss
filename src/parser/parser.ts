@@ -1,7 +1,7 @@
 import { Keywords, ReservedWords } from "keywords";
 import { AssignmentOperator, Symbols } from "symbols";
 import { LiteralToken, TokenType } from "token";
-import { ArrayBindingPattern, BindingPattern, BindingPatternType, Declaration, DeclarationNode, DefaultNode, ExportFromClause, ExportSpecifier, ExportVarStatement, FromClause, HoistableDeclaration, NamedExports, ObjectBindingPattern, VarNames } from "./exportsNodes";
+import { ArrayBindingPattern, BindingPattern, BindingPatternType, ExportDeclaration, ExportDefault, ExportFromClause, ExportSpecifier, ExportVarStatement, FromClause, HoistableDeclaration, NamedExports, ObjectBindingPattern, VarNames, Declaration } from "./exportsNodes";
 import { ParserError, UnexpectedEndError } from "./parserError";
 import { anyBlock, anyLiteral, anySpace, anyString, anyTempateStringLiteral, block, comma, commaList, firstOf, ignoreSpacesAndComments, keyword, lazyBlock, leftHandRecurciveRule, longestOf, map, multiSymbol, noLineTerminatorHere, notAllowed, oneOfSymbols, optional, optionalBool, optionalRaw, regexpLiteral, repeat, returnRawNode, returnSourceAndValue, roundBracket, sequence, sequenceVoid, squareBracket, strictLoop, symbol } from "./parserUtils";
 import { isLiteralNextToken, makeIsKeywordNextTokenProbe, makeIsSymbolNextTokenProbe } from "./predicats";
@@ -420,13 +420,7 @@ function objectBindingPattern(stream : TokenStream) : BindingPattern {
         // { BindingPropertyList[?Yield, ?Await] }
         // { BindingPropertyList[?Yield, ?Await] , BindingRestProperty[?Yield, ?Await]opt }
         const props = commaList(bindingProperty, true)(stream);
-        const restName = optional(function(stream : TokenStream) : LiteralToken {
-            if (props.length > 0) {
-                comma(stream);
-            }
-
-            return bindingRestProperty(stream);
-        })(stream);
+        const restName = optional(bindingRestProperty)(stream); //NOTE it might parse ... without comma for exampel {a, b ...c}
 
         optional(anySpace)(stream);
         const names = props;
@@ -481,10 +475,6 @@ function arrayBindingPattern(stream : TokenStream) : BindingPattern {
         const props = commaList(bindingElisionElement, true)(stream);
 
         const restName = optional(function(stream : TokenStream) : VarNames {
-            if (props.length > 0) {
-                comma(stream);
-            }
-
             optionalBool(elision)(stream);
 
             return bindingRestElement(stream);
@@ -1225,17 +1215,17 @@ export function exportDeclaration(stream : TokenStream) : ExportDeclarationNode 
         // export Declaration[~Yield, ~Await]
         map(
             returnSourceAndValue(declaration),
-            (value) => new DeclarationNode(value),
+            (value) => new ExportDeclaration(value),
         ),
         // export default HoistableDeclaration[~Yield, ~Await, +Default]
         map(
             sequence(keyword(Keywords._default), returnSourceAndValue(hoistableDeclaration)),
-            ([, value]) => new DefaultNode(value),
+            ([, value]) => new ExportDefault(value),
         ),
         // export default ClassDeclaration[~Yield, ~Await, +Default]
         map(
             sequence(keyword(Keywords._default), returnSourceAndValue(classDeclaration)),
-            ([, value]) => new DefaultNode(value),
+            ([, value]) => new ExportDefault(value),
         ),
         // export default [lookahead ∉ { function, async [no LineTerminator here] function, class }] AssignmentExpression[+In, ~Yield, ~Await] ;
         map(
@@ -1251,7 +1241,7 @@ export function exportDeclaration(stream : TokenStream) : ExportDeclarationNode 
                 ),
                 symbol(Symbols.semicolon)
             ),
-            ([,,value]) => new DefaultNode(value),
+            ([,,value]) => new ExportDefault(value),
         )
     )(stream);
 

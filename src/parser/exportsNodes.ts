@@ -12,8 +12,8 @@ export enum ExportDeclarationType {
 
 export type HoistableDeclaration = FunctionEpressionNode | GeneratorEpressionNode
     | AsyncFunctionEpressionNode | AsyncGeneratorEpressionNode;
-export type ExportDeclaration = ExportFromClause | NamedExports | ExportVarStatement
-    | DefaultNode | DeclarationNode;
+export type ExportDeclarationValue = ExportFromClause | NamedExports | ExportVarStatement
+    | ExportDefault | ExportDeclaration;
 export type Declaration = HoistableDeclaration | ClassDeclarationNode
     | VarDeclarationNode;
 
@@ -34,7 +34,6 @@ export class ExportFromClause {
 export class ExportSpecifier {
     constructor(readonly name : LiteralToken,
                 readonly asName? : LiteralToken) {
-
     }
 }
 
@@ -47,7 +46,6 @@ export class NamedExports {
     static isNamedExports(obj : any) : obj is NamedExports {
         return obj instanceof NamedExports;
     }
-
 }
 
 export enum BindingPatternType {
@@ -72,24 +70,19 @@ export class ArrayBindingPattern {
     constructor(readonly names : VarNames[]) {}
 }
 
-export interface DefaultNode {
+export interface ExportDefaultNode {
     readonly type: ExportDeclarationType.Default,
     readonly value: SourceAndValue<HoistableDeclaration |
         ClassDeclarationNode | AssigmentExpressionNode>,
 }
 
-export interface DeclarationNode {
-    readonly type: ExportDeclarationType.Declaration,
-    readonly value: SourceAndValue<Declaration>,
-}
-
-export class DeclarationNode implements DeclarationNode {
+export class ExportDeclaration {
     readonly type = ExportDeclarationType.Declaration;
     constructor(readonly value : SourceAndValue<Declaration>) {
     }
 }
 
-export class DefaultNode implements DefaultNode {
+export class ExportDefault {
     readonly type = ExportDeclarationType.Default;
     constructor(readonly value : SourceAndValue<HoistableDeclaration
         | ClassDeclarationNode | AssigmentExpressionNode>) {

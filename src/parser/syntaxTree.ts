@@ -1,6 +1,6 @@
 import { Position } from "stream/position";
 import { LiteralToken, StringToken, SymbolToken } from "token";
-import { ExportDeclaration, VarNames } from "./exportsNodes";
+import { ExportDeclarationValue, VarNames } from "./exportsNodes";
 
 export type SyntaxTree = JssNode[];
 
@@ -296,7 +296,7 @@ export interface AsyncGeneratorEpressionNode extends Node {
 
 export interface ExportDeclarationNode extends Node {
     readonly type: NodeType.ExportDeclaration,
-    readonly value: ExportDeclaration;
+    readonly value: ExportDeclarationValue;
 }
 
 export interface AssigmentExpressionNode extends Node {

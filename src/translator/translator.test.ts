@@ -552,46 +552,45 @@ _export(exports, {'y1':function() { return y1; }, 'y2':function() { return y2; }
 export class C1 {}
 export const x1 = 1;
 export let {y1, y2} = func();
-export const {a1, aa3:a3, ...a2} = func();
-export let [z1, z2] = func();`)))
+export const {a1, aa2:a2, ...a3} = func();
+export let [z1, z2,,,zz] = func();`)))
                 .toEqual(`function f1() {}
-_export(exports, {'f1': function() { return f1; }});
+_export(exports, {'f1':function() { return f1; }});
 class C1 {}
-_export(exports, {'C1': function() { return C1; }});
+_export(exports, {'C1':function() { return C1; }});
 const x1 = 1;
-_export(exports, {'x1': function() { return x1; }});
+_export(exports, {'x1':function() { return x1; }});
 let {y1, y2} = func();
-_export(exports, {y1 : function() {return y1;}, y2: function() {return y2;}});
-const {a1, aa3:a3, ...a2} = func();
-_export(exports, {a1 : function() {return a1;}, a2: function() {return a2;}});
-export let [z1, z2] = func();
-_export(exports, {z1 : function() {return z1;}, z2: function() {return z2;}});
-`);
+_export(exports, {'y1':function() { return y1; }, 'y2':function() { return y2; }});
+const {a1, aa2:a2, ...a3} = func();
+_export(exports, {'a1':function() { return a1; }, 'a2':function() { return a2; }, 'a3':function() { return a3; }});
+let [z1, z2,,,zz] = func();
+_export(exports, {'z1':function() { return z1; }, 'z2':function() { return z2; }, 'zz':function() { return zz; }});`);
         });
 
         it('translates default hoistableDeclaration', () => {
             expect(codeWithoutHeaderAndFooter(translateToJs(`export default function() {}`)))
                 .toEqual(`var _default = function() {};
-_export(exports, {'default': function() { return _default; }});`);
+_export(exports, {'_default':function() { return _default; }});`);
         });
 
         it('translates default classDeclaration', () => {
             expect(codeWithoutHeaderAndFooter(translateToJs(`export default class TestClass {}`)))
                 .toEqual(`class TestClass {}
-_export(exports, {'default': function() { return TestClass; }});`);
+_export(exports, {'TestClass':function() { return TestClass; }});`);
         });
 
         it('translates default classDeclaration without name', () => {
             expect(codeWithoutHeaderAndFooter(translateToJs(`export default class {}`)))
                 .toEqual(`var _default = class {};
-_export(exports, {'default': function() { return _default; }});`);
+_export(exports, {'_default':function() { return _default; }});`);
         });
 
 
         it('translates default assigmentExpression', () => {
             expect(codeWithoutHeaderAndFooter(translateToJs(`export default 1 + 2;`)))
                 .toEqual(`var _default = 1 + 2;
-_export(exports, {'default': function() { return _default; }});`);
+_export(exports, {'_default':function() { return _default; }});`);
         });
 
     });

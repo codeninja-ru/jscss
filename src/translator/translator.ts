@@ -1,4 +1,4 @@
-import { BindingPattern, DeclarationNode, DefaultNode, ExportDeclarationType, ExportSpecifier, ExportVarStatement, NamedExports, VarNames } from 'parser/exportsNodes';
+import { BindingPattern, ExportDeclaration, ExportDefault, ExportDeclarationType, ExportSpecifier, ExportVarStatement, NamedExports, VarNames } from 'parser/exportsNodes';
 import { isLiteralToken } from 'parser/predicats';
 import { CssDeclarationNode, CssImportNode, CssRawNode, ExportDeclarationNode, FontFaceNode, ImportDeclarationNode, ImportSepcifier, JssAtRuleNode, JssBlockItemNode, JssBlockNode, JssDeclarationNode, JssNode, JssPageNode, JssSelectorNode, JssSpreadNode, JssSupportsNode, JssVarDeclarationNode, NodeType, SyntaxTree } from 'parser/syntaxTree';
 import { SourceMapGenerator, SourceNode } from 'source-map';
@@ -358,10 +358,10 @@ function extractVarNames(varNames : VarNames[]) : LiteralToken[] {
 }
 
 function makeExportVarCode(name : string) {
-    return tag`_export(exports, {'default': function() { return ${name}; }});`;
+    return tag`_export(exports, {'${name}':function() { return ${name}; }});\n`;
 }
 
-function esDefault2Js(node : DefaultNode,
+function esDefault2Js(node : ExportDefault,
                       fileName : string) : SourceNode {
     const [source, value] = node.value;
     const sourceNode = makeSourceNode(source.position, fileName, source.value);
@@ -392,7 +392,7 @@ function esDefault2Js(node : DefaultNode,
     }
 }
 
-function esDeclaration2Js(node : DeclarationNode,
+function esDeclaration2Js(node : ExportDeclaration,
                       fileName : string) : SourceNode {
     const [source, value] = node.value;
     const sourceNode = makeSourceNode(source.position, fileName, source.value);
