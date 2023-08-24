@@ -1,13 +1,15 @@
 import path from 'path';
 import fs from 'fs';
 import { evalTestCodeFile } from 'testUtils';
+import { parseJssScript } from 'parser/jssParser';
+import { ArrayTokenStream } from 'parser/tokenStream';
 
-const ATOM_FILEPATH = path.join(__dirname, '../../test/atom.io.css');
-const NORMALIZE_FILEPATH = path.join(__dirname, '../../test/normalize.css');
-const GITHUB_FILEPATH = path.join(__dirname, '../../test/github.com.css');
-const JQUERY_FILEPATH = path.join(__dirname, '../../test/jquery.js');
+const ATOM_FILEPATH = path.join(__dirname, '../../test/vendor/atom.io.css');
+const NORMALIZE_FILEPATH = path.join(__dirname, '../../test/vendor/normalize.css');
+const GITHUB_FILEPATH = path.join(__dirname, '../../test/vendor/github.com.css');
+const JQUERY_FILEPATH = path.join(__dirname, '../../test/vendor/jquery.js');
 
-xdescribe('/test', () => {
+describe('/test', () => {
     it('parses atom.io.css', () => {
         expect(
             evalTestCodeFile(
@@ -40,11 +42,8 @@ xdescribe('/test', () => {
 
     it('parses jquery', () => {
         expect(
-            evalTestCodeFile(
-                fs.readFileSync(JQUERY_FILEPATH).toString(),
-                'jquery.js',
-                'jquery.compliled.js',
-            )
+            // js shouldn't be run
+            parseJssScript(ArrayTokenStream.fromFile(JQUERY_FILEPATH))
         ).toBeDefined();
     });
 });
