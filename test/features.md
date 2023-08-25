@@ -81,6 +81,8 @@ Output:
 }
 ```
 
+### ES Modules
+
 You can export code from jss files.
 
 ```jsslang title="lib1.jss"
@@ -130,5 +132,35 @@ Output:
 p {
     font-size: 14px;
     padding: 10px;
+}
+```
+
+Jss compiler can import EM module
+
+```javascript title='utils.js'
+function pad2(n) {
+    return n.length > 1 ? n : "0" + n;
+}
+
+export function rgb(r,g,b) {
+    return "#" + pad2(r.toString(16)) +
+        pad2(g.toString(16)) +
+        pad2(b.toString(16));
+}
+```
+
+```jsslang
+import { rgb } from './utils.js';
+
+div.grayColor {
+    background-color: ${rgb(125, 125, 125)};
+}
+```
+
+Output:
+
+```css
+div.grayColor {
+    background-color: #7d7d7d;
 }
 ```
