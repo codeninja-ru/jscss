@@ -378,7 +378,7 @@ function esDefault2Js(node : ExportDefault,
     const [source, value] = node.value;
     const sourceNode = makeSourceNode(source.position, fileName, source.value);
     switch(value.type) {
-        case NodeType.AssigmentExpression:
+        case NodeType.AssignmentExpression:
             if (source.value[source.value.length - 1] != ';') {
                 sourceNode.add(';');
             }

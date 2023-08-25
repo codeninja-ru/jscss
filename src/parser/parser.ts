@@ -5,7 +5,7 @@ import { ArrayBindingPattern, BindingPattern, BindingPatternType, ExportDeclarat
 import { ParserError, UnexpectedEndError } from "./parserError";
 import { anyBlock, anyLiteral, anySpace, anyString, anyTempateStringLiteral, block, comma, commaList, firstOf, ignoreSpacesAndComments, keyword, lazyBlock, leftHandRecurciveRule, longestOf, map, multiSymbol, noLineTerminatorHere, notAllowed, oneOfSymbols, optional, optionalBool, optionalRaw, regexpLiteral, repeat, returnRawNode, returnSourceAndValue, roundBracket, sequence, sequenceVoid, squareBracket, strictLoop, symbol } from "./parserUtils";
 import { isLiteralNextToken, makeIsKeywordNextTokenProbe, makeIsSymbolNextTokenProbe } from "./predicats";
-import { AssigmentExpressionNode, AsyncFunctionEpressionNode, AsyncGeneratorEpressionNode, ClassDeclarationNode, ExportDeclarationNode, FunctionEpressionNode, GeneratorEpressionNode, IfNode, ImportDeclarationNode, ImportSepcifier, JsModuleNode, JsRawNode, JssScriptNode, NodeType, VarDeclarationNode, VarStatementNode } from "./syntaxTree";
+import { AssignmentExpressionNode, AsyncFunctionEpressionNode, AsyncGeneratorEpressionNode, ClassDeclarationNode, ExportDeclarationNode, FunctionEpressionNode, GeneratorEpressionNode, IfNode, ImportDeclarationNode, ImportSepcifier, JsModuleNode, JsRawNode, JssScriptNode, NodeType, VarDeclarationNode, VarStatementNode } from "./syntaxTree";
 import { NextToken } from "./tokenParser";
 import { TokenStream } from "./tokenStream";
 import { peekAndSkipSpaces, peekNextToken, peekNoLineTerminatorHere } from "./tokenStreamReader";
@@ -737,7 +737,7 @@ function asyncArrowFunction(stream : TokenStream) : void {
     firstOf(anyBlock, assignmentExpression)(stream);
 }
 
-export function assignmentExpression(stream : TokenStream) : AssigmentExpressionNode {
+export function assignmentExpression(stream : TokenStream) : AssignmentExpressionNode {
     //TODO get rid of longestOf
     longestOf(
         // ConditionalExpression[?In, ?Yield, ?Await]
@@ -761,7 +761,7 @@ export function assignmentExpression(stream : TokenStream) : AssigmentExpression
     )(stream);
 
     return {
-        type: NodeType.AssigmentExpression,
+        type: NodeType.AssignmentExpression,
     };
 }
 

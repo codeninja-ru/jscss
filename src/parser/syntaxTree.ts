@@ -31,7 +31,7 @@ export enum NodeType {
     ExpressionStatement,
     JsModule,
     ImportDeclaration,
-    AssigmentExpression,
+    AssignmentExpression,
     ExportDeclaration,
 
     Lazy,
@@ -299,6 +299,6 @@ export interface ExportDeclarationNode extends Node {
     readonly value: ExportDeclarationValue;
 }
 
-export interface AssigmentExpressionNode extends Node {
-    readonly type: NodeType.AssigmentExpression,
+export interface AssignmentExpressionNode extends Node {
+    readonly type: NodeType.AssignmentExpression,
 }

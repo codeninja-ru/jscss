@@ -1,6 +1,6 @@
 import { LiteralToken, StringToken } from "token";
 import { LazyBlockParser, SourceAndValue } from "./parserUtils";
-import { AssigmentExpressionNode, AsyncFunctionEpressionNode, AsyncGeneratorEpressionNode, ClassDeclarationNode, FunctionEpressionNode, GeneratorEpressionNode, VarDeclarationNode, VarStatementNode } from "./syntaxTree";
+import { AssignmentExpressionNode, AsyncFunctionEpressionNode, AsyncGeneratorEpressionNode, ClassDeclarationNode, FunctionEpressionNode, GeneratorEpressionNode, VarDeclarationNode, VarStatementNode } from "./syntaxTree";
 
 export enum ExportDeclarationType {
     ExportFromClause,
@@ -73,7 +73,7 @@ export class ArrayBindingPattern {
 export interface ExportDefaultNode {
     readonly type: ExportDeclarationType.Default,
     readonly value: SourceAndValue<HoistableDeclaration |
-        ClassDeclarationNode | AssigmentExpressionNode>,
+        ClassDeclarationNode | AssignmentExpressionNode>,
 }
 
 export class ExportDeclaration {
@@ -85,7 +85,7 @@ export class ExportDeclaration {
 export class ExportDefault {
     readonly type = ExportDeclarationType.Default;
     constructor(readonly value : SourceAndValue<HoistableDeclaration
-        | ClassDeclarationNode | AssigmentExpressionNode>) {
+        | ClassDeclarationNode | AssignmentExpressionNode>) {
     }
 }
 

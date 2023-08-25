@@ -1,14 +1,12 @@
-# JavaScript + CSS = Jss
+# JavaScript + CSS = JssLang
 
-Jss is a preprocessor for Css that allow mix css and javascript grammar. Jss generates CSS so the output is CSS.
+Jss is a preprocessor for Css that allows to mix css and javascript grammar. Jss generates plain Css.
 
 ## Why?
 
-CSS is a greate language for declaring styles but it lucks features of programmar language like variables, inheritance, functions and etc. With Css alone you have to reapet yourself defining complex rules. There were attempts to solve this such as LESS, SASS and etc, but they still are not a not a programmer langauge and another drownback of them that they use unfamiliar syntax.
+CSS is a greate language for declaring styles but it lucks features of programmar language like variables, inheritance, functions and etc. With Css alone you have to reapet yourself defining complex rules. There were attempts to solve this such as LESS, SASS and etc, but they still are not a programmer langauge and another drownback of them that they use unfamiliar syntax.
 
 With Jss you can do everything that you can with LESS or SASS and even more. You don't need to learn a complete new language. JSS is based on CSS and JavaScript the langueages you already know (JavaScript is familiar for all frontend developers) so the learning curve should be less.
-
-TODO
 
 ## Get started guide
 
@@ -29,6 +27,10 @@ or if you installed it globally
 ``` sh
 jss file.jss file.css
 ```
+
+type _jss_ in the console to see all available options.
+
+## Syntax
 
 ### Variables
 
@@ -128,11 +130,10 @@ Output:
 }
 ```
 
-
 ### Mixins
 
 ``` jsslang
-const bordered = new {
+const bordered = @block {
   border: 3px solid red;
   border-radius: 3px;
 };
@@ -308,7 +309,7 @@ All kind of comments a supported
 
 ## Syntax Highlighting
 
-Syntax highlighting is in progress, but you can use same of our basic configs the following text editors.
+Syntax highlighting is in progress, but you can use same of our basic configs for the following text editors.
 
 ### vim
 

@@ -1,10 +1,5 @@
 # TODOs
 
-## replace new by @block
-const clearfix = @block {
-  clear: both;
-}
-
 ## universal selector *
 ```css
 * {
@@ -115,7 +110,7 @@ Output:
 
 ## class generators
 
-``` javascript
+```jsslang
 let columns = [];
 for (var i = 1; i < 3; i++) {
     const column = @block {

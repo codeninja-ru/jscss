@@ -1,6 +1,6 @@
 {
     "name": "@jsslang/jss",
-    "version": "1.0.0",
+    "version": "1.0.0-b",
     "description": "css pre-processor",
     "main": "jss.js",
     "keywords": [
