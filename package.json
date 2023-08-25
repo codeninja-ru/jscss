@@ -1,6 +1,6 @@
 {
     "name": "@jsslang/jss",
-    "version": "1.0.0-b",
+    "version": "1.0.0-c",
     "description": "css pre-processor",
     "main": "jss.js",
     "keywords": [
@@ -14,7 +14,8 @@
         "jss": "./jss.js"
     },
     "files": [
-        "jss.js"
+        "jss.js",
+        "jss.js.map"
     ],
     "devDependencies": {
         "@rollup/plugin-node-resolve": "^13.3.0",
