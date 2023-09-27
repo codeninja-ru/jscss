@@ -1,25 +1,7 @@
 # TODOs
 
-## universal selector *
-```css
-* {
-    display: block;
-}
-```
-
 ## css variables
 ## css nesting
-## pseudo class arguments
-```css
-:is(section, article, aside, nav) h1 {
-  font-size: 25px;
-}
-```
-
-## @font-face, @page, @charset and etc
-
-see https://developer.mozilla.org/en-US/docs/Web/CSS/At-rule
-
 ## shebang
 
 You can run scrips with shebang

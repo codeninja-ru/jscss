@@ -2,6 +2,8 @@
 
 Jss is a preprocessor for Css that allows to mix css and javascript grammar. Jss generates plain Css.
 
+**It's in alpha stage. Bugs are expected. Use on your own risk.**
+
 ## Why?
 
 CSS is a greate language for declaring styles but it lucks features of programmar language like variables, inheritance, functions and etc. With Css alone you have to reapet yourself defining complex rules. There were attempts to solve this such as LESS, SASS and etc, but they still are not a programmer langauge and another drownback of them that they use unfamiliar syntax.
